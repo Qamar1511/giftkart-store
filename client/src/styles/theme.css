@@ -1,0 +1,52 @@
+@import url("https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&display=swap");
+
+/* ---------- Light (default) theme — subtle blue-tinted page, white cards ---------- */
+:root {
+  --bg-deep: #f6f8fd;
+  --bg-panel: #ffffff;
+  --bg-panel-raised: #eef1f9;
+  --accent-blue: #2f6fed;
+  --accent-violet: #7c4fe0;
+  --accent-cyan: #0891b2;
+  --text-primary: #12141f;
+  --text-muted: #5b6478;
+  --card-border: rgba(15, 23, 42, 0.1);
+  --navbar-bg: rgba(255, 255, 255, 0.95);
+  --overlay-soft: rgba(15, 23, 42, 0.03);
+  --overlay-hover: rgba(15, 23, 42, 0.05);
+  --body-glow: none;
+}
+
+/* ---------- Dark theme — opt-in via the navbar toggle ---------- */
+[data-theme="dark"] {
+  --bg-deep: #080b14;
+  --bg-panel: #10182c;
+  --bg-panel-raised: #151f38;
+  --accent-blue: #3b7bf6;
+  --accent-violet: #8a5cf6;
+  --accent-cyan: #29e6ff;
+  --text-primary: #f3f6fc;
+  --text-muted: #8991a8;
+  --card-border: rgba(255, 255, 255, 0.08);
+  --navbar-bg: rgba(8, 11, 20, 0.9);
+  --overlay-soft: rgba(255, 255, 255, 0.03);
+  --overlay-hover: rgba(255, 255, 255, 0.05);
+  --body-glow: radial-gradient(50rem 40rem at 12% -10%, rgba(59, 123, 246, 0.22), transparent 60%),
+    radial-gradient(45rem 40rem at 92% 8%, rgba(138, 92, 246, 0.18), transparent 60%),
+    radial-gradient(38rem 32rem at 50% 105%, rgba(41, 230, 255, 0.1), transparent 60%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg-deep);
+  background-image: var(--body-glow);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  font-family: "Inter", sans-serif;
+  color: var(--text-primary);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}

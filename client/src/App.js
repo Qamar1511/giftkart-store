@@ -1,0 +1,102 @@
+import React from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import "./styles/theme.css";
+import { CartProvider } from "./context/CartContext";
+import { ThemeProvider } from "./context/ThemeContext";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+import Home from "./pages/Home";
+import BrandProducts from "./pages/BrandProducts";
+import Cart from "./pages/Cart";
+import CheckoutAddress from "./pages/CheckoutAddress";
+import CheckoutPayment from "./pages/CheckoutPayment";
+import OrderConfirmation from "./pages/OrderConfirmation";
+import OrderHistory from "./pages/OrderHistory";
+import PaypalReturn from "./pages/PaypalReturn";
+import Contact from "./pages/Contact";
+import Layout from "./components/Layout";
+import ProtectedRoute from "./components/ProtectedRoute";
+
+function App() {
+  return (
+    <ThemeProvider>
+      <CartProvider>
+        <BrowserRouter>
+        <Routes>
+          {/* Auth pages are full-screen, no Navbar/Footer */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
+
+          {/* Everything else uses the Navbar + Footer shell */}
+          <Route element={<Layout />}>
+            <Route path="/" element={<Home />} />
+            <Route path="/gift-cards" element={<Navigate to="/" replace />} />
+            <Route path="/brand/:slug" element={<BrandProducts />} />
+            <Route path="/cart" element={<Cart />} />
+            <Route path="/contact" element={<Contact />} />
+
+            <Route
+              path="/checkout/address"
+              element={
+                <ProtectedRoute>
+                  <CheckoutAddress />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/checkout/payment"
+              element={
+                <ProtectedRoute>
+                  <CheckoutPayment />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/order-confirmation/:orderId"
+              element={
+                <ProtectedRoute>
+                  <OrderConfirmation />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/orders"
+              element={
+                <ProtectedRoute>
+                  <OrderHistory />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/paypal/return"
+              element={
+                <ProtectedRoute>
+                  <PaypalReturn />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* /contact, /refund-policy, /terms are linked from the footer;
+                add pages for these whenever you want real content there */}
+            <Route
+              path="*"
+              element={
+                <div style={{ padding: "4rem 2rem", textAlign: "center" }}>
+                  <h2 style={{ fontFamily: "Rajdhani, sans-serif" }}>Coming soon</h2>
+                  <p style={{ color: "var(--text-muted)" }}>This page hasn't been built yet.</p>
+                </div>
+              }
+            />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+      </CartProvider>
+    </ThemeProvider>
+  );
+}
+
+export default App;

@@ -1,0 +1,361 @@
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.app-content {
+  flex: 1;
+}
+
+/* ---------- Navbar ---------- */
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--card-border);
+  box-shadow: 0 1px 12px rgba(15, 23, 42, 0.05);
+}
+
+.navbar-inner {
+  max-width: 78rem;
+  margin: 0 auto;
+  padding: 0.9rem 1.75rem;
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.navbar-logo {
+  font-family: "Rajdhani", sans-serif;
+  font-weight: 700;
+  font-size: 1.35rem;
+  letter-spacing: 0.02em;
+  color: var(--text-primary);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.navbar-logo-accent {
+  color: var(--accent-cyan);
+}
+
+.navbar-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.6rem;
+  flex: 1;
+}
+
+.navbar-link {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.92rem;
+  font-weight: 500;
+  padding: 0.3rem 0;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.navbar-link:hover {
+  color: var(--text-primary);
+}
+
+.navbar-link.is-active {
+  color: var(--text-primary);
+  border-bottom-color: var(--accent-cyan);
+}
+
+.navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.navbar-theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 999px;
+  border: 1px solid var(--card-border);
+  background: var(--bg-panel-raised);
+  font-size: 1.05rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.navbar-theme-toggle:hover {
+  transform: translateY(-1px);
+  border-color: var(--accent-blue);
+}
+
+.navbar-cart-link {
+  position: relative;
+  font-size: 1.2rem;
+  text-decoration: none;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  padding: 0.2rem;
+}
+
+.navbar-cart-badge {
+  position: absolute;
+  top: -0.35rem;
+  right: -0.5rem;
+  background: linear-gradient(120deg, var(--accent-blue), var(--accent-violet));
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  min-width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.25rem;
+}
+
+.navbar-auth-buttons {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.navbar-btn {
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 0.5rem 1.1rem;
+  border-radius: 0.5rem;
+  text-decoration: none;
+  transition: filter 0.15s ease, background 0.15s ease;
+}
+
+.navbar-btn-ghost {
+  color: var(--text-primary);
+  border: 1px solid var(--card-border);
+}
+
+.navbar-btn-ghost:hover {
+  background: var(--overlay-hover);
+}
+
+.navbar-btn-solid {
+  color: #fff;
+  background: linear-gradient(120deg, var(--accent-blue), var(--accent-violet));
+}
+
+.navbar-btn-solid:hover {
+  filter: brightness(1.1);
+}
+
+/* Profile dropdown */
+.navbar-profile {
+  position: relative;
+}
+
+.navbar-avatar {
+  width: 2.3rem;
+  height: 2.3rem;
+  border-radius: 50%;
+  border: 1px solid var(--card-border);
+  background: linear-gradient(120deg, var(--accent-blue), var(--accent-violet));
+  color: #fff;
+  font-family: "Rajdhani", sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.navbar-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.6rem);
+  width: 14rem;
+  background: var(--bg-panel-raised);
+  border: 1px solid var(--card-border);
+  border-radius: 0.65rem;
+  padding: 0.9rem;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+}
+
+.navbar-dropdown-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.navbar-dropdown-email {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin: 0.15rem 0 0.7rem;
+}
+
+.navbar-dropdown hr {
+  border: none;
+  border-top: 1px solid var(--card-border);
+  margin: 0.5rem 0;
+}
+
+.navbar-dropdown-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  text-decoration: none;
+  font-size: 0.88rem;
+  padding: 0.5rem 0.4rem;
+  border-radius: 0.4rem;
+  cursor: pointer;
+}
+
+.navbar-dropdown-item:hover {
+  background: var(--overlay-hover);
+}
+
+.navbar-dropdown-item.is-danger {
+  color: #c62828;
+}
+
+/* Hamburger - hidden on desktop */
+.navbar-hamburger {
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.3rem;
+}
+
+.navbar-hamburger span {
+  width: 22px;
+  height: 2px;
+  background: var(--text-primary);
+  border-radius: 2px;
+}
+
+/* ---------- Footer ---------- */
+.site-footer {
+  background: var(--bg-panel);
+  border-top: 1px solid var(--card-border);
+  margin-top: 3rem;
+}
+
+.site-footer-inner {
+  max-width: 78rem;
+  margin: 0 auto;
+  padding: 3rem 1.75rem 2rem;
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1fr 1.2fr;
+  gap: 2rem;
+}
+
+.footer-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.footer-blurb {
+  color: var(--text-muted);
+  font-size: 0.87rem;
+  line-height: 1.55;
+  max-width: 22rem;
+  margin-top: 0.5rem;
+}
+
+.footer-heading {
+  font-family: "Rajdhani", sans-serif;
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  margin: 0 0 0.3rem;
+}
+
+.footer-link {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.88rem;
+}
+
+.footer-link:hover {
+  color: var(--accent-cyan);
+}
+
+.footer-payment-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.footer-payment-badge {
+  font-size: 0.76rem;
+  font-weight: 500;
+  padding: 0.3rem 0.6rem;
+  border-radius: 0.4rem;
+  border: 1px solid var(--card-border);
+  color: var(--text-muted);
+}
+
+.site-footer-bottom {
+  max-width: 78rem;
+  margin: 0 auto;
+  padding: 1.1rem 1.75rem;
+  border-top: 1px solid var(--card-border);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 860px) {
+  .navbar-links {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    background: var(--bg-panel-raised);
+    border-bottom: 1px solid var(--card-border);
+    padding: 1rem 1.75rem;
+    gap: 0.9rem;
+    display: none;
+  }
+
+  .navbar-links.is-open {
+    display: flex;
+  }
+
+  .navbar-hamburger {
+    display: flex;
+  }
+
+  .site-footer-inner {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .site-footer-inner {
+    grid-template-columns: 1fr;
+  }
+
+  .navbar-auth-buttons .navbar-btn-ghost {
+    display: none;
+  }
+}

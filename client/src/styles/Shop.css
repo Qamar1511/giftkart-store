@@ -1,0 +1,1395 @@
+/* ---------- Shared page shell ---------- */
+.shop-page,
+.buy-page {
+  max-width: 78rem;
+  margin: 0 auto;
+  padding: 3rem 1.75rem 5rem;
+}
+
+.shop-status {
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+
+.shop-status-error {
+  color: #c62828;
+}
+
+.section-heading {
+  font-family: "Rajdhani", sans-serif;
+  font-size: 1.7rem;
+  font-weight: 700;
+  margin: 0 0 1.5rem;
+}
+
+/* ---------- Homepage hero carousel (contained card, not full-bleed —
+   sits inside the same max-width/padding as the rest of the site) ---------- */
+.hero-carousel-wrap {
+  max-width: 82rem;
+  margin: 0 auto;
+  padding: 1.5rem 1.75rem 0;
+}
+
+.hero-image-carousel {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1.975 / 1;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  background: var(--bg-panel);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+}
+
+/* Dark theme's hero art is pure black, so the side padding/margin around
+   the card revealed the page's dark glow as a visible lighter band on
+   either side. Go full width there; keep everything else identical. */
+[data-theme="dark"] .hero-carousel-wrap {
+  max-width: 100%;
+  padding: 0;
+}
+
+[data-theme="dark"] .hero-image-carousel {
+  border-radius: 0;
+}
+
+.hero-image-carousel a {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.hero-image-carousel img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center center;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
+.hero-image-carousel img.is-active {
+  opacity: 1;
+}
+
+.hero-carousel-dots {
+  position: absolute;
+  z-index: 2;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.5rem;
+}
+
+.hero-carousel-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  border: none;
+  background: rgba(15, 23, 42, 0.25);
+  cursor: pointer;
+  padding: 0;
+}
+
+.hero-carousel-dot.is-active {
+  background: var(--accent-blue);
+}
+
+/* ---------- Category quick-nav ---------- */
+.category-nav {
+  max-width: 78rem;
+  margin: 0 auto;
+  padding: 1.25rem 1.75rem 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+.category-nav-pill {
+  font-family: "Rajdhani", sans-serif;
+  font-weight: 600;
+  font-size: 0.88rem;
+  letter-spacing: 0.02em;
+  color: var(--text-primary);
+  text-decoration: none;
+  background: var(--bg-panel);
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  padding: 0.45rem 1rem;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.category-nav-pill:hover {
+  border-color: var(--accent-blue);
+  color: var(--accent-cyan);
+}
+
+/* ---------- Brand badge (colored initials, stand-in for brand logos) ---------- */
+.brand-badge {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.6rem;
+  color: #fff;
+  font-family: "Rajdhani", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.brand-badge-has-image {
+  padding: 0.4rem;
+}
+
+.brand-badge-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.brand-badge-sm {
+  width: 3rem;
+  height: 3rem;
+  font-size: 0.95rem;
+  border-radius: 0.5rem;
+}
+
+.brand-badge-md {
+  width: 3.4rem;
+  height: 3.4rem;
+  font-size: 1.05rem;
+}
+
+.brand-badge-lg {
+  width: 4.5rem;
+  height: 4.5rem;
+  font-size: 1.4rem;
+  border-radius: 0.9rem;
+}
+
+/* ---------- Featured brands row (wraps, no scroll) ---------- */
+.featured-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+}
+
+/* ---------- Brand tile (used in featured row + category grids) ---------- */
+.brand-tile {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-panel);
+  border: 1px solid var(--card-border);
+  border-radius: 0.9rem;
+  overflow: hidden;
+  min-width: 17.5rem;
+  width: 17.5rem;
+  text-decoration: none;
+  color: var(--text-primary);
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.brand-tile:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent-blue);
+}
+
+.brand-tile-image-wrap {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--overlay-soft);
+}
+
+.brand-tile-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.brand-tile-body {
+  padding: 0.85rem 1rem 1rem;
+}
+
+.brand-tile-name {
+  font-weight: 600;
+  font-size: 0.92rem;
+  margin: 0;
+}
+
+.brand-tile-meta {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  margin: 0.25rem 0 0;
+}
+
+/* ---------- Category blocks + brand grid (All gift cards section) ---------- */
+.category-block {
+  margin-bottom: 2.5rem;
+  scroll-margin-top: 5.5rem;
+}
+
+.category-block-title {
+  font-family: "Rajdhani", sans-serif;
+  font-size: 1.25rem;
+  margin: 0 0 1rem;
+  color: var(--accent-cyan);
+}
+
+.brand-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+  gap: 0.9rem;
+}
+
+/* ---------- Brand product page header ---------- */
+.brand-page-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+
+/* ---------- Card badge wrap (replaces product image on GiftCardCard) ---------- */
+.giftcard-card-badge-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--overlay-soft);
+}
+
+/* ---------- Homepage hero banner (image variant, kept for other uses) ---------- */
+.hero-banner {
+  position: relative;
+  overflow: hidden;
+  min-height: 34rem;
+  display: flex;
+  align-items: center;
+}
+
+.hero-banner-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.hero-banner-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, var(--bg-deep) 8%, rgba(8, 11, 20, 0.75) 42%, rgba(8, 11, 20, 0.15) 78%),
+    linear-gradient(0deg, var(--bg-deep) 0%, transparent 22%);
+}
+
+.hero-banner-content {
+  position: relative;
+  z-index: 2;
+  max-width: 78rem;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 1.75rem;
+}
+
+.hero-banner-title {
+  font-family: "Rajdhani", sans-serif;
+  font-weight: 700;
+  font-size: 3.6rem;
+  line-height: 1.02;
+  margin: 1rem 0;
+  max-width: 26rem;
+  background: linear-gradient(120deg, #ffffff 30%, var(--accent-cyan) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.hero-banner-sub {
+  color: var(--text-muted);
+  max-width: 28rem;
+  line-height: 1.6;
+  margin: 0 0 1.75rem;
+}
+
+.hero-banner-actions {
+  margin-bottom: 1.5rem;
+}
+
+.hero-banner-cta {
+  display: inline-block;
+  padding: 0.85rem 1.75rem;
+  font-size: 1.05rem;
+  text-decoration: none;
+  width: auto;
+}
+
+.hero-banner-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  letter-spacing: 0.03em;
+}
+
+.hero-banner-badges span:nth-child(even) {
+  color: rgba(137, 145, 168, 0.5);
+}
+
+@media (max-width: 860px) {
+  .hero-banner {
+    min-height: 28rem;
+  }
+
+  .hero-banner-overlay {
+    background: linear-gradient(0deg, var(--bg-deep) 15%, rgba(8, 11, 20, 0.55) 55%, rgba(8, 11, 20, 0.25) 100%);
+  }
+
+  .hero-banner-title {
+    font-size: 2.4rem;
+    max-width: 100%;
+  }
+
+  .hero-banner-sub {
+    max-width: 100%;
+  }
+}
+
+/* ---------- How it works ---------- */
+.how-it-works-wrap {
+  max-width: 78rem;
+  margin: 0 auto;
+  padding: 3.5rem 1.75rem 0.5rem;
+  text-align: center;
+}
+
+.how-it-works-sub {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  margin: 0.4rem 0 0;
+}
+
+.how-it-works {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 1.25rem;
+  margin-top: 2rem;
+  text-align: left;
+}
+
+.how-step {
+  position: relative;
+  background: var(--bg-panel);
+  border: 1px solid var(--card-border);
+  border-radius: 0.9rem;
+  padding: 1.5rem 1.4rem 1.6rem;
+  overflow: hidden;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.how-step::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent-blue), var(--accent-violet));
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.how-step:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent-blue);
+  box-shadow: 0 10px 24px rgba(47, 111, 237, 0.1);
+}
+
+.how-step:hover::before {
+  opacity: 1;
+}
+
+.how-step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 0.6rem;
+  background: linear-gradient(135deg, rgba(47, 111, 237, 0.12), rgba(124, 79, 224, 0.12));
+  font-family: "Rajdhani", sans-serif;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--accent-blue);
+  margin-bottom: 0.9rem;
+}
+
+.how-step h3 {
+  font-family: "Rajdhani", sans-serif;
+  font-size: 1.1rem;
+  margin: 0 0 0.4rem;
+}
+
+.how-step p {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ---------- FAQ ---------- */
+.faq-section {
+  max-width: 78rem;
+  margin: 0 auto;
+  padding: 1rem 1.75rem 4.5rem;
+}
+
+.faq-inner {
+  max-width: 44rem;
+}
+
+.faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.faq-item {
+  background: var(--bg-panel);
+  border: 1px solid var(--card-border);
+  border-radius: 0.7rem;
+  overflow: hidden;
+}
+
+.faq-item.is-open {
+  border-color: var(--accent-blue);
+}
+
+.faq-question {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  background: none;
+  border: none;
+  text-align: left;
+  padding: 1rem 1.25rem;
+  font-family: "Inter", sans-serif;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.faq-icon {
+  flex-shrink: 0;
+  color: var(--accent-cyan);
+  font-size: 1.1rem;
+}
+
+.faq-answer {
+  margin: 0;
+  padding: 0 1.25rem 1.1rem;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+/* ---------- Homepage hero (legacy text-only, kept for other pages) ---------- */
+.hero {
+  text-align: center;
+  padding: 3rem 1rem 4rem;
+}
+
+.hero-title {
+  font-family: "Rajdhani", sans-serif;
+  font-weight: 700;
+  font-size: 3rem;
+  line-height: 1.05;
+  margin: 1rem 0;
+  background: linear-gradient(120deg, #ffffff 30%, var(--accent-cyan) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.hero-sub {
+  color: var(--text-muted);
+  max-width: 34rem;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+/* ---------- Product grid ---------- */
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 1.25rem;
+}
+
+.giftcard-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--card-border);
+  border-radius: 0.9rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.giftcard-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent-blue);
+}
+
+.giftcard-card-image-wrap {
+  position: relative;
+  aspect-ratio: 5 / 4;
+  overflow: hidden;
+}
+
+.giftcard-card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.giftcard-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.giftcard-card-console {
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.giftcard-card-price-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.giftcard-stock-pill {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+}
+
+.giftcard-stock-pill.in-stock {
+  background: rgba(41, 230, 255, 0.2);
+  color: var(--accent-cyan);
+}
+
+.giftcard-stock-pill.out-of-stock {
+  background: rgba(255, 138, 138, 0.2);
+  color: #c62828;
+}
+
+.giftcard-card-body {
+  padding: 1.1rem 1.25rem 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.giftcard-card-amount {
+  font-family: "Rajdhani", sans-serif;
+  font-weight: 700;
+  font-size: 1.8rem;
+  margin: 0;
+}
+
+.giftcard-card-title {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin: 0 0 0.5rem;
+}
+
+.giftcard-card-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.qty-stepper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid var(--card-border);
+  border-radius: 0.5rem;
+  padding: 0.2rem 0.5rem;
+}
+
+.qty-stepper button {
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  cursor: pointer;
+  border-radius: 0.3rem;
+}
+
+.qty-stepper button:hover:not(:disabled) {
+  background: var(--overlay-hover);
+}
+
+.qty-stepper button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.qty-stepper span {
+  min-width: 1.2rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+.giftcard-card-btn {
+  flex: 1;
+  padding: 0.6rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-family: "Rajdhani", sans-serif;
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: #fff;
+  background: linear-gradient(120deg, var(--accent-blue), var(--accent-violet));
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.giftcard-card-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--bg-panel-raised);
+}
+
+/* ---------- Buy page ---------- */
+.buy-page {
+  position: relative;
+  display: grid;
+  grid-template-columns: 18rem 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+.checkout-address-page {
+  padding-top: 1.5rem;
+  padding-bottom: 2rem;
+}
+
+.checkout-bg-decor {
+  position: absolute;
+  top: 15rem;
+  left: -3rem;
+  width: 30rem;
+  height: 27rem;
+  background-repeat: no-repeat;
+  background-position: left top;
+  background-size: contain;
+  -webkit-mask-image: radial-gradient(65% 70% at 30% 40%, black 55%, transparent 100%);
+  mask-image: radial-gradient(65% 70% at 30% 40%, black 55%, transparent 100%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.checkout-payment-page {
+  padding-top: 1.5rem;
+  padding-bottom: 2rem;
+}
+
+.payment-bg-decor {
+  top: -1rem;
+  left: -3rem;
+  width: 17rem;
+  height: 32rem;
+}
+
+.upi-wait-page {
+  position: relative;
+}
+
+.upi-wait-bg-decor {
+  top: 4rem;
+  left: -3rem;
+  width: 26rem;
+  height: 32rem;
+}
+
+.usdt-invoice-card {
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 860px) {
+  .upi-wait-bg-decor {
+    display: none;
+  }
+}
+
+.cart-page {
+  position: relative;
+}
+
+.cart-bg-decor {
+  top: 2rem;
+  left: -3rem;
+  width: 26rem;
+  height: 32rem;
+}
+
+.cart-list,
+.cart-summary {
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 860px) {
+  .cart-bg-decor {
+    display: none;
+  }
+}
+
+.buy-summary-card {
+  z-index: 1;
+}
+
+.buy-form-card {
+  position: relative;
+  z-index: 1;
+}
+
+.buy-summary-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--card-border);
+  border-radius: 0.9rem;
+  padding: 1.75rem;
+  position: relative;
+  top: 0.5rem;
+  left: 264px;
+}
+
+.buy-form-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--card-border);
+  border-radius: 0.9rem;
+  padding: 1.5rem 2rem;
+  max-width: 40rem;
+  margin: 0 0 0 auto;
+}
+
+.address-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 1rem;
+}
+
+.address-full-width {
+  grid-column: 1 / -1;
+}
+
+/* ---------- Contact page ---------- */
+.contact-page-sub {
+  color: var(--text-muted);
+  max-width: 40rem;
+  margin: -0.75rem 0 1.75rem;
+  line-height: 1.55;
+}
+
+.contact-form-card {
+  margin: 0 auto;
+}
+
+.contact-file-input {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+
+.contact-file-input input[type="file"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+}
+
+.contact-file-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--overlay-hover);
+  border: 1px solid var(--card-border);
+  border-radius: 0.55rem;
+  padding: 0.6rem 1rem;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.contact-file-btn:hover {
+  border-color: var(--accent-blue);
+}
+
+.contact-file-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  background: var(--overlay-soft);
+  border-radius: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  max-width: 16rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.contact-file-remove {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+
+.contact-file-remove:hover {
+  color: #c62828;
+}
+
+.payment-method-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.7rem;
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 640px) {
+  .payment-method-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 420px) {
+  .payment-method-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.payment-method-tile {
+  text-align: left;
+  background: var(--overlay-hover);
+  border: 1px solid var(--card-border);
+  border-radius: 0.6rem;
+  padding: 0.75rem 0.9rem;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.payment-method-tile:hover {
+  border-color: var(--accent-blue);
+}
+
+.payment-method-tile.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  background: var(--overlay-soft);
+}
+
+.payment-method-tile.is-disabled:hover {
+  border-color: var(--card-border);
+}
+
+.payment-method-tile.is-selected {
+  border-color: var(--accent-cyan);
+  background: rgba(41, 230, 255, 0.08);
+}
+
+.payment-method-label {
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--text-primary);
+}
+
+.payment-method-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* ---------- USDT invoice ---------- */
+.usdt-invoice-card {
+  grid-column: 1 / -1;
+  background: var(--bg-panel);
+  border: 1px solid var(--card-border);
+  border-radius: 0.9rem;
+  padding: 2rem;
+  max-width: 30rem;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.usdt-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin: 1rem 0;
+  text-align: left;
+}
+
+.usdt-field span {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.usdt-field code {
+  word-break: break-all;
+  font-size: 0.85rem;
+}
+
+/* ---------- Order confirmation ---------- */
+.confirmation-card {
+  grid-column: 1 / -1;
+  max-width: 32rem;
+  margin: 0 auto;
+  background: var(--bg-panel);
+  border: 1px solid var(--card-border);
+  border-radius: 0.9rem;
+  padding: 2.25rem;
+  text-align: center;
+}
+
+.confirmation-heading {
+  font-family: "Rajdhani", sans-serif;
+  font-size: 1.6rem;
+  margin: 0.75rem 0 0.4rem;
+}
+
+.confirmation-summary {
+  text-align: left;
+  margin: 1.5rem 0;
+  border-top: 1px solid var(--card-border);
+  padding-top: 1rem;
+}
+
+.confirmation-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.4rem 0;
+  font-size: 0.9rem;
+}
+
+.confirmation-row span {
+  color: var(--text-muted);
+}
+
+.confirmation-code-row code {
+  background: rgba(41, 230, 255, 0.1);
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.3rem;
+}
+
+.confirmation-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+/* ---------- Status pill (shared by confirmation + order history) ---------- */
+.order-status-pill {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.status-placed {
+  background: rgba(139, 145, 168, 0.15);
+  color: var(--text-muted);
+}
+
+.status-paid {
+  background: rgba(59, 123, 246, 0.15);
+  color: var(--accent-blue);
+}
+
+.status-delivered {
+  background: rgba(41, 230, 255, 0.15);
+  color: var(--accent-cyan);
+}
+
+.status-cancelled,
+.status-refunded,
+.status-failed {
+  background: rgba(255, 138, 138, 0.15);
+  color: #c62828;
+}
+
+.status-refund_pending {
+  background: rgba(255, 193, 7, 0.15);
+  color: #ffc107;
+}
+
+/* ---------- Order history ---------- */
+.orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.order-row-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--card-border);
+  border-radius: 0.8rem;
+  padding: 1.25rem 1.5rem;
+}
+
+.order-row-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.order-row-amount {
+  font-weight: 600;
+  margin: 0;
+}
+
+.order-row-meta {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  margin: 0.2rem 0 0;
+}
+
+.delivering-to {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.delivering-to-icon {
+  flex-shrink: 0;
+  width: 1.9rem;
+  height: 1.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(124, 79, 224, 0.1);
+  font-size: 0.9rem;
+}
+
+.order-row-code {
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.order-row-code code {
+  color: var(--text-primary);
+}
+
+.order-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.order-row-actions .navbar-btn {
+  font-size: 0.82rem;
+  padding: 0.4rem 0.85rem;
+}
+
+.order-cancel-btn {
+  color: #c62828;
+  border-color: rgba(255, 138, 138, 0.35);
+}
+
+.empty-orders {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text-muted);
+}
+
+.empty-orders .auth-submit {
+  max-width: 14rem;
+  margin: 1rem auto 0;
+}
+
+/* ---------- Test mode button (dev-only, disabled in production) ---------- */
+.test-mode-btn {
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.65rem;
+  border: 1px dashed rgba(255, 193, 7, 0.5);
+  border-radius: 0.5rem;
+  background: rgba(255, 193, 7, 0.06);
+  color: #ffc107;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.test-mode-btn:hover:not(:disabled) {
+  background: rgba(255, 193, 7, 0.12);
+}
+
+.test-mode-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---------- Trust / why-us badges (homepage) ---------- */
+.trust-section {
+  max-width: 78rem;
+  margin: 0 auto;
+  padding: 0 1.75rem 3rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 1rem;
+}
+
+.trust-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--card-border);
+  border-radius: 0.8rem;
+  padding: 1.4rem;
+  text-align: center;
+}
+
+.trust-icon {
+  font-size: 1.6rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.trust-card h3 {
+  font-family: "Rajdhani", sans-serif;
+  font-size: 1.05rem;
+  margin: 0 0 0.4rem;
+}
+
+.trust-card p {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ---------- Why buy from us (homepage) ---------- */
+.why-us-section {
+  background: var(--bg-panel);
+  border-top: 1px solid var(--card-border);
+  padding: 3.5rem 0;
+  margin-top: 2rem;
+}
+
+.why-us-inner {
+  max-width: 78rem;
+  margin: 0 auto;
+  padding: 0 1.75rem;
+}
+
+.why-us-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1.5rem;
+}
+
+.why-us-item h4 {
+  font-family: "Rajdhani", sans-serif;
+  font-size: 1.1rem;
+  margin: 0 0 0.5rem;
+  color: var(--accent-cyan);
+}
+
+.why-us-item p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ---------- Cart page ---------- */
+.cart-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-bottom: 1.5rem;
+  max-width: 46rem;
+  margin-left: auto;
+}
+
+.cart-row {
+  display: grid;
+  grid-template-columns: 4.5rem 1fr auto auto auto;
+  align-items: center;
+  gap: 1rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--card-border);
+  border-radius: 0.7rem;
+  padding: 0.75rem 1rem;
+}
+
+.cart-row-image {
+  width: 4.5rem;
+  height: 3rem;
+  object-fit: cover;
+  border-radius: 0.4rem;
+}
+
+.cart-row-title {
+  font-weight: 600;
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.cart-row-subtotal {
+  font-weight: 700;
+  font-family: "Rajdhani", sans-serif;
+  white-space: nowrap;
+}
+
+.cart-row-remove {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0.3rem;
+}
+
+.cart-row-remove:hover {
+  color: #c62828;
+}
+
+.cart-summary {
+  max-width: 22rem;
+  margin-left: auto;
+  background: var(--bg-panel);
+  border: 1px solid var(--card-border);
+  border-radius: 0.8rem;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.cart-summary > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1.05rem;
+}
+
+/* ---------- Manual UPI QR ---------- */
+.upi-qr-image {
+  width: 200px;
+  height: 200px;
+  margin: 1rem auto;
+  display: block;
+  border-radius: 0.5rem;
+  background: #fff;
+  padding: 0.5rem;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 860px) {
+  .buy-page {
+    grid-template-columns: 1fr;
+  }
+
+  .checkout-bg-decor {
+    display: none;
+  }
+
+  .buy-summary-card {
+    position: static;
+    left: 0;
+  }
+
+  .address-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-title {
+    font-size: 2.2rem;
+  }
+
+  .cart-row {
+    grid-template-columns: 3.5rem 1fr auto;
+    grid-template-areas:
+      "img title remove"
+      "img qty subtotal";
+    row-gap: 0.5rem;
+  }
+
+  .cart-row-image-wrap {
+    grid-area: img;
+  }
+
+  .cart-row-info {
+    grid-area: title;
+  }
+
+  .qty-stepper {
+    grid-area: qty;
+    justify-self: start;
+  }
+
+  .cart-row-subtotal {
+    grid-area: subtotal;
+    justify-self: end;
+  }
+
+  .cart-row-remove {
+    grid-area: remove;
+    justify-self: end;
+  }
+
+  .cart-summary {
+    max-width: none;
+  }
+
+  .cart-list {
+    max-width: none;
+    margin-left: 0;
+  }
+}

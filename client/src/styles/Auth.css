@@ -1,0 +1,375 @@
+@import url("https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&display=swap");
+
+/* Note: color variables come from theme.css's global :root / [data-theme="dark"]
+   blocks now — don't redefine :root here, it would override the dark mode
+   toggle for the whole app (Login.jsx is statically imported, so this file's
+   CSS is always loaded, not just on the /login route). */
+
+.auth-screen {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  background: var(--bg-deep);
+  font-family: "Inter", sans-serif;
+  color: var(--text-primary);
+}
+
+/* Left: brand panel with an asymmetric console-style cut on its edge */
+.auth-brand-panel {
+  position: relative;
+  overflow: hidden;
+  padding: 4rem 4rem 4rem 5rem;
+  display: flex;
+  align-items: center;
+  background:
+    radial-gradient(120% 140% at 0% 0%, #e8f0ff 0%, #f2f6ff 55%, #ffffff 100%);
+  clip-path: polygon(0 0, 100% 0, 92% 100%, 0 100%);
+}
+
+.auth-brand-content {
+  position: relative;
+  z-index: 2;
+  max-width: 26rem;
+}
+
+.auth-eyebrow {
+  display: inline-block;
+  font-family: "Rajdhani", sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+  color: var(--accent-cyan);
+  border: 1px solid rgba(41, 230, 255, 0.35);
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  margin-bottom: 1.75rem;
+}
+
+.auth-brand-title {
+  font-family: "Rajdhani", sans-serif;
+  font-weight: 700;
+  font-size: 3.4rem;
+  line-height: 1.02;
+  letter-spacing: -0.01em;
+  margin: 0 0 1.25rem;
+  background: linear-gradient(120deg, var(--text-primary) 30%, var(--accent-blue) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.auth-brand-sub {
+  color: var(--text-muted);
+  font-size: 1.02rem;
+  line-height: 1.6;
+  margin-bottom: 2.5rem;
+  max-width: 26rem;
+}
+
+/* Denomination chips - stacked with a slight cascading offset */
+.auth-chip-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.auth-chip {
+  --i: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 15rem;
+  padding: 0.65rem 1rem;
+  background: rgba(15, 23, 42, 0.04);
+  border: 1px solid var(--card-border);
+  border-radius: 0.6rem;
+  backdrop-filter: blur(6px);
+  transform: translateX(calc(var(--i) * 0.55rem));
+  animation: chip-in 0.5s ease backwards;
+  animation-delay: calc(var(--i) * 70ms);
+}
+
+@keyframes chip-in {
+  from {
+    opacity: 0;
+    transform: translateX(calc(var(--i) * 0.55rem + 12px));
+  }
+  to {
+    opacity: 1;
+    transform: translateX(calc(var(--i) * 0.55rem));
+  }
+}
+
+.auth-chip-label {
+  font-family: "Rajdhani", sans-serif;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--text-primary);
+}
+
+.auth-chip-tag {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.auth-trust-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.1rem;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--card-border);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.auth-brand-glow {
+  position: absolute;
+  width: 32rem;
+  height: 32rem;
+  right: -14rem;
+  bottom: -14rem;
+  background: radial-gradient(circle, rgba(124, 79, 224, 0.16) 0%, transparent 70%);
+  filter: blur(10px);
+  z-index: 1;
+}
+
+.auth-brand-visual {
+  position: absolute;
+  z-index: 1;
+  right: -2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 26rem;
+  max-width: 58%;
+  height: auto;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+
+@media (max-width: 1200px) {
+  .auth-brand-visual {
+    width: 20rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .auth-brand-visual {
+    display: none;
+  }
+}
+
+/* Right: form panel */
+.auth-form-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+}
+
+.auth-form-card {
+  width: 100%;
+  max-width: 24rem;
+}
+
+.auth-form-title {
+  font-family: "Rajdhani", sans-serif;
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 0.35rem;
+}
+
+.auth-form-sub {
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  margin-bottom: 1.75rem;
+}
+
+.auth-link {
+  color: var(--accent-cyan);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.auth-link:hover {
+  text-decoration: underline;
+}
+
+.auth-error {
+  background: rgba(255, 82, 82, 0.1);
+  border: 1px solid rgba(255, 82, 82, 0.35);
+  color: #c62828;
+  font-size: 0.88rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.auth-success {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: #15803d;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  padding: 1rem 1.1rem;
+  border-radius: 0.6rem;
+}
+
+.auth-dev-note {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed rgba(21, 128, 61, 0.3);
+  font-size: 0.82rem;
+}
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 1.1rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.auth-field-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.auth-forgot-link {
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.auth-field input,
+.auth-field textarea {
+  background: rgba(15, 23, 42, 0.03);
+  border: 1px solid var(--card-border);
+  border-radius: 0.55rem;
+  padding: 0.75rem 0.9rem;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-family: "Inter", sans-serif;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.auth-field textarea {
+  resize: vertical;
+  min-height: 6rem;
+}
+
+.auth-field input:focus,
+.auth-field textarea:focus {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(59, 123, 246, 0.18);
+}
+
+.auth-field input::placeholder,
+.auth-field textarea::placeholder {
+  color: #4b5468;
+}
+
+.auth-password-wrap {
+  position: relative;
+  display: flex;
+}
+
+.auth-password-wrap input {
+  flex: 1;
+  padding-right: 3.5rem;
+}
+
+.auth-toggle-visibility {
+  position: absolute;
+  right: 0.7rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--accent-cyan);
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.auth-submit {
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.85rem 1rem;
+  border: none;
+  border-radius: 0.6rem;
+  font-family: "Rajdhani", sans-serif;
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+  color: #ffffff;
+  background: linear-gradient(120deg, var(--accent-blue), var(--accent-violet));
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.1s ease;
+}
+
+.auth-submit:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.auth-submit:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.auth-submit:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* Keyboard focus visibility */
+.auth-toggle-visibility:focus-visible,
+.auth-submit:focus-visible,
+.auth-link:focus-visible {
+  outline: 2px solid var(--accent-cyan);
+  outline-offset: 2px;
+}
+
+/* Responsive: stack panels on smaller screens, drop the diagonal cut */
+@media (max-width: 900px) {
+  .auth-screen {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-brand-panel {
+    clip-path: none;
+    padding: 3rem 1.75rem;
+  }
+
+  .auth-brand-title {
+    font-size: 2.4rem;
+  }
+
+  .auth-chip-stack {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .auth-chip {
+    width: auto;
+    flex: 1 1 8rem;
+    transform: none;
+  }
+
+  .auth-form-panel {
+    padding: 2.5rem 1.75rem 3.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-chip {
+    animation: none;
+  }
+}
