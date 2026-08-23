@@ -127,6 +127,11 @@ const Navbar = () => {
                   <p className="navbar-dropdown-name">{session.user.fullName}</p>
                   <p className="navbar-dropdown-email">{session.user.email}</p>
                   <hr />
+                  {session.user.role === "admin" && (
+                    <Link to="/admin" className="navbar-dropdown-item" onClick={() => setMenuOpen(false)}>
+                      Admin panel
+                    </Link>
+                  )}
                   <Link to="/orders" className="navbar-dropdown-item" onClick={() => setMenuOpen(false)}>
                     My Orders
                   </Link>

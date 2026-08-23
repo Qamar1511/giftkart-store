@@ -18,6 +18,12 @@ import PaypalReturn from "./pages/PaypalReturn";
 import Contact from "./pages/Contact";
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AdminRoute from "./components/AdminRoute";
+import AdminLayout from "./pages/admin/AdminLayout";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminOrders from "./pages/admin/AdminOrders";
+import AdminStock from "./pages/admin/AdminStock";
+import AdminQueries from "./pages/admin/AdminQueries";
 
 function App() {
   return (
@@ -30,6 +36,21 @@ function App() {
           <Route path="/signup" element={<Signup />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
+
+          {/* Admin panel — own sidebar shell, gated to role === "admin" */}
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <AdminLayout />
+              </AdminRoute>
+            }
+          >
+            <Route index element={<AdminDashboard />} />
+            <Route path="orders" element={<AdminOrders />} />
+            <Route path="stock" element={<AdminStock />} />
+            <Route path="queries" element={<AdminQueries />} />
+          </Route>
 
           {/* Everything else uses the Navbar + Footer shell */}
           <Route element={<Layout />}>

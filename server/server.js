@@ -1,12 +1,14 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const productRoutes = require("./routes/productRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const contactRoutes = require("./routes/contactRoutes");
+const adminRoutes = require("./routes/adminRoutes");
 
 const app = express();
 
@@ -17,12 +19,16 @@ connectDB();
 app.use(cors());
 app.use(express.json());
 
+// Contact form attachments, saved to disk in contactController.js
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/contact", contactRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", message: "PS Gift Card Store API is running" });

@@ -40,7 +40,7 @@ async function verify() {
   order.paymentStatus = "paid";
   order.verificationStatus = "verified";
   order.providerPaymentId = order.utrNumber || `MANUAL-${Date.now()}`;
-  await order.save();
+  await order.save({ validateModifiedOnly: true });
 
   const delivered = await deliverGiftCard(order);
   console.log(`Marked as paid. Order status is now: ${delivered.orderStatus}`);

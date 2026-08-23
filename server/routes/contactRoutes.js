@@ -1,6 +1,11 @@
 const express = require("express");
 const multer = require("multer");
-const { submitContactForm } = require("../controllers/contactController");
+const {
+  submitContactForm,
+  getContactSubmissions,
+  updateContactStatus,
+} = require("../controllers/contactController");
+const { protect, adminOnly } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
@@ -12,5 +17,7 @@ const upload = multer({
 });
 
 router.post("/", upload.single("attachment"), submitContactForm);
+router.get("/", protect, adminOnly, getContactSubmissions);
+router.patch("/:id", protect, adminOnly, updateContactStatus);
 
 module.exports = router;

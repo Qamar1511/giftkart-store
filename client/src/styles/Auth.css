@@ -29,7 +29,7 @@
 .auth-brand-content {
   position: relative;
   z-index: 2;
-  max-width: 26rem;
+  max-width: min(26rem, 54%);
 }
 
 .auth-eyebrow {
@@ -64,7 +64,7 @@
   font-size: 1.02rem;
   line-height: 1.6;
   margin-bottom: 2.5rem;
-  max-width: 26rem;
+  max-width: 100%;
 }
 
 /* Denomination chips - stacked with a slight cascading offset */
@@ -144,22 +144,39 @@
   top: 50%;
   transform: translateY(-50%);
   width: 26rem;
-  max-width: 58%;
+  max-width: 38%;
   height: auto;
   object-fit: contain;
   pointer-events: none;
   user-select: none;
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1300px) {
   .auth-brand-visual {
     width: 20rem;
+    max-width: 34%;
+    right: -1rem;
+  }
+}
+
+@media (max-width: 1000px) {
+  .auth-brand-visual {
+    width: 15rem;
+    max-width: 30%;
+  }
+
+  .auth-brand-content {
+    max-width: 62%;
   }
 }
 
 @media (max-width: 900px) {
   .auth-brand-visual {
     display: none;
+  }
+
+  .auth-brand-content {
+    max-width: 100%;
   }
 }
 
