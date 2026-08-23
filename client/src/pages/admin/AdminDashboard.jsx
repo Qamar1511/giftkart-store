@@ -48,7 +48,7 @@ const AdminDashboard = () => {
   const lowStockItems = stock?.filter((s) => s.available < LOW_STOCK_THRESHOLD) || [];
 
   const newQueries = queries?.filter((q) => q.status === "new").length || 0;
-  const totalQueries = queries?.length || 0;
+  // const totalQueries = queries?.length || 0;
 
   const STAT_CARDS = [
     {
