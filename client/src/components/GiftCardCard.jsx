@@ -1,14 +1,15 @@
 import React, { useState } from "react";
-import { useCart } from "../context/CartContext";
+import { useCart, MAX_QUANTITY_PER_ITEM } from "../context/CartContext";
 import BrandBadge from "./BrandBadge";
 
 const GiftCardCard = ({ product, color }) => {
   const { addToCart } = useCart();
+  const maxQty = Math.max(0, Math.min(MAX_QUANTITY_PER_ITEM, product.availableStock ?? MAX_QUANTITY_PER_ITEM));
   const [quantity, setQuantity] = useState(1);
   const [justAdded, setJustAdded] = useState(false);
 
   const handleAdd = () => {
-    addToCart(product.brand, product.denomination, quantity);
+    addToCart(product.brand, product.denomination, quantity, product.availableStock);
     setJustAdded(true);
     setTimeout(() => setJustAdded(false), 1500);
   };
@@ -45,7 +46,11 @@ const GiftCardCard = ({ product, color }) => {
               −
             </button>
             <span>{quantity}</span>
-            <button type="button" onClick={() => setQuantity((q) => Math.min(20, q + 1))} disabled={!product.inStock}>
+            <button
+              type="button"
+              onClick={() => setQuantity((q) => Math.min(maxQty, q + 1))}
+              disabled={!product.inStock || quantity >= maxQty}
+            >
               +
             </button>
           </div>
@@ -54,6 +59,9 @@ const GiftCardCard = ({ product, color }) => {
             {!product.inStock ? "Notify me" : justAdded ? "Added ✓" : "Add to cart"}
           </button>
         </div>
+        {product.inStock && product.availableStock < 5 && (
+          <p className="giftcard-card-stock-hint">Only {product.availableStock} left</p>
+        )}
       </div>
     </div>
   );

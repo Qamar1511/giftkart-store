@@ -70,6 +70,16 @@ const Navbar = () => {
   return (
     <header className="navbar">
       <div className="navbar-inner">
+        <button
+          className="navbar-hamburger"
+          onClick={() => setMobileNavOpen((open) => !open)}
+          aria-label="Toggle navigation menu"
+        >
+          <span />
+          <span />
+          <span />
+        </button>
+
         <Link to="/" className="navbar-logo">
           GIFT<span className="navbar-logo-accent">KART</span>
         </Link>
@@ -95,6 +105,20 @@ const Navbar = () => {
               </Link>
             )
           )}
+
+          <div className="navbar-mobile-theme-row">
+            <span>Dark mode</span>
+            <button
+              type="button"
+              className="navbar-switch"
+              role="switch"
+              aria-checked={theme === "dark"}
+              aria-label="Toggle dark mode"
+              onClick={toggleTheme}
+            >
+              <span className="navbar-switch-thumb" />
+            </button>
+          </div>
         </nav>
 
         <div className="navbar-actions">
@@ -151,16 +175,6 @@ const Navbar = () => {
               </Link>
             </div>
           )}
-
-          <button
-            className="navbar-hamburger"
-            onClick={() => setMobileNavOpen((open) => !open)}
-            aria-label="Toggle navigation menu"
-          >
-            <span />
-            <span />
-            <span />
-          </button>
         </div>
       </div>
     </header>

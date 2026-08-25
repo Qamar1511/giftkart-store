@@ -5,15 +5,16 @@ const { BRANDS } = require("../config/catalog");
 
 // @route  GET /api/admin/orders
 // @access Admin
-// Optional ?status=upi_pending filters to manual-UPI orders awaiting
-// verification (the queue an admin actually needs to work through daily).
+// Optional ?status=upi_pending filters to manual-payment orders (UPI or
+// USDT) awaiting verification — the queue an admin actually needs to work
+// through daily.
 exports.getAllOrders = async (req, res) => {
   try {
     const { status } = req.query;
     const filter = {};
 
     if (status === "upi_pending") {
-      filter.paymentMethod = "upi_manual";
+      filter.paymentMethod = { $in: ["upi_manual", "usdt"] };
       filter.verificationStatus = "submitted";
     } else if (status) {
       filter.orderStatus = status;
@@ -33,17 +34,18 @@ exports.getAllOrders = async (req, res) => {
 
 // @route  POST /api/admin/orders/:id/verify-upi
 // @access Admin
-// Same effect as scripts/verifyManualPayment.js — check the UTR against your
-// actual bank/UPI statement yourself first, then click this to mark the
-// order paid and trigger gift-card delivery.
+// Same effect as scripts/verifyManualPayment.js — check the UTR (for UPI) or
+// the transaction hash on a block explorer (for USDT) against the real
+// payment yourself first, then click this to mark the order paid and
+// trigger gift-card delivery.
 exports.verifyUpiPayment = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
     }
-    if (order.paymentMethod !== "upi_manual") {
-      return res.status(400).json({ message: "This order isn't a manual UPI order." });
+    if (!["upi_manual", "usdt"].includes(order.paymentMethod)) {
+      return res.status(400).json({ message: "This order isn't a manual UPI/USDT order." });
     }
     if (order.paymentStatus === "paid") {
       return res.status(400).json({ message: "This order is already marked paid." });
@@ -51,7 +53,7 @@ exports.verifyUpiPayment = async (req, res) => {
 
     order.paymentStatus = "paid";
     order.verificationStatus = "verified";
-    order.providerPaymentId = order.utrNumber || `MANUAL-${Date.now()}`;
+    order.providerPaymentId = order.utrNumber || order.usdtTxId || `MANUAL-${Date.now()}`;
     await order.save({ validateModifiedOnly: true });
 
     const delivered = await deliverGiftCard(order);
@@ -71,8 +73,9 @@ exports.verifyUpiPayment = async (req, res) => {
 
 // @route  POST /api/admin/orders/:id/reject-upi
 // @access Admin
-// For when the UTR the customer submitted doesn't match anything in your
-// bank/UPI statement — marks the order failed instead of silently ignoring it.
+// For when the UTR/transaction ID the customer submitted doesn't match
+// anything in your bank/UPI statement or block explorer — marks the order
+// failed instead of silently ignoring it.
 exports.rejectUpiPayment = async (req, res) => {
   try {
     const { reason } = req.body;
@@ -80,13 +83,13 @@ exports.rejectUpiPayment = async (req, res) => {
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
     }
-    if (order.paymentMethod !== "upi_manual") {
-      return res.status(400).json({ message: "This order isn't a manual UPI order." });
+    if (!["upi_manual", "usdt"].includes(order.paymentMethod)) {
+      return res.status(400).json({ message: "This order isn't a manual UPI/USDT order." });
     }
 
     order.verificationStatus = "rejected";
     order.paymentStatus = "failed";
-    order.cancelReason = reason || "UTR could not be verified";
+    order.cancelReason = reason || "Payment could not be verified";
     await order.save({ validateModifiedOnly: true });
 
     res.status(200).json({ message: "Order marked as rejected.", order });

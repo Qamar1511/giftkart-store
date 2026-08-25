@@ -9,6 +9,7 @@ const orderRoutes = require("./routes/orderRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const contactRoutes = require("./routes/contactRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const { cancelAbandonedOrders } = require("./utils/stockReservation");
 
 const app = express();
 
@@ -42,3 +43,14 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+// Auto-cancel orders nobody ever paid for, so stock doesn't stay locked
+// away forever. Runs once on boot, then every 2 minutes.
+cancelAbandonedOrders().catch((err) =>
+  console.error("Abandoned order cleanup failed:", err)
+);
+setInterval(() => {
+  cancelAbandonedOrders().catch((err) =>
+    console.error("Abandoned order cleanup failed:", err)
+  );
+}, 2 * 60 * 1000);

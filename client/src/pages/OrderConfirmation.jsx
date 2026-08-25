@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { getOrderById, downloadInvoice } from "../services/orderService";
 import { getDisplayStatus } from "../utils/orderStatus";
+import { reorderItems } from "../utils/reorderItems";
 import { useCart } from "../context/CartContext";
 import "../styles/Shop.css";
 
@@ -43,6 +44,8 @@ const OrderConfirmation = () => {
   const [order, setOrder] = useState(null);
   const [error, setError] = useState("");
   const [downloading, setDownloading] = useState(false);
+  const [reordering, setReordering] = useState(false);
+  const [reorderNotice, setReorderNotice] = useState("");
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -67,11 +70,30 @@ const OrderConfirmation = () => {
     }
   };
 
-  const handleReorder = () => {
-    (order.items || [])
-      .filter((item) => item && item.denomination != null)
-      .forEach((item) => addToCart(item.brand, item.denomination, item.quantity || 1));
-    navigate("/cart");
+  const handleReorder = async () => {
+    setReordering(true);
+    setReorderNotice("");
+    try {
+      const { addedAny, limitedItems } = await reorderItems(order, addToCart);
+      if (limitedItems.length > 0) {
+        const detail = limitedItems
+          .map((li) =>
+            li.available > 0
+              ? `${li.brandName} ₹${li.denomination} (only ${li.available} available, added ${li.available})`
+              : `${li.brandName} ₹${li.denomination} (out of stock, not added)`
+          )
+          .join("; ");
+        setReorderNotice(`Some quantities were reduced to match current stock: ${detail}`);
+        // Don't auto-navigate away — let them read the warning first, then
+        // go to the cart themselves when ready.
+      } else if (addedAny) {
+        navigate("/cart");
+      }
+    } catch (err) {
+      setReorderNotice("Couldn't check current stock. Please try again.");
+    } finally {
+      setReordering(false);
+    }
   };
 
   if (error) {
@@ -159,9 +181,14 @@ const OrderConfirmation = () => {
           >
             {downloading ? "Preparing PDF…" : "Download invoice"}
           </button>
-          <button className="navbar-btn navbar-btn-ghost" onClick={handleReorder}>
-            Reorder these items
+          <button className="navbar-btn navbar-btn-ghost" onClick={handleReorder} disabled={reordering}>
+            {reordering ? "Checking stock…" : "Reorder these items"}
           </button>
+          {reorderNotice && (
+            <p className="shop-status shop-status-error" style={{ textAlign: "left", fontSize: "0.82rem" }}>
+              {reorderNotice} <Link to="/cart">Go to cart →</Link>
+            </p>
+          )}
           <Link to="/" className="navbar-btn navbar-btn-ghost" style={{ textAlign: "center" }}>
             Go to homepage
           </Link>

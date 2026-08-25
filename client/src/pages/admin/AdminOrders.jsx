@@ -5,7 +5,7 @@ import { getDisplayStatus } from "../../utils/orderStatus";
 
 const FILTERS = [
   { key: "", label: "All orders" },
-  { key: "upi_pending", label: "UPI — needs verification" },
+  { key: "upi_pending", label: "Manual — needs verification" },
   { key: "delivered", label: "Delivered" },
   { key: "cancelled", label: "Cancelled" },
 ];
@@ -76,7 +76,7 @@ const AdminOrders = () => {
   };
 
   const handleReject = async (orderId) => {
-    if (!window.confirm("Mark this UTR as rejected? The customer's order will be marked failed.")) {
+    if (!window.confirm("Mark this payment as rejected? The customer's order will be marked failed.")) {
       return;
     }
     setActioningId(orderId);
@@ -97,8 +97,8 @@ const AdminOrders = () => {
     <div>
       <h1 className="admin-page-title">Orders</h1>
       <p className="admin-page-sub">
-        Manual UPI orders need a quick check against your bank/UPI app before you verify them —
-        the UTR the customer typed in is shown below for each one.
+        Manual UPI and USDT orders need a quick check against your bank/UPI app or block explorer
+        before you verify them — the UTR / transaction ID the customer typed in is shown below for each one.
       </p>
 
       <div className="admin-filter-tabs">
@@ -132,7 +132,7 @@ const AdminOrders = () => {
                 <th>Total</th>
                 <th>Payment</th>
                 <th>Status</th>
-                <th>UTR</th>
+                <th>UTR / TX ID</th>
                 <th></th>
               </tr>
             </thead>
@@ -140,7 +140,8 @@ const AdminOrders = () => {
               {orders.map((order) => {
                 const status = getDisplayStatus(order);
                 const isUpiPending =
-                  order.paymentMethod === "upi_manual" && order.verificationStatus === "submitted";
+                  ["upi_manual", "usdt"].includes(order.paymentMethod) &&
+                  order.verificationStatus === "submitted";
                 const items = Array.isArray(order.items) ? order.items : [];
                 return (
                   <tr key={order._id}>
@@ -173,7 +174,7 @@ const AdminOrders = () => {
                     <td>
                       <span className={`admin-status-pill status-${status.key}`}>{status.label}</span>
                     </td>
-                    <td className="admin-table-mono">{order.utrNumber || "—"}</td>
+                    <td className="admin-table-mono">{order.utrNumber || order.usdtTxId || "—"}</td>
                     <td>
                       {isUpiPending && (
                         <div className="admin-table-actions">

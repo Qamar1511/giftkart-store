@@ -6,6 +6,7 @@ const {
   cancelOrder,
   downloadInvoice,
   submitUtr,
+  submitUsdtTx,
 } = require("../controllers/orderController");
 const { protect } = require("../middleware/authMiddleware");
 
@@ -19,5 +20,6 @@ router.get("/:id", getOrderById);
 router.post("/:id/cancel", cancelOrder);
 router.get("/:id/invoice", downloadInvoice);
 router.post("/:id/submit-utr", submitUtr);
+router.post("/:id/submit-usdt-tx", submitUsdtTx);
 
 module.exports = router;

@@ -66,6 +66,13 @@ const orderSchema = new mongoose.Schema(
     // the actual bank/UPI statement and mark it verified (see
     // scripts/verifyManualPayment.js) before the gift card is delivered.
     utrNumber: String,
+
+    // Manual USDT flow: same idea as manual UPI, but customer sends USDT to
+    // your own wallet address (e.g. copied from Binance/Bybit) and pastes in
+    // the transaction hash/ID here. Someone has to check it on a block
+    // explorer and mark it verified before the gift card is delivered.
+    usdtTxId: String,
+
     verificationStatus: {
       type: String,
       enum: ["not_submitted", "submitted", "verified", "rejected"],

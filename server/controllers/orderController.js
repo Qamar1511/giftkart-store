@@ -3,17 +3,22 @@ const generateInvoiceNumber = require("../utils/generateInvoiceNumber");
 const streamInvoicePDF = require("../utils/pdfInvoice");
 const { getBrand, INR_TO_USD_RATE } = require("../config/catalog");
 const { refundRazorpayPayment, refundPaypalCapture } = require("./paymentController");
+const { getAvailableCount, reserveStockForOrder, releaseStockForOrder } = require("../utils/stockReservation");
 
 const ALLOWED_PAYMENT_METHODS = ["razorpay", "card", "debit_card", "upi_manual", "usdt", "paypal"];
 const FOREIGN_CURRENCY_METHODS = ["paypal", "usdt"]; // charged in USD, not INR
+const MAX_QUANTITY_PER_ITEM = 10;
 
 // @route  POST /api/orders
 // @access Private
 // Creates the order (one or more cart line items) in "placed / pending
 // payment" state. Pricing is always computed server-side from `items` —
-// we never trust a client-supplied amount. The actual payment (Razorpay /
-// PayPal / USDT / manual UPI) is created and confirmed in separate calls
-// that reference this order's _id.
+// we never trust a client-supplied amount. Stock is also checked here,
+// against real-time available codes — so a customer can never pay for
+// more units than we can actually deliver (see the delivery step in
+// utils/deliverGiftCard.js, which pulls from the same pool). The actual
+// payment (Razorpay / PayPal / USDT / manual UPI) is created and confirmed
+// in separate calls that reference this order's _id.
 exports.createOrder = async (req, res) => {
   try {
     const { items, paymentMethod, address } = req.body;
@@ -45,8 +50,30 @@ exports.createOrder = async (req, res) => {
           .status(400)
           .json({ message: `Invalid ${brand.name} denomination: ${rawItem.denomination}` });
       }
-      if (!Number.isInteger(quantity) || quantity < 1 || quantity > 20) {
-        return res.status(400).json({ message: "Quantity must be between 1 and 20" });
+      if (!Number.isInteger(quantity) || quantity < 1 || quantity > MAX_QUANTITY_PER_ITEM) {
+        return res
+          .status(400)
+          .json({ message: `Quantity must be between 1 and ${MAX_QUANTITY_PER_ITEM} per item` });
+      }
+
+      // Friendly pre-check — the real guarantee against over-selling comes
+      // from reserveStockForOrder() below, which atomically claims the
+      // exact units right after the order is created. This check just
+      // avoids creating an order doc at all for an obviously-out-of-stock
+      // request.
+      const availableStock = await getAvailableCount(brand.slug, denomination);
+      if (availableStock < quantity) {
+        return res.status(400).json({
+          message:
+            availableStock > 0
+              ? `Only ${availableStock} × ₹${denomination} ${brand.name} code${
+                  availableStock === 1 ? "" : "s"
+                } left in stock. Please lower the quantity in your cart.`
+              : `${brand.name} ₹${denomination} is out of stock right now.`,
+          brand: brand.slug,
+          denomination,
+          availableStock,
+        });
       }
 
       orderItems.push({
@@ -72,6 +99,28 @@ exports.createOrder = async (req, res) => {
       paymentMethod,
       address,
     });
+
+    // Actually claim the stock now — atomically, per unit — so a second
+    // customer's order can never succeed against the same codes while this
+    // one is still going through checkout. If we can't get everything this
+    // order needs (a race lost to someone else, or stock changed between
+    // the pre-check above and now), undo the order and say so clearly.
+    const reservation = await reserveStockForOrder(order._id, orderItems);
+    if (!reservation.success) {
+      await Order.deleteOne({ _id: order._id });
+      const rBrand = getBrand(reservation.brand);
+      return res.status(409).json({
+        message:
+          reservation.availableStock > 0
+            ? `Only ${reservation.availableStock} × ₹${reservation.denomination} ${rBrand.name} code${
+                reservation.availableStock === 1 ? "" : "s"
+              } left — someone just grabbed the rest. Please lower the quantity in your cart.`
+            : `${rBrand.name} ₹${reservation.denomination} just sold out. Please remove it from your cart.`,
+        brand: reservation.brand,
+        denomination: reservation.denomination,
+        availableStock: reservation.availableStock,
+      });
+    }
 
     res.status(201).json({ order });
   } catch (error) {
@@ -146,6 +195,7 @@ exports.cancelOrder = async (req, res) => {
     }
 
     await order.save();
+    await releaseStockForOrder(order._id);
     res.status(200).json({ message: "Order cancelled", order });
   } catch (error) {
     console.error("Cancel order error:", error);
@@ -163,8 +213,9 @@ exports.cancelOrder = async (req, res) => {
 exports.submitUtr = async (req, res) => {
   try {
     const { utrNumber } = req.body;
-    if (!utrNumber || utrNumber.trim().length < 4) {
-      return res.status(400).json({ message: "Enter a valid UTR / reference number" });
+    const trimmedUtr = (utrNumber || "").trim();
+    if (!/^\d{12}$/.test(trimmedUtr)) {
+      return res.status(400).json({ message: "Enter a valid 12-digit UTR / reference number" });
     }
 
     const order = await Order.findOne({ _id: req.params.id, user: req.user.id });
@@ -173,7 +224,7 @@ exports.submitUtr = async (req, res) => {
       return res.status(400).json({ message: "This order isn't a manual UPI order" });
     }
 
-    order.utrNumber = utrNumber.trim();
+    order.utrNumber = trimmedUtr;
     order.verificationStatus = "submitted";
     await order.save();
 
@@ -181,6 +232,37 @@ exports.submitUtr = async (req, res) => {
   } catch (error) {
     console.error("Submit UTR error:", error);
     res.status(500).json({ message: "Couldn't submit the UTR. Please try again." });
+  }
+};
+
+// @route  POST /api/orders/:id/submit-usdt-tx
+// @access Private
+// Used by the manual-USDT flow: customer sends USDT to the wallet address
+// we show them, then submits the transaction hash here. This does NOT mark
+// the order as paid automatically — someone has to check the tx on a block
+// explorer first. See scripts/verifyManualPayment.js for that step.
+exports.submitUsdtTx = async (req, res) => {
+  try {
+    const { txId } = req.body;
+    const trimmedTxId = (txId || "").trim();
+    if (trimmedTxId.length < 10) {
+      return res.status(400).json({ message: "Enter a valid transaction hash / ID" });
+    }
+
+    const order = await Order.findOne({ _id: req.params.id, user: req.user.id });
+    if (!order) return res.status(404).json({ message: "Order not found" });
+    if (order.paymentMethod !== "usdt") {
+      return res.status(400).json({ message: "This order isn't a manual USDT order" });
+    }
+
+    order.usdtTxId = trimmedTxId;
+    order.verificationStatus = "submitted";
+    await order.save();
+
+    res.status(200).json({ message: "Transaction ID submitted — we'll verify and deliver shortly", order });
+  } catch (error) {
+    console.error("Submit USDT tx error:", error);
+    res.status(500).json({ message: "Couldn't submit the transaction ID. Please try again." });
   }
 };
 

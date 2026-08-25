@@ -117,6 +117,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.75rem;
   padding: 1.1rem 2rem;
   background: var(--bg-panel);
   border-bottom: 1px solid var(--card-border);
@@ -127,11 +128,16 @@
   font-weight: 700;
   font-size: 1.05rem;
   color: var(--text-primary);
+  white-space: nowrap;
 }
 
 .admin-topbar-user {
   font-size: 0.88rem;
   color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .admin-content {
@@ -203,6 +209,7 @@
 /* ---------- Orders table ---------- */
 .admin-table-wrap {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   border: 1px solid var(--card-border);
   border-radius: 0.75rem;
   background: var(--bg-panel);
@@ -515,5 +522,49 @@
 
   .admin-content {
     padding: 1.25rem;
+  }
+
+  .admin-stock-form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-topbar {
+    padding: 0.85rem 1rem;
+  }
+
+  .admin-content {
+    padding: 0.9rem;
+  }
+
+  .admin-page-title {
+    font-size: 1.35rem;
+  }
+
+  .admin-stat-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+  }
+
+  .admin-stat-card {
+    padding: 1rem 1.1rem;
+  }
+
+  .admin-stat-value {
+    font-size: 1.5rem;
+  }
+
+  .admin-card {
+    padding: 1rem;
+  }
+
+  .admin-filter-tabs {
+    gap: 0.35rem;
+  }
+
+  .admin-filter-tab {
+    font-size: 0.78rem;
+    padding: 0.4rem 0.7rem;
   }
 }

@@ -316,6 +316,50 @@
   cursor: pointer;
 }
 
+.auth-inline-verify-wrap {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.auth-inline-verify-wrap input {
+  flex: 1;
+}
+
+.auth-inline-verify-btn {
+  flex-shrink: 0;
+  padding: 0 1rem;
+  border: none;
+  border-radius: 0.55rem;
+  font-family: "Rajdhani", sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #fff;
+  background: linear-gradient(120deg, var(--accent-blue), var(--accent-violet));
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.auth-inline-verify-btn:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.auth-inline-verify-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.auth-otp-inline {
+  background: rgba(41, 230, 255, 0.06);
+  border: 1px dashed rgba(41, 230, 255, 0.4);
+  border-radius: 0.6rem;
+  padding: 0.9rem 1rem 1rem;
+  margin: -0.3rem 0 1.1rem;
+}
+
+.auth-otp-inline .auth-field {
+  margin-bottom: 0.7rem;
+}
+
 .auth-submit {
   width: 100%;
   margin-top: 0.5rem;

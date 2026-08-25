@@ -1,14 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useCart } from "../context/CartContext";
-import { createOrder, submitUtr } from "../services/orderService";
+import { createOrder, submitUtr, submitUsdtTx } from "../services/orderService";
 import {
   createRazorpayOrder,
   openRazorpayCheckout,
   verifyRazorpayPayment,
   createPaypalOrder,
-  createUsdtInvoice,
-  getUsdtPaymentStatus,
+  getUsdtWalletDetails,
   getUpiQrDetails,
   mockConfirmPayment, // eslint-disable-line no-unused-vars -- kept for potential future dev/testing use
 } from "../services/paymentService";
@@ -117,7 +116,9 @@ const CheckoutPayment = () => {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [usdtInvoice, setUsdtInvoice] = useState(null);
-  const [polling, setPolling] = useState(false);
+  const [txIdValue, setTxIdValue] = useState("");
+  const [txIdSubmitting, setTxIdSubmitting] = useState(false);
+  const [txIdSubmitted, setTxIdSubmitted] = useState(false);
   const [upiInvoice, setUpiInvoice] = useState(null);
   const [utrValue, setUtrValue] = useState("");
   const [utrSubmitting, setUtrSubmitting] = useState(false);
@@ -130,24 +131,6 @@ const CheckoutPayment = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Poll for USDT payment confirmation once the invoice is shown
-  useEffect(() => {
-    if (!usdtInvoice || !polling) return;
-    const interval = setInterval(async () => {
-      try {
-        const status = await getUsdtPaymentStatus(usdtInvoice.dbOrderId);
-        if (status.paymentStatus === "paid") {
-          clearInterval(interval);
-          clearCart();
-          navigate(`/order-confirmation/${usdtInvoice.dbOrderId}`);
-        }
-      } catch (err) {
-        // stay quiet, keep polling
-      }
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [usdtInvoice, polling, navigate, clearCart]);
-
   if (!address || items.length === 0) return null;
 
   const buildItemsPayload = () =>
@@ -155,8 +138,8 @@ const CheckoutPayment = () => {
 
   const handleUtrSubmit = async (e) => {
     e.preventDefault();
-    if (!utrValue.trim()) {
-      setError("Enter the UTR / reference number from your UPI app.");
+    if (!/^\d{12}$/.test(utrValue.trim())) {
+      setError("Enter the 12-digit UTR / reference number from your UPI app.");
       return;
     }
     setUtrSubmitting(true);
@@ -169,6 +152,25 @@ const CheckoutPayment = () => {
     } catch (err) {
       setError(err.response?.data?.message || "Couldn't submit the UTR. Please try again.");
       setUtrSubmitting(false);
+    }
+  };
+
+  const handleTxIdSubmit = async (e) => {
+    e.preventDefault();
+    if (txIdValue.trim().length < 10) {
+      setError("Enter the transaction hash / ID from your wallet or exchange app.");
+      return;
+    }
+    setTxIdSubmitting(true);
+    setError("");
+    try {
+      await submitUsdtTx(usdtInvoice.dbOrderId, txIdValue.trim());
+      clearCart();
+      setTxIdSubmitted(true);
+      setTimeout(() => navigate(`/order-confirmation/${usdtInvoice.dbOrderId}`), 1200);
+    } catch (err) {
+      setError(err.response?.data?.message || "Couldn't submit the transaction ID. Please try again.");
+      setTxIdSubmitting(false);
     }
   };
 
@@ -188,9 +190,8 @@ const CheckoutPayment = () => {
       }
 
       if (paymentMethod === "usdt") {
-        const invoice = await createUsdtInvoice(order._id);
-        setUsdtInvoice({ ...invoice, dbOrderId: order._id });
-        setPolling(true);
+        const wallet = await getUsdtWalletDetails(order._id);
+        setUsdtInvoice({ ...wallet, dbOrderId: order._id });
         setSubmitting(false);
         return;
       }
@@ -265,9 +266,14 @@ const CheckoutPayment = () => {
                 <span>UTR / Reference number (from your UPI app, after paying)</span>
                 <input
                   value={utrValue}
-                  onChange={(e) => setUtrValue(e.target.value)}
-                  placeholder="e.g. 123456789012"
+                  onChange={(e) => setUtrValue(e.target.value.replace(/\D/g, "").slice(0, 12))}
+                  placeholder="12-digit UTR, e.g. 123456789012"
+                  inputMode="numeric"
+                  maxLength={12}
                 />
+                <span className="shop-status" style={{ fontSize: "0.78rem", marginTop: "0.25rem" }}>
+                  {utrValue.length}/12 digits
+                </span>
               </label>
               <button type="submit" className="auth-submit" disabled={utrSubmitting} style={{ marginTop: "0.5rem" }}>
                 {utrSubmitting ? "Submitting…" : "Submit UTR"}
@@ -282,23 +288,46 @@ const CheckoutPayment = () => {
     );
   }
 
-  // ---- USDT: waiting-for-blockchain screen ----
+  // ---- Manual USDT: wallet address / QR + transaction ID entry screen ----
   if (usdtInvoice) {
     return (
       <div className="buy-page">
         <div className="usdt-invoice-card">
           <h2>Send USDT to complete your order</h2>
-          <p className="shop-status">Waiting for blockchain confirmation…</p>
+          <img src={usdtInvoice.qrImageUrl} alt="USDT wallet address QR code" className="upi-qr-image" />
           <div className="usdt-field">
-            <span>Amount</span>
-            <strong>{usdtInvoice.payAmount} {usdtInvoice.payCurrency?.toUpperCase()}</strong>
+            <span>Network</span>
+            <strong>{usdtInvoice.network}</strong>
           </div>
           <div className="usdt-field">
             <span>Send to address</span>
-            <code>{usdtInvoice.payAddress}</code>
+            <code>{usdtInvoice.walletAddress}</code>
           </div>
-          <p className="shop-status">
-            This page will automatically move on once payment is confirmed on-chain — no need to refresh.
+          <div className="usdt-field">
+            <span>Amount</span>
+            <strong>{usdtInvoice.amount} USDT</strong>
+          </div>
+
+          {txIdSubmitted ? (
+            <p className="shop-status">✅ Transaction ID submitted — redirecting…</p>
+          ) : (
+            <form onSubmit={handleTxIdSubmit}>
+              {error && <div className="auth-error" role="alert">{error}</div>}
+              <label className="auth-field" style={{ textAlign: "left" }}>
+                <span>Transaction hash / ID (from your wallet or exchange app, after sending)</span>
+                <input
+                  value={txIdValue}
+                  onChange={(e) => setTxIdValue(e.target.value)}
+                  placeholder="e.g. a1b2c3d4e5f6…"
+                />
+              </label>
+              <button type="submit" className="auth-submit" disabled={txIdSubmitting} style={{ marginTop: "0.5rem" }}>
+                {txIdSubmitting ? "Submitting…" : "Submit transaction ID"}
+              </button>
+            </form>
+          )}
+          <p className="shop-status" style={{ marginTop: "1rem" }}>
+            Double-check the network before sending — sending on the wrong network can lose your funds. We'll verify your transaction and deliver your code shortly after.
           </p>
         </div>
       </div>

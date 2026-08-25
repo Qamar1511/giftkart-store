@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { getMyOrders, cancelOrder, downloadInvoice } from "../services/orderService";
 import { getDisplayStatus } from "../utils/orderStatus";
+import { reorderItems } from "../utils/reorderItems";
 import { useCart } from "../context/CartContext";
 import "../styles/Shop.css";
 
@@ -12,6 +13,7 @@ const OrderHistory = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [actioningId, setActioningId] = useState(null);
+  const [reorderNotice, setReorderNotice] = useState("");
 
   const loadOrders = async () => {
     try {
@@ -54,11 +56,28 @@ const OrderHistory = () => {
     }
   };
 
-  const handleReorder = (order) => {
-    (order.items || [])
-      .filter((item) => item && item.denomination != null)
-      .forEach((item) => addToCart(item.brand, item.denomination, item.quantity || 1));
-    navigate("/cart");
+  const handleReorder = async (order) => {
+    setActioningId(order._id);
+    setReorderNotice("");
+    try {
+      const { addedAny, limitedItems } = await reorderItems(order, addToCart);
+      if (limitedItems.length > 0) {
+        const detail = limitedItems
+          .map((li) =>
+            li.available > 0
+              ? `${li.brandName} ₹${li.denomination} (only ${li.available} available, added ${li.available})`
+              : `${li.brandName} ₹${li.denomination} (out of stock, not added)`
+          )
+          .join("; ");
+        setReorderNotice(`Some quantities were reduced to match current stock: ${detail}`);
+      } else if (addedAny) {
+        navigate("/cart");
+      }
+    } catch (err) {
+      setReorderNotice("Couldn't check current stock. Please try again.");
+    } finally {
+      setActioningId(null);
+    }
   };
 
   if (loading) {
@@ -74,6 +93,11 @@ const OrderHistory = () => {
       <h1 className="section-heading">Order history</h1>
 
       {error && <p className="shop-status shop-status-error">{error}</p>}
+      {reorderNotice && (
+        <p className="shop-status shop-status-error">
+          {reorderNotice} <Link to="/cart">Go to cart →</Link>
+        </p>
+      )}
 
       {orders.length === 0 ? (
         <div className="empty-orders">
@@ -123,8 +147,12 @@ const OrderHistory = () => {
                 )}
 
                 <div className="order-row-actions">
-                  <button className="navbar-btn navbar-btn-ghost" onClick={() => handleReorder(order)}>
-                    Reorder
+                  <button
+                    className="navbar-btn navbar-btn-ghost"
+                    onClick={() => handleReorder(order)}
+                    disabled={actioningId === order._id}
+                  >
+                    {actioningId === order._id ? "Checking stock…" : "Reorder"}
                   </button>
                   {canDownloadInvoice && (
                     <button

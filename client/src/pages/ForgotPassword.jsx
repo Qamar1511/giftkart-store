@@ -87,7 +87,7 @@ const ForgotPassword = () => {
               </p>
               {devResetLink && (
                 <p className="auth-dev-note">
-                  Dev mode (no email service configured yet):{" "}
+                  Email isn't configured on this server yet, so here's the link directly:{" "}
                   <Link to={devResetLink} className="auth-link">
                     open the reset link
                   </Link>

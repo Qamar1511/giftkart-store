@@ -41,9 +41,41 @@ exports.signup = async (req, res) => {
 
     const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
-      return res
-        .status(409)
-        .json({ message: "An account with this email already exists" });
+      if (existingUser.isVerified) {
+        return res
+          .status(409)
+          .json({ message: "An account with this email already exists" });
+      }
+
+      // Account exists but was never verified — most likely the very first
+      // OTP email failed to send (bad SMTP config, network hiccup, etc.),
+      // leaving them stuck. Rather than reject them forever, just send a
+      // fresh code to the same (still-unverified) account.
+      if (!isEmailConfigured()) {
+        return res.status(500).json({
+          message: "Email isn't configured on this server yet. Please try again shortly.",
+        });
+      }
+
+      const retryOtp = generateOtp();
+      existingUser.otp = hashOtp(retryOtp);
+      existingUser.otpExpires = Date.now() + 10 * 60 * 1000;
+      await existingUser.save();
+
+      try {
+        await sendOtpEmail(existingUser, retryOtp);
+      } catch (mailError) {
+        console.error("Failed to resend signup OTP email:", mailError);
+        return res.status(500).json({
+          message: "Couldn't send the verification email. Please try again.",
+        });
+      }
+
+      return res.status(200).json({
+        requiresVerification: true,
+        email: existingUser.email,
+        message: "This email is already registered but not verified yet — we've sent a fresh code.",
+      });
     }
 
     const user = await User.create({ fullName, email, phone, password });
@@ -288,13 +320,35 @@ exports.forgotPassword = async (req, res) => {
     user.resetPasswordExpires = Date.now() + 60 * 60 * 1000; // 1 hour
     await user.save();
 
-    res.status(200).json({
-      message: genericMessage,
-      // TEMPORARY: remove resetToken from the response once real email
-      // delivery is wired up. It's only here so the reset flow is usable
-      // end-to-end without an email service configured.
-      resetToken: rawToken,
-    });
+    const resetLink = `${process.env.CLIENT_URL}/reset-password/${rawToken}`;
+
+    if (!isEmailConfigured()) {
+      // No email service configured on this server yet — hand back the raw
+      // link so the flow still works end-to-end for local dev/testing.
+      return res.status(200).json({ message: genericMessage, resetToken: rawToken });
+    }
+
+    try {
+      await sendEmail({
+        to: user.email,
+        subject: "Reset your GIFTKART password",
+        html: `
+          <p>Hi ${user.fullName},</p>
+          <p>Click the link below to set a new password. This link expires in 1 hour.</p>
+          <p><a href="${resetLink}">${resetLink}</a></p>
+          <p>If you didn't request this, you can safely ignore this email.</p>
+        `,
+      });
+    } catch (mailError) {
+      console.error("Failed to send password reset email:", mailError);
+      // Don't leak the failure to the client in a way that reveals the
+      // account exists — but do surface a generic retry message.
+      return res.status(500).json({
+        message: "Couldn't send the reset email right now. Please try again shortly.",
+      });
+    }
+
+    res.status(200).json({ message: genericMessage });
   } catch (error) {
     console.error("Forgot password error:", error);
     res.status(500).json({ message: "Something went wrong. Please try again." });

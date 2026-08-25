@@ -67,15 +67,10 @@ export const capturePaypalOrder = async (orderId) => {
   return data.order;
 };
 
-/* ---------------------------------- USDT ----------------------------------- */
+/* ------------------------------- Manual USDT -------------------------------- */
 
-export const createUsdtInvoice = async (orderId) => {
-  const { data } = await apiClient.post("/payments/usdt/create", { orderId });
-  return data;
-};
-
-export const getUsdtPaymentStatus = async (orderId) => {
-  const { data } = await apiClient.get(`/payments/usdt/status/${orderId}`);
+export const getUsdtWalletDetails = async (orderId) => {
+  const { data } = await apiClient.get(`/payments/usdt/wallet/${orderId}`);
   return data;
 };
 

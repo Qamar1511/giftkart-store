@@ -16,11 +16,22 @@ async function deliverGiftCard(order) {
     if (codesNeeded <= 0) continue; // already delivered on a previous attempt
 
     for (let i = 0; i < codesNeeded; i++) {
-      const stockItem = await GiftCardStock.findOneAndUpdate(
-        { brand: item.brand, denomination: item.denomination, isUsed: false },
-        { isUsed: true, order: order._id },
+      let stockItem = await GiftCardStock.findOneAndUpdate(
+        { brand: item.brand, denomination: item.denomination, isUsed: false, reservedFor: order._id },
+        { isUsed: true, reservedFor: null, reservedAt: null, order: order._id },
         { new: true }
       );
+
+      // No reservation found for this order (e.g. an order placed before
+      // reservations existed, or an admin-created order) — fall back to
+      // claiming any generally available unit, same as before.
+      if (!stockItem) {
+        stockItem = await GiftCardStock.findOneAndUpdate(
+          { brand: item.brand, denomination: item.denomination, isUsed: false, reservedFor: null },
+          { isUsed: true, order: order._id },
+          { new: true }
+        );
+      }
 
       if (!stockItem) {
         fullyDelivered = false;

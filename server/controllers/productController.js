@@ -1,5 +1,5 @@
-const GiftCardStock = require("../models/GiftCardStock");
 const { CATEGORIES, BRANDS } = require("../config/catalog");
+const { getAvailableCount } = require("../utils/stockReservation");
 
 // @route  GET /api/products
 // @access Public
@@ -11,11 +11,7 @@ exports.getGiftCardProducts = async (req, res) => {
       BRANDS.map(async (brand) => {
         const products = await Promise.all(
           brand.denominations.map(async (denomination) => {
-            const availableStock = await GiftCardStock.countDocuments({
-              brand: brand.slug,
-              denomination,
-              isUsed: false,
-            });
+            const availableStock = await getAvailableCount(brand.slug, denomination);
             const image = (brand.denominationImages && brand.denominationImages[denomination]) || brand.image || null;
             return {
               id: `${brand.slug}-${denomination}`,

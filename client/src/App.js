@@ -16,6 +16,8 @@ import OrderConfirmation from "./pages/OrderConfirmation";
 import OrderHistory from "./pages/OrderHistory";
 import PaypalReturn from "./pages/PaypalReturn";
 import Contact from "./pages/Contact";
+import RefundPolicy from "./pages/RefundPolicy";
+import TermsOfService from "./pages/TermsOfService";
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
@@ -59,6 +61,8 @@ function App() {
             <Route path="/brand/:slug" element={<BrandProducts />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/refund-policy" element={<RefundPolicy />} />
+            <Route path="/terms" element={<TermsOfService />} />
 
             <Route
               path="/checkout/address"
@@ -101,8 +105,7 @@ function App() {
               }
             />
 
-            {/* /contact, /refund-policy, /terms are linked from the footer;
-                add pages for these whenever you want real content there */}
+            {/* Anything else falls through to a simple "coming soon" page */}
             <Route
               path="*"
               element={

@@ -196,87 +196,42 @@ exports.refundPaypalCapture = async (order) => {
   );
 };
 
-/* ------------------------------- USDT --------------------------------
-   Crypto payments via NOWPayments (or any similar IPN-based gateway).
-   Set NOWPAYMENTS_API_KEY and NOWPAYMENTS_IPN_SECRET in .env.
+/* --------------------------- MANUAL USDT -------------------------------
+   No payment gateway involved — same idea as manual UPI below, but for
+   crypto. We show your own wallet address (copy it from Binance, Bybit, or
+   any exchange/wallet that supports the network you set) as a QR code, and
+   let the customer paste in the transaction hash after sending USDT.
+   Set USDT_WALLET_ADDRESS and USDT_NETWORK in .env. Verification is
+   manual — see scripts/verifyManualPayment.js.
 ------------------------------------------------------------------------ */
 
-// @route  POST /api/payments/usdt/create
+// @route  GET /api/payments/usdt/wallet/:orderId
 // @access Private
-exports.createUsdtInvoice = async (req, res) => {
+exports.getUsdtWalletDetails = async (req, res) => {
   try {
-    const { orderId } = req.body;
-    const order = await Order.findOne({ _id: orderId, user: req.user.id });
+    const order = await Order.findOne({ _id: req.params.orderId, user: req.user.id });
     if (!order) return res.status(404).json({ message: "Order not found" });
 
-    const { data } = await axios.post(
-      "https://api.nowpayments.io/v1/payment",
-      {
-        price_amount: order.totalAmount,
-        price_currency: "usd",
-        pay_currency: "usdttrc20",
-        order_id: order._id.toString(),
-        ipn_callback_url: `${process.env.SERVER_URL}/api/payments/usdt/webhook`,
-      },
-      { headers: { "x-api-key": process.env.NOWPAYMENTS_API_KEY } }
-    );
+    const walletAddress = process.env.USDT_WALLET_ADDRESS;
+    const network = process.env.USDT_NETWORK || "TRC20";
+    if (!walletAddress) {
+      return res.status(500).json({ message: "USDT wallet address isn't configured on the server yet." });
+    }
 
-    order.providerOrderId = data.payment_id;
-    await order.save();
+    const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(
+      walletAddress
+    )}`;
 
     res.status(200).json({
-      paymentId: data.payment_id,
-      payAddress: data.pay_address,
-      payAmount: data.pay_amount,
-      payCurrency: data.pay_currency,
+      walletAddress,
+      network,
+      amount: order.totalAmount,
+      qrImageUrl,
     });
   } catch (error) {
-    console.error("USDT invoice error:", error?.response?.data || error);
-    res.status(500).json({ message: "Couldn't create the crypto payment." });
+    console.error("USDT wallet details error:", error);
+    res.status(500).json({ message: "Couldn't load USDT payment details." });
   }
-};
-
-// @route  POST /api/payments/usdt/webhook
-// @access Public (verified via HMAC signature header from NOWPayments)
-exports.usdtWebhook = async (req, res) => {
-  try {
-    const signature = req.headers["x-nowpayments-sig"];
-    const expected = crypto
-      .createHmac("sha512", process.env.NOWPAYMENTS_IPN_SECRET)
-      .update(JSON.stringify(req.body, Object.keys(req.body).sort()))
-      .digest("hex");
-
-    if (signature !== expected) {
-      return res.status(401).json({ message: "Invalid signature" });
-    }
-
-    const { payment_id, payment_status } = req.body;
-    const order = await Order.findOne({ providerOrderId: String(payment_id) });
-    if (!order) return res.status(404).json({ message: "Order not found" });
-
-    if (payment_status === "finished" && order.paymentStatus !== "paid") {
-      order.paymentStatus = "paid";
-      order.providerPaymentId = String(payment_id);
-      await order.save();
-      await deliverGiftCard(order);
-    } else if (payment_status === "failed" || payment_status === "expired") {
-      order.paymentStatus = "failed";
-      await order.save();
-    }
-
-    res.status(200).json({ received: true });
-  } catch (error) {
-    console.error("USDT webhook error:", error);
-    res.status(500).json({ message: "Webhook processing failed" });
-  }
-};
-
-// @route  GET /api/payments/usdt/status/:orderId  (used by the frontend to poll)
-// @access Private
-exports.getUsdtPaymentStatus = async (req, res) => {
-  const order = await Order.findOne({ _id: req.params.orderId, user: req.user.id });
-  if (!order) return res.status(404).json({ message: "Order not found" });
-  res.status(200).json({ paymentStatus: order.paymentStatus, orderStatus: order.orderStatus });
 };
 
 /* ---------------------------- MANUAL UPI ------------------------------

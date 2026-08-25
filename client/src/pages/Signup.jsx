@@ -20,18 +20,18 @@ const Signup = () => {
   const [form, setForm] = useState(initialForm);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState("form"); // "form" | "otp"
+  const [otpSent, setOtpSent] = useState(false); // once true, email field locks and the OTP box appears right under it
   const [otp, setOtp] = useState("");
   const [otpNotice, setOtpNotice] = useState("");
   const [resending, setResending] = useState(false);
 
-  // Arrived here via Login's "Verify your email now" link — skip straight
-  // to the OTP step and send a fresh code for that address.
+  // Arrived here via Login's "Verify your email now" link — the account
+  // already exists, so skip straight to the OTP box and send a fresh code.
   useEffect(() => {
     const verifyEmail = location.state?.verifyEmail;
     if (!verifyEmail) return;
     setForm((f) => ({ ...f, email: verifyEmail }));
-    setStep("otp");
+    setOtpSent(true);
     resendOtp(verifyEmail)
       .then((data) => setOtpNotice(data.message || "We've sent a code to your email."))
       .catch((err) => setError(err.response?.data?.message || "Couldn't send a verification code."));
@@ -59,7 +59,10 @@ const Signup = () => {
     return "";
   };
 
-  const handleSubmit = async (e) => {
+  // Triggered by the "Verify" button next to the Email field. Creates the
+  // account (all fields must be valid already) and sends the OTP — the
+  // code box then appears right under Email, in the same form.
+  const handleSendOtp = async (e) => {
     e.preventDefault();
     const validationError = validate();
     if (validationError) {
@@ -72,9 +75,11 @@ const Signup = () => {
     try {
       const data = await signupUser(form);
       if (data.requiresVerification) {
-        setStep("otp");
+        setOtpSent(true);
         setOtpNotice(data.message || "We've emailed you a 6-digit code.");
       } else {
+        // Email sending isn't configured on the server — account is
+        // already fully verified and logged in, nothing more to do.
         saveSession(data);
         navigate("/");
       }
@@ -121,6 +126,20 @@ const Signup = () => {
     }
   };
 
+  // Lets someone fix a typo'd email (or any other field) after the OTP has
+  // already gone out — unlocks the form again; submitting it re-sends a
+  // fresh code to whatever email is now in the box.
+  const handleEditDetails = () => {
+    setOtpSent(false);
+    setOtp("");
+    setOtpNotice("");
+    setError("");
+  };
+
+  // One form throughout — Enter key (or the matching button) does whichever
+  // step is currently active: send the OTP, or verify the code.
+  const handleFormSubmit = (e) => (otpSent ? handleVerify(e) : handleSendOtp(e));
+
   return (
     <div className="auth-screen">
       <div className="auth-brand-panel">
@@ -160,97 +179,72 @@ const Signup = () => {
 
       <div className="auth-form-panel">
         <div className="auth-form-card">
-          {step === "form" ? (
-            <>
-              <h2 className="auth-form-title">Create account</h2>
-              <p className="auth-form-sub">
-                Already have one?{" "}
-                <Link to="/login" className="auth-link">
-                  Log in
-                </Link>
-              </p>
+          <h2 className="auth-form-title">Create account</h2>
+          <p className="auth-form-sub">
+            Already have one?{" "}
+            <Link to="/login" className="auth-link">
+              Log in
+            </Link>
+          </p>
 
-              {error && <div className="auth-error" role="alert">{error}</div>}
+          {error && <div className="auth-error" role="alert">{error}</div>}
+          {!error && otpSent && otpNotice && (
+            <div className="auth-success" role="status">{otpNotice}</div>
+          )}
 
-              <form onSubmit={handleSubmit} noValidate>
-                <label className="auth-field">
-                  <span>Full name</span>
-                  <input
-                    type="text"
-                    name="fullName"
-                    value={form.fullName}
-                    onChange={handleChange}
-                    placeholder="Rohan Sharma"
-                    autoComplete="name"
-                  />
-                </label>
+          <form onSubmit={handleFormSubmit} noValidate>
+            <label className="auth-field">
+              <span>Full name</span>
+              <input
+                type="text"
+                name="fullName"
+                value={form.fullName}
+                onChange={handleChange}
+                placeholder="Rohan Sharma"
+                autoComplete="name"
+                disabled={otpSent}
+              />
+            </label>
 
-                <label className="auth-field">
-                  <span>Email address</span>
-                  <input
-                    type="email"
-                    name="email"
-                    value={form.email}
-                    onChange={handleChange}
-                    placeholder="you@example.com"
-                    autoComplete="email"
-                  />
-                </label>
-
-                <label className="auth-field">
-                  <span>Phone number</span>
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={form.phone}
-                    onChange={handleChange}
-                    placeholder="98765 43210"
-                    autoComplete="tel"
-                  />
-                </label>
-
-                <label className="auth-field">
-                  <span>Password</span>
-                  <input
-                    type="password"
-                    name="password"
-                    value={form.password}
-                    onChange={handleChange}
-                    placeholder="At least 6 characters"
-                    autoComplete="new-password"
-                  />
-                </label>
-
-                <label className="auth-field">
-                  <span>Confirm password</span>
-                  <input
-                    type="password"
-                    name="confirmPassword"
-                    value={form.confirmPassword}
-                    onChange={handleChange}
-                    placeholder="Re-enter password"
-                    autoComplete="new-password"
-                  />
-                </label>
-
-                <button type="submit" className="auth-submit" disabled={loading}>
-                  {loading ? "Creating account…" : "Create account"}
+            <label className="auth-field">
+              <span>Email address</span>
+              <div className="auth-inline-verify-wrap">
+                <input
+                  type="email"
+                  name="email"
+                  value={form.email}
+                  onChange={handleChange}
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                  disabled={otpSent}
+                />
+                <button
+                  type="submit"
+                  className="auth-inline-verify-btn"
+                  disabled={loading || otpSent}
+                >
+                  {otpSent ? "Sent ✓" : loading ? "Sending…" : "Verify"}
                 </button>
-              </form>
-            </>
-          ) : (
-            <>
-              <h2 className="auth-form-title">Verify your email</h2>
-              <p className="auth-form-sub">
-                Enter the 6-digit code we sent to <strong>{form.email}</strong>
-              </p>
+              </div>
+            </label>
 
-              {error && <div className="auth-error" role="alert">{error}</div>}
-              {!error && otpNotice && <div className="auth-success" role="status">{otpNotice}</div>}
-
-              <form onSubmit={handleVerify} noValidate>
+            {/* OTP box appears right here, directly under Email, the moment
+                the code has been sent — no separate screen. */}
+            {otpSent && (
+              <div className="auth-otp-inline">
                 <label className="auth-field">
-                  <span>Verification code</span>
+                  <span>
+                    6-digit code sent to {form.email}
+                    {" · "}
+                    <button
+                      type="button"
+                      className="auth-link"
+                      style={{ background: "none", border: "none", cursor: "pointer", padding: 0, font: "inherit" }}
+                      onClick={handleEditDetails}
+                    >
+                      Wrong email? Edit details
+                    </button>
+                  </span>
                   <input
                     type="text"
                     inputMode="numeric"
@@ -262,29 +256,73 @@ const Signup = () => {
                     }}
                     placeholder="123456"
                     autoComplete="one-time-code"
-                    style={{ letterSpacing: "0.4em", textAlign: "center", fontSize: "1.2rem" }}
+                    style={{ letterSpacing: "0.4em", textAlign: "center", fontSize: "1.15rem" }}
+                    autoFocus
                   />
                 </label>
-
                 <button type="submit" className="auth-submit" disabled={loading}>
-                  {loading ? "Verifying…" : "Verify account"}
+                  {loading ? "Verifying…" : "Verify & create account"}
                 </button>
-              </form>
+                <p className="auth-form-sub" style={{ marginTop: "0.6rem", marginBottom: 0 }}>
+                  Didn't get a code?{" "}
+                  <button
+                    type="button"
+                    className="auth-link"
+                    style={{ background: "none", border: "none", cursor: "pointer", padding: 0, font: "inherit" }}
+                    onClick={handleResend}
+                    disabled={resending}
+                  >
+                    {resending ? "Sending…" : "Resend code"}
+                  </button>
+                </p>
+              </div>
+            )}
 
-              <p className="auth-form-sub" style={{ marginTop: "1rem" }}>
-                Didn't get a code?{" "}
-                <button
-                  type="button"
-                  className="auth-link"
-                  style={{ background: "none", border: "none", cursor: "pointer", padding: 0, font: "inherit" }}
-                  onClick={handleResend}
-                  disabled={resending}
-                >
-                  {resending ? "Sending…" : "Resend code"}
-                </button>
-              </p>
-            </>
-          )}
+            <label className="auth-field">
+              <span>Phone number</span>
+              <input
+                type="tel"
+                name="phone"
+                value={form.phone}
+                onChange={handleChange}
+                placeholder="98765 43210"
+                autoComplete="tel"
+                disabled={otpSent}
+              />
+            </label>
+
+            <label className="auth-field">
+              <span>Password</span>
+              <input
+                type="password"
+                name="password"
+                value={form.password}
+                onChange={handleChange}
+                placeholder="At least 6 characters"
+                autoComplete="new-password"
+                disabled={otpSent}
+              />
+            </label>
+
+            <label className="auth-field">
+              <span>Confirm password</span>
+              <input
+                type="password"
+                name="confirmPassword"
+                value={form.confirmPassword}
+                onChange={handleChange}
+                placeholder="Re-enter password"
+                autoComplete="new-password"
+                disabled={otpSent}
+              />
+            </label>
+
+            {!otpSent && (
+              <button type="submit" className="auth-submit" disabled={loading}>
+                {loading ? "Sending code…" : "Create account"}
+              </button>
+            )}
+          </form>
         </div>
       </div>
     </div>

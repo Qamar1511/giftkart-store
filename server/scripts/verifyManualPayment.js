@@ -26,20 +26,24 @@ async function verify() {
     process.exit(1);
   }
 
-  if (order.paymentMethod !== "upi_manual") {
-    console.error("This order isn't a manual UPI order.");
+  if (!["upi_manual", "usdt"].includes(order.paymentMethod)) {
+    console.error("This order isn't a manual UPI or USDT order.");
     await mongoose.disconnect();
     process.exit(1);
   }
 
   console.log(`Order ${order._id}`);
-  console.log(`  Total: ₹${order.totalAmount}`);
-  console.log(`  UTR submitted by customer: ${order.utrNumber || "(none yet)"}`);
+  console.log(`  Total: ${order.currency} ${order.totalAmount}`);
+  if (order.paymentMethod === "upi_manual") {
+    console.log(`  UTR submitted by customer: ${order.utrNumber || "(none yet)"}`);
+  } else {
+    console.log(`  USDT tx ID submitted by customer: ${order.usdtTxId || "(none yet)"}`);
+  }
   console.log(`  Current verification status: ${order.verificationStatus}`);
 
   order.paymentStatus = "paid";
   order.verificationStatus = "verified";
-  order.providerPaymentId = order.utrNumber || `MANUAL-${Date.now()}`;
+  order.providerPaymentId = order.utrNumber || order.usdtTxId || `MANUAL-${Date.now()}`;
   await order.save({ validateModifiedOnly: true });
 
   const delivered = await deliverGiftCard(order);

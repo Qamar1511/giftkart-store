@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { getSession } from "../services/authService";
+import { getGiftCardProducts } from "../services/productService";
 import { getBrand } from "../data/catalog";
 import BrandBadge from "../components/BrandBadge";
 import "../styles/Shop.css";
@@ -9,6 +10,24 @@ import "../styles/Shop.css";
 const Cart = () => {
   const navigate = useNavigate();
   const { items, setQuantity, removeFromCart, totalItems, totalAmount } = useCart();
+  const [stockByKey, setStockByKey] = useState(null);
+
+  // Load live stock so the +/- stepper here can never go above what's
+  // actually available right now (stock can change after items were added).
+  useEffect(() => {
+    let cancelled = false;
+    getGiftCardProducts()
+      .then(({ products }) => {
+        if (cancelled) return;
+        setStockByKey(new Map(products.map((p) => [`${p.brand}-${p.denomination}`, p.availableStock])));
+      })
+      .catch(() => {
+        if (!cancelled) setStockByKey(new Map()); // fail open-ish: checkout still enforces the real check
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleCheckout = () => {
     const session = getSession();
@@ -45,6 +64,8 @@ const Cart = () => {
       <div className="cart-list">
         {items.map((item) => {
           const brand = getBrand(item.brand);
+          const available = stockByKey?.get(`${item.brand}-${item.denomination}`);
+          const atMax = available != null && item.quantity >= available;
           return (
             <div className="cart-row" key={`${item.brand}-${item.denomination}`}>
               <div className="cart-row-image-wrap">
@@ -52,14 +73,24 @@ const Cart = () => {
               </div>
               <div className="cart-row-info">
                 <p className="cart-row-title">{brand.name} — ₹{item.denomination.toLocaleString("en-IN")}</p>
-                <p className="order-row-meta">₹{item.denomination.toLocaleString("en-IN")} each</p>
+                <p className="order-row-meta">
+                  ₹{item.denomination.toLocaleString("en-IN")} each
+                  {available != null && available < 5 && (
+                    <span className="cart-row-stock-warning"> · Only {available} left</span>
+                  )}
+                </p>
               </div>
               <div className="qty-stepper">
                 <button type="button" onClick={() => setQuantity(item.brand, item.denomination, item.quantity - 1)}>
                   −
                 </button>
                 <span>{item.quantity}</span>
-                <button type="button" onClick={() => setQuantity(item.brand, item.denomination, item.quantity + 1)}>
+                <button
+                  type="button"
+                  onClick={() => setQuantity(item.brand, item.denomination, item.quantity + 1, available)}
+                  disabled={atMax}
+                  title={atMax ? "That's all we have in stock" : undefined}
+                >
                   +
                 </button>
               </div>
