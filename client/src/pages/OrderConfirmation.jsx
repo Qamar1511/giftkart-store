@@ -4,6 +4,7 @@ import { getOrderById, downloadInvoice } from "../services/orderService";
 import { getDisplayStatus } from "../utils/orderStatus";
 import { reorderItems } from "../utils/reorderItems";
 import { useCart } from "../context/CartContext";
+import Seo from "../components/Seo";
 import "../styles/Shop.css";
 
 const STATUS_COPY = {
@@ -124,6 +125,7 @@ const OrderConfirmation = () => {
 
   return (
     <div className="buy-page">
+      <Seo title="Order Confirmation — GIFTKART" path="/order-confirmation" noindex />
       <div className="confirmation-card">
         <span className={`order-status-pill status-${status.key}`}>
           {showUtrPending ? "Verification pending" : status.label}

@@ -13,6 +13,7 @@ import {
 } from "../services/paymentService";
 import { getSession } from "../services/authService";
 import { getBrand } from "../data/catalog";
+import Seo from "../components/Seo";
 import "../styles/Shop.css";
 
 // Only these methods are live for now — the rest render as disabled tiles.
@@ -336,6 +337,7 @@ const CheckoutPayment = () => {
 
   return (
     <div className="buy-page checkout-payment-page">
+      <Seo title="Payment — GIFTKART" path="/checkout/payment" noindex />
       <div
         className="checkout-bg-decor payment-bg-decor"
         style={{ backgroundImage: "url(/images/payment-bg.png)" }}

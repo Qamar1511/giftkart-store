@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { getCatalog } from "../services/productService";
 import BrandBadge from "../components/BrandBadge";
+import Seo, { SITE_URL } from "../components/Seo";
 import { useTheme } from "../context/ThemeContext";
 import "../styles/Shop.css";
 
@@ -136,6 +137,33 @@ const Home = () => {
 
   return (
     <div>
+      <Seo
+        title="Buy Gift Cards Online in India — Amazon, Steam, PlayStation, Netflix & More | GIFTKART"
+        description="Buy digital gift cards online in India for Amazon, Steam, PlayStation, Xbox, Netflix, Flipkart, Google Play, Swiggy, Domino's & PayPal. Instant delivery, UPI & USDT accepted."
+        path="/"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          name: "GIFTKART",
+          url: SITE_URL,
+          description: "India's online store for digital gift cards — Amazon, Steam, PlayStation, Netflix and more, delivered instantly.",
+        }}
+      />
+      {/* Visually hidden but real text for search engines — the hero
+          above is an image carousel, so this gives Google an actual H1
+          with the primary keywords instead of relying on image alt text. */}
+      <h1
+        style={{
+          position: "absolute",
+          width: "1px",
+          height: "1px",
+          overflow: "hidden",
+          clip: "rect(0 0 0 0)",
+          whiteSpace: "nowrap",
+        }}
+      >
+        Buy Gift Cards Online in India — Amazon, Steam, PlayStation, Xbox, Netflix, Flipkart & More
+      </h1>
       {/* ---------- Hero carousel (contained card, fixed height so it
            never dominates the viewport or touches the raw page edge).
            Uses light-background art in light mode, dark-background art

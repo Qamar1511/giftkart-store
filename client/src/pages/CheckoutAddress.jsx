@@ -4,6 +4,7 @@ import { useCart } from "../context/CartContext";
 import { getSession } from "../services/authService";
 import { getBrand } from "../data/catalog";
 import "../styles/Shop.css";
+import Seo from "../components/Seo";
 
 const initialAddress = {
   fullName: "",
@@ -59,6 +60,7 @@ const CheckoutAddress = () => {
 
   return (
     <div className="buy-page checkout-address-page">
+      <Seo title="Checkout — GIFTKART" path="/checkout/address" noindex />
       <div
         className="checkout-bg-decor"
         style={{ backgroundImage: "url(/images/checkout-bg.png)" }}

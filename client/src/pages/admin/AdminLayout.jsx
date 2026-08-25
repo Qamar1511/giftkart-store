@@ -2,6 +2,7 @@ import React from "react";
 import { NavLink, Link, Outlet, useNavigate } from "react-router-dom";
 import { getSession, clearSession } from "../../services/authService";
 import "../../styles/Admin.css";
+import Seo from "../../components/Seo";
 
 const NAV_ITEMS = [
   { to: "/admin", label: "Dashboard", icon: "📊", end: true },
@@ -21,6 +22,7 @@ const AdminLayout = () => {
 
   return (
     <div className="admin-shell">
+      <Seo title="Admin — GIFTKART" path="/admin" noindex />
       <aside className="admin-sidebar">
         <Link to="/" className="admin-logo">
           GIFT<span className="admin-logo-accent">KART</span>

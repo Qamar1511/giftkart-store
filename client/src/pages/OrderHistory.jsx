@@ -4,6 +4,7 @@ import { getMyOrders, cancelOrder, downloadInvoice } from "../services/orderServ
 import { getDisplayStatus } from "../utils/orderStatus";
 import { reorderItems } from "../utils/reorderItems";
 import { useCart } from "../context/CartContext";
+import Seo from "../components/Seo";
 import "../styles/Shop.css";
 
 const OrderHistory = () => {
@@ -90,6 +91,7 @@ const OrderHistory = () => {
 
   return (
     <div className="shop-page">
+      <Seo title="Order History — GIFTKART" path="/orders" noindex />
       <h1 className="section-heading">Order history</h1>
 
       {error && <p className="shop-status shop-status-error">{error}</p>}

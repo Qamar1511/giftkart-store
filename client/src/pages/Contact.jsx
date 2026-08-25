@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { submitContactForm } from "../services/contactService";
+import Seo from "../components/Seo";
 import "../styles/Shop.css";
 
 const MAX_FILE_MB = 5;
@@ -54,6 +55,11 @@ const Contact = () => {
 
   return (
     <div className="shop-page contact-page">
+      <Seo
+        title="Contact Us — GIFTKART Gift Card Support"
+        description="Get in touch with GIFTKART for order help, gift card issues, or general questions. We reply as fast as we can."
+        path="/contact"
+      />
       <h1 className="section-heading">Contact us</h1>
       <p className="contact-page-sub">
         Have a question about an order, a gift card, or anything else? Send us a message and

@@ -1,10 +1,16 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import Seo from "../components/Seo";
 import "../styles/Shop.css";
 
 const TermsOfService = () => {
   return (
     <div className="shop-page legal-page">
+      <Seo
+        title="Terms of Service — GIFTKART"
+        description="Read GIFTKART's terms of service covering gift card purchases, delivery, and account use."
+        path="/terms"
+      />
       <section className="legal-hero">
         <div
           className="checkout-bg-decor legal-bg-decor"

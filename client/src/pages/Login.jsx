@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { loginUser, saveSession } from "../services/authService";
 import { BRANDS } from "../data/catalog";
 import "../styles/Auth.css";
+import Seo from "../components/Seo";
 
 const FEATURED_BRANDS = BRANDS.slice(0, 5);
 
@@ -50,6 +51,7 @@ const Login = () => {
 
   return (
     <div className="auth-screen">
+      <Seo title="Login — GIFTKART" description="Log in to your GIFTKART account." path="/login" noindex />
       <div className="auth-brand-panel">
         <div className="auth-brand-content">
           <span className="auth-eyebrow">GIFTKART · India's Gift Card Store</span>

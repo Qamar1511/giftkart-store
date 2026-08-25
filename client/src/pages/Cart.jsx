@@ -6,6 +6,7 @@ import { getGiftCardProducts } from "../services/productService";
 import { getBrand } from "../data/catalog";
 import BrandBadge from "../components/BrandBadge";
 import "../styles/Shop.css";
+import Seo from "../components/Seo";
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -41,6 +42,7 @@ const Cart = () => {
   if (items.length === 0) {
     return (
       <div className="shop-page">
+        <Seo title="Your Cart — GIFTKART" path="/cart" noindex />
         <h1 className="section-heading">Your cart</h1>
         <div className="empty-orders">
           <p>Your cart is empty.</p>
@@ -59,6 +61,7 @@ const Cart = () => {
         style={{ backgroundImage: "url(/images/cart-bg.png)" }}
         aria-hidden="true"
       />
+      <Seo title="Your Cart — GIFTKART" path="/cart" noindex />
       <h1 className="section-heading">Your cart ({totalItems} item{totalItems !== 1 ? "s" : ""})</h1>
 
       <div className="cart-list">

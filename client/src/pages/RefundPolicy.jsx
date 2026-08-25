@@ -1,10 +1,16 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import Seo from "../components/Seo";
 import "../styles/Shop.css";
 
 const RefundPolicy = () => {
   return (
     <div className="shop-page legal-page">
+      <Seo
+        title="Refund & Cancellation Policy — GIFTKART"
+        description="Read GIFTKART's refund and cancellation policy for gift card orders."
+        path="/refund-policy"
+      />
       <section className="legal-hero">
         <div
           className="checkout-bg-decor legal-bg-decor"

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { resetPassword } from "../services/authService";
 import "../styles/Auth.css";
+import Seo from "../components/Seo";
 
 const ResetPassword = () => {
   const navigate = useNavigate();
@@ -46,6 +47,7 @@ const ResetPassword = () => {
 
   return (
     <div className="auth-screen">
+      <Seo title="Reset Password — GIFTKART" description="Set a new password for your GIFTKART account." path="/reset-password" noindex />
       <div className="auth-brand-panel">
         <div className="auth-brand-content">
           <span className="auth-eyebrow">GIFTKART · India's Gift Card Store</span>

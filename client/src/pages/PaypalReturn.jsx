@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { capturePaypalOrder } from "../services/paymentService";
+import Seo from "../components/Seo";
 
 const PaypalReturn = () => {
   const [searchParams] = useSearchParams();
@@ -26,6 +27,7 @@ const PaypalReturn = () => {
 
   return (
     <div className="buy-page">
+      <Seo title="Confirming Payment — GIFTKART" path="/paypal/return" noindex />
       <div className="usdt-invoice-card">
         {error ? (
           <>

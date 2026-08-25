@@ -20,7 +20,7 @@ const GiftCardCard = ({ product, color }) => {
         {product.image ? (
           <img
             src={product.image}
-            alt={`${product.brandName} ₹${product.denomination}`}
+            alt={`${product.brandName} Gift Card ₹${product.denomination}`}
             className="giftcard-card-image"
           />
         ) : (
