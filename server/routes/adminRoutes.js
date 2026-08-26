@@ -1,4 +1,5 @@
 const express = require("express");
+const multer = require("multer");
 const {
   getAllOrders,
   verifyUpiPayment,
@@ -14,12 +15,18 @@ const {
   createPost,
   updatePost,
   deletePost,
+  uploadCoverImage,
 } = require("../controllers/adminBlogController");
 const { protect, adminOnly } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
 router.use(protect, adminOnly);
+
+const uploadImage = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+});
 
 router.get("/orders", getAllOrders);
 router.post("/orders/:id/verify-upi", verifyUpiPayment);
@@ -35,5 +42,6 @@ router.get("/blog/:id", getPostById);
 router.post("/blog", createPost);
 router.put("/blog/:id", updatePost);
 router.delete("/blog/:id", deletePost);
+router.post("/blog/upload-image", uploadImage.single("image"), uploadCoverImage);
 
 module.exports = router;

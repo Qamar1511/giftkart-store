@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { getBlogPostBySlug } from "../services/blogService";
+import { getBlogPostBySlug, resolveImageUrl } from "../services/blogService";
 import Seo, { SITE_URL } from "../components/Seo";
 import "../styles/Shop.css";
 
@@ -42,19 +42,21 @@ const BlogPost = () => {
     );
   }
 
+  const resolvedCoverImage = resolveImageUrl(post.coverImage);
+
   return (
     <div className="shop-page blog-post-page">
       <Seo
         title={post.metaTitle || `${post.title} | GIFTKART Blog`}
         description={post.metaDescription || post.excerpt}
         path={`/blog/${post.slug}`}
-        ogImage={post.coverImage}
+        ogImage={resolvedCoverImage}
         jsonLd={{
           "@context": "https://schema.org",
           "@type": "Article",
           headline: post.title,
           description: post.excerpt,
-          image: post.coverImage ? [post.coverImage] : undefined,
+          image: resolvedCoverImage ? [resolvedCoverImage] : undefined,
           author: { "@type": "Organization", name: post.author || "GIFTKART Team" },
           publisher: { "@type": "Organization", name: "GIFTKART" },
           datePublished: post.publishedAt,
@@ -63,8 +65,8 @@ const BlogPost = () => {
         }}
       />
       <Link to="/blog" className="footer-link">← Back to blog</Link>
-      {post.coverImage && (
-        <div className="blog-post-cover" style={{ backgroundImage: `url(${post.coverImage})` }} />
+      {resolvedCoverImage && (
+        <div className="blog-post-cover" style={{ backgroundImage: `url(${resolvedCoverImage})` }} />
       )}
       <h1 className="confirmation-heading" style={{ marginTop: "1rem" }}>{post.title}</h1>
       <p className="shop-status">

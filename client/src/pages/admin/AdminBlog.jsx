@@ -51,10 +51,13 @@ const AdminBlog = () => {
   };
 
   return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem" }}>
-        <h1 className="admin-page-title">Blog</h1>
-        <button type="button" className="auth-submit" style={{ maxWidth: "10rem" }} onClick={() => navigate("/admin/blog/new")}>
+    <div className="admin-page-wrap">
+      <div className="admin-page-header">
+        <div>
+          <h1 className="admin-page-title">Blog</h1>
+          <p className="admin-page-sub">Write and publish posts for the public /blog section.</p>
+        </div>
+        <button type="button" className="admin-btn-approve" onClick={() => navigate("/admin/blog/new")}>
           + New post
         </button>
       </div>
@@ -63,7 +66,7 @@ const AdminBlog = () => {
       {error && <p className="shop-status shop-status-error">{error}</p>}
 
       {!loading && !error && (
-        <div className="admin-table-wrap" style={{ marginTop: "1.5rem" }}>
+        <div className="admin-table-wrap">
           <table className="admin-table">
             <thead>
               <tr>
@@ -76,7 +79,9 @@ const AdminBlog = () => {
             <tbody>
               {posts.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="admin-table-muted">No posts yet — click "New post" to write your first one.</td>
+                  <td colSpan={4} className="admin-table-muted">
+                    No posts yet — click "New post" to write your first one.
+                  </td>
                 </tr>
               )}
               {posts.map((post) => (
@@ -87,27 +92,31 @@ const AdminBlog = () => {
                       {post.published ? "Published" : "Draft"}
                     </span>
                   </td>
-                  <td className="admin-table-muted">{new Date(post.updatedAt).toLocaleDateString("en-IN")}</td>
-                  <td style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
-                    <button
-                      type="button"
-                      className="admin-btn-approve"
-                      disabled={busyId === post._id}
-                      onClick={() => handleTogglePublish(post)}
-                    >
-                      {post.published ? "Unpublish" : "Publish"}
-                    </button>
-                    <Link to={`/admin/blog/${post._id}/edit`} className="admin-btn-approve" style={{ textDecoration: "none" }}>
-                      Edit
-                    </Link>
-                    <button
-                      type="button"
-                      className="admin-btn-reject"
-                      disabled={busyId === post._id}
-                      onClick={() => handleDelete(post)}
-                    >
-                      Delete
-                    </button>
+                  <td className="admin-table-muted">
+                    {new Date(post.updatedAt).toLocaleDateString("en-IN")}
+                  </td>
+                  <td>
+                    <div className="admin-table-actions">
+                      <button
+                        type="button"
+                        className="admin-btn-approve"
+                        disabled={busyId === post._id}
+                        onClick={() => handleTogglePublish(post)}
+                      >
+                        {post.published ? "Unpublish" : "Publish"}
+                      </button>
+                      <Link to={`/admin/blog/${post._id}/edit`} className="admin-btn-approve">
+                        Edit
+                      </Link>
+                      <button
+                        type="button"
+                        className="admin-btn-reject"
+                        disabled={busyId === post._id}
+                        onClick={() => handleDelete(post)}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

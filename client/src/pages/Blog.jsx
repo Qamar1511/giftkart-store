@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getBlogPosts } from "../services/blogService";
+import { getBlogPosts, resolveImageUrl } from "../services/blogService";
 import Seo from "../components/Seo";
 import "../styles/Shop.css";
 
@@ -42,7 +42,10 @@ const Blog = () => {
         {posts.map((post) => (
           <Link to={`/blog/${post.slug}`} className="blog-card" key={post._id}>
             {post.coverImage && (
-              <div className="blog-card-image" style={{ backgroundImage: `url(${post.coverImage})` }} />
+              <div
+                className="blog-card-image"
+                style={{ backgroundImage: `url(${resolveImageUrl(post.coverImage)})` }}
+              />
             )}
             <div className="blog-card-body">
               <span className="blog-card-date">{formatDate(post.publishedAt || post.createdAt)}</span>

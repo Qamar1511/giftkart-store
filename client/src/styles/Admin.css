@@ -489,6 +489,175 @@
   color: #c62828;
 }
 
+/* ---------- Page header row (title + primary action) ---------- */
+.admin-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.admin-page-header .admin-page-title {
+  margin-bottom: 0.25rem;
+}
+
+/* Standalone color buttons now carry the full button look themselves,
+   without needing .admin-btn alongside them. */
+.admin-btn-approve,
+.admin-btn-reject {
+  border: none;
+  border-radius: 0.4rem;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: "Inter", sans-serif;
+  text-decoration: none;
+  display: inline-block;
+  text-align: center;
+}
+
+.admin-btn-approve:disabled,
+.admin-btn-reject:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ---------- Centered form pages (blog editor, etc.) ---------- */
+.admin-form-wrap {
+  max-width: 42rem;
+  margin: 0 auto;
+}
+
+.admin-page-wrap {
+  max-width: 64rem;
+  margin: 0 auto;
+}
+
+.admin-form-section {
+  margin-bottom: 1.75rem;
+}
+
+.admin-form-section:last-of-type {
+  margin-bottom: 0;
+}
+
+.admin-form-section-title {
+  font-family: "Rajdhani", sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text-primary);
+  margin: 0 0 0.25rem;
+}
+
+.admin-form-section-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0 0 1rem;
+}
+
+.admin-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 1rem;
+}
+
+.admin-field-full {
+  grid-column: 1 / -1;
+}
+
+.admin-field textarea.admin-field-mono {
+  font-family: "Roboto Mono", monospace;
+  font-size: 0.85rem;
+}
+
+.admin-field-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-direction: row;
+}
+
+.admin-form-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.admin-form-actions > * {
+  flex: 1;
+}
+
+/* ---------- Cover image upload ---------- */
+.admin-image-upload {
+  border: 1.5px dashed var(--card-border);
+  border-radius: 0.6rem;
+  background: var(--overlay-soft);
+  padding: 1.25rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.admin-image-upload:hover {
+  border-color: var(--accent-blue);
+  background: var(--overlay-hover);
+}
+
+.admin-image-upload input[type="file"] {
+  display: none;
+}
+
+.admin-image-upload-label {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.admin-image-upload-hint {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+
+.admin-image-preview-wrap {
+  position: relative;
+  border-radius: 0.6rem;
+  overflow: hidden;
+  border: 1px solid var(--card-border);
+}
+
+.admin-image-preview {
+  width: 100%;
+  max-height: 14rem;
+  object-fit: cover;
+  display: block;
+}
+
+.admin-image-preview-remove {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: rgba(15, 23, 42, 0.65);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  width: 1.8rem;
+  height: 1.8rem;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.admin-image-uploading {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-top: 0.5rem;
+}
+
 @media (max-width: 860px) {
   .admin-shell {
     flex-direction: column;
@@ -526,6 +695,22 @@
 
   .admin-stock-form-row {
     grid-template-columns: 1fr;
+  }
+
+  .admin-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-form-actions {
+    flex-direction: column;
+  }
+
+  .admin-page-header {
+    align-items: flex-start;
+  }
+
+  .admin-page-header > .admin-btn-approve {
+    width: 100%;
   }
 }
 

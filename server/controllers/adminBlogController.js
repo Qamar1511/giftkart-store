@@ -1,4 +1,8 @@
+const fs = require("fs");
+const path = require("path");
 const BlogPost = require("../models/BlogPost");
+
+const UPLOAD_DIR = path.join(__dirname, "..", "uploads", "blog");
 
 const slugify = (text) =>
   text
@@ -121,5 +125,28 @@ exports.deletePost = async (req, res) => {
   } catch (error) {
     console.error("Delete blog post error:", error);
     res.status(500).json({ message: "Couldn't delete this post" });
+  }
+};
+
+// @route  POST /api/admin/blog/upload-image
+// @access Admin
+// Accepts multipart/form-data with a single "image" field. Saves it to
+// disk under server/uploads/blog/ (served statically, see server.js) and
+// returns the URL to store as the post's coverImage.
+exports.uploadCoverImage = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "No image was uploaded." });
+    }
+
+    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+    const safeExt = path.extname(req.file.originalname).slice(0, 10) || ".jpg";
+    const storedFilename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${safeExt}`;
+    fs.writeFileSync(path.join(UPLOAD_DIR, storedFilename), req.file.buffer);
+
+    res.status(200).json({ url: `/uploads/blog/${storedFilename}` });
+  } catch (error) {
+    console.error("Upload blog image error:", error);
+    res.status(500).json({ message: "Couldn't upload this image." });
   }
 };
