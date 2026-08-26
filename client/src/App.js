@@ -19,6 +19,7 @@ import Contact from "./pages/Contact";
 import RefundPolicy from "./pages/RefundPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import Layout from "./components/Layout";
+import ScrollToTop from "./components/ScrollToTop";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 import AdminLayout from "./pages/admin/AdminLayout";
@@ -32,6 +33,7 @@ function App() {
     <ThemeProvider>
       <CartProvider>
         <BrowserRouter>
+        <ScrollToTop />
         <Routes>
           {/* Auth pages are full-screen, no Navbar/Footer */}
           <Route path="/login" element={<Login />} />
