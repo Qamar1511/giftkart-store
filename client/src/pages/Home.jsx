@@ -214,9 +214,18 @@ const Home = () => {
       </nav>
 
       {loading && (
-        <p className="shop-status" style={{ textAlign: "center", padding: "2rem" }}>
-          Loading gift cards…
-        </p>
+        <section className="shop-page" style={{ paddingBottom: "1rem" }}>
+          <div className="skeleton-line skeleton-heading" />
+          <div className="products-grid">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div className="skeleton-card" key={i}>
+                <div className="skeleton-block" />
+                <div className="skeleton-line" style={{ width: "60%" }} />
+                <div className="skeleton-line" style={{ width: "40%" }} />
+              </div>
+            ))}
+          </div>
+        </section>
       )}
       {error && (
         <p className="shop-status shop-status-error" style={{ textAlign: "center", padding: "2rem" }}>

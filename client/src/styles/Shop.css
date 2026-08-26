@@ -1614,3 +1614,46 @@
     max-width: 10rem;
   }
 }
+
+/* ---------- Skeleton loading placeholders ---------- */
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: -40rem 0;
+  }
+  100% {
+    background-position: 40rem 0;
+  }
+}
+
+.skeleton-line,
+.skeleton-block {
+  background: linear-gradient(90deg, var(--overlay-soft) 25%, var(--overlay-hover) 50%, var(--overlay-soft) 75%);
+  background-size: 40rem 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+  border-radius: 0.4rem;
+}
+
+.skeleton-heading {
+  width: 12rem;
+  height: 1.6rem;
+  margin-bottom: 1.25rem;
+}
+
+.skeleton-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--card-border);
+  border-radius: 0.9rem;
+  padding: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.skeleton-block {
+  aspect-ratio: 5 / 4;
+  border-radius: 0.6rem;
+}
+
+.skeleton-line {
+  height: 0.85rem;
+}

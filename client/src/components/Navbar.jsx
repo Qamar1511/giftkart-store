@@ -2,7 +2,6 @@ import React, { useEffect, useState, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { getSession, clearSession } from "../services/authService";
 import { useCart } from "../context/CartContext";
-import { useTheme } from "../context/ThemeContext";
 import "../styles/Layout.css";
 
 const NAV_LINKS = [
@@ -17,7 +16,6 @@ const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { totalItems } = useCart();
-  const { theme, toggleTheme } = useTheme();
   const [session, setSession] = useState(getSession());
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -80,7 +78,11 @@ const Navbar = () => {
           <span />
         </button>
 
-        <Link to="/" className="navbar-logo">
+        <Link
+          to="/"
+          className="navbar-logo"
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        >
           GIFT<span className="navbar-logo-accent">KART</span>
         </Link>
 
@@ -105,32 +107,9 @@ const Navbar = () => {
               </Link>
             )
           )}
-
-          <div className="navbar-mobile-theme-row">
-            <span>Dark mode</span>
-            <button
-              type="button"
-              className="navbar-switch"
-              role="switch"
-              aria-checked={theme === "dark"}
-              aria-label="Toggle dark mode"
-              onClick={toggleTheme}
-            >
-              <span className="navbar-switch-thumb" />
-            </button>
-          </div>
         </nav>
 
         <div className="navbar-actions">
-          <button
-            type="button"
-            className="navbar-theme-toggle"
-            onClick={toggleTheme}
-            aria-label={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
-            title={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
-          >
-            {theme === "light" ? "🌙" : "☀️"}
-          </button>
           <Link to="/cart" className="navbar-cart-link" aria-label="Cart">
             🛒
             {totalItems > 0 && <span className="navbar-cart-badge">{totalItems}</span>}
