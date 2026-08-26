@@ -18,6 +18,8 @@ import PaypalReturn from "./pages/PaypalReturn";
 import Contact from "./pages/Contact";
 import RefundPolicy from "./pages/RefundPolicy";
 import TermsOfService from "./pages/TermsOfService";
+import Blog from "./pages/Blog";
+import BlogPost from "./pages/BlogPost";
 import Layout from "./components/Layout";
 import ScrollToTop from "./components/ScrollToTop";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -27,6 +29,8 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminStock from "./pages/admin/AdminStock";
 import AdminQueries from "./pages/admin/AdminQueries";
+import AdminBlog from "./pages/admin/AdminBlog";
+import AdminBlogEditor from "./pages/admin/AdminBlogEditor";
 
 function App() {
   return (
@@ -54,6 +58,9 @@ function App() {
             <Route path="orders" element={<AdminOrders />} />
             <Route path="stock" element={<AdminStock />} />
             <Route path="queries" element={<AdminQueries />} />
+            <Route path="blog" element={<AdminBlog />} />
+            <Route path="blog/new" element={<AdminBlogEditor />} />
+            <Route path="blog/:id/edit" element={<AdminBlogEditor />} />
           </Route>
 
           {/* Everything else uses the Navbar + Footer shell */}
@@ -65,6 +72,8 @@ function App() {
             <Route path="/contact" element={<Contact />} />
             <Route path="/refund-policy" element={<RefundPolicy />} />
             <Route path="/terms" element={<TermsOfService />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/:slug" element={<BlogPost />} />
 
             <Route
               path="/checkout/address"

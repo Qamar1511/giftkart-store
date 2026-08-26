@@ -1657,3 +1657,117 @@
 .skeleton-line {
   height: 0.85rem;
 }
+/* ---------- Blog ---------- */
+.blog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(17.5rem, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.blog-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-panel);
+  border: 1px solid var(--card-border);
+  border-radius: 0.9rem;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.blog-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
+}
+
+.blog-card-image {
+  aspect-ratio: 16 / 9;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--overlay-soft);
+}
+
+.blog-card-body {
+  padding: 1.1rem 1.25rem 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.blog-card-date {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.blog-card-title {
+  font-family: "Rajdhani", sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.blog-card-excerpt {
+  font-size: 0.92rem;
+  color: var(--text-muted);
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.blog-post-page {
+  max-width: 42rem;
+  margin: 0 auto;
+}
+
+.blog-post-cover {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background-size: cover;
+  background-position: center;
+  border-radius: 0.9rem;
+  margin-top: 1rem;
+}
+
+.blog-post-content {
+  margin-top: 1.5rem;
+  line-height: 1.75;
+  color: var(--text-primary);
+}
+
+.blog-post-content h2,
+.blog-post-content h3 {
+  font-family: "Rajdhani", sans-serif;
+  margin: 1.75rem 0 0.75rem;
+}
+
+.blog-post-content p {
+  margin: 0 0 1rem;
+}
+
+.blog-post-content ul,
+.blog-post-content ol {
+  margin: 0 0 1rem 1.25rem;
+}
+
+.blog-post-content a {
+  color: var(--accent-blue);
+}
+
+.blog-post-content img {
+  max-width: 100%;
+  border-radius: 0.6rem;
+  margin: 1rem 0;
+}
+
+@media (max-width: 480px) {
+  .blog-grid {
+    grid-template-columns: 1fr;
+  }
+}

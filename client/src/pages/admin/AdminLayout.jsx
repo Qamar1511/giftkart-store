@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { to: "/admin/orders", label: "Orders", icon: "📦" },
   { to: "/admin/stock", label: "Gift Card Stock", icon: "🎟️" },
   { to: "/admin/queries", label: "Contact Queries", icon: "💬" },
+  { to: "/admin/blog", label: "Blog", icon: "📝" },
 ];
 
 const AdminLayout = () => {

@@ -9,6 +9,8 @@ const orderRoutes = require("./routes/orderRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const contactRoutes = require("./routes/contactRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const blogRoutes = require("./routes/blogRoutes");
+const { generateSitemap } = require("./utils/generateSitemap");
 const { cancelAbandonedOrders } = require("./utils/stockReservation");
 
 const app = express();
@@ -30,6 +32,11 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/blog", blogRoutes);
+
+// Not under /api — this is what giftkartstore.in/sitemap.xml proxies to
+// (see client/vercel.json). Regenerated fresh on every request from the DB.
+app.get("/sitemap.xml", generateSitemap);
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", message: "PS Gift Card Store API is running" });

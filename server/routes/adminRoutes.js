@@ -8,6 +8,13 @@ const {
   addStockCodes,
   deleteStockCode,
 } = require("../controllers/adminController");
+const {
+  getAllPosts,
+  getPostById,
+  createPost,
+  updatePost,
+  deletePost,
+} = require("../controllers/adminBlogController");
 const { protect, adminOnly } = require("../middleware/authMiddleware");
 
 const router = express.Router();
@@ -22,5 +29,11 @@ router.get("/stock", getStockSummary);
 router.get("/stock/:brand/:denomination", getStockCodes);
 router.post("/stock", addStockCodes);
 router.delete("/stock/:codeId", deleteStockCode);
+
+router.get("/blog", getAllPosts);
+router.get("/blog/:id", getPostById);
+router.post("/blog", createPost);
+router.put("/blog/:id", updatePost);
+router.delete("/blog/:id", deletePost);
 
 module.exports = router;

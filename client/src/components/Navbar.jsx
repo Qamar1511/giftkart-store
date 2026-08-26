@@ -9,6 +9,7 @@ const NAV_LINKS = [
   { label: "Shopping", categorySlug: "shopping" },
   { label: "Entertainment", categorySlug: "entertainment" },
   { label: "Food", categorySlug: "food" },
+  { label: "Blog", to: "/blog" },
   { label: "My Orders", to: "/orders", authOnly: true },
 ];
 

@@ -22,6 +22,7 @@ const Footer = () => {
         <div className="footer-col">
           <h4 className="footer-heading">Quick Links</h4>
           <Link to="/" className="footer-link">Home</Link>
+          <Link to="/blog" className="footer-link">Blog</Link>
           <Link to="/orders" className="footer-link">My Orders</Link>
           <Link to="/cart" className="footer-link">Cart</Link>
         </div>
