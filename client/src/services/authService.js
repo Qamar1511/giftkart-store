@@ -37,6 +37,18 @@ export const resetPassword = async (token, password) => {
   return data;
 };
 
+// Switch the logged-in user's buying currency (INR <-> USDT). The token is
+// passed in explicitly rather than importing apiClient here, which would
+// create a circular import (apiClient imports getSession from this file).
+export const updateCurrency = async (currency, token) => {
+  const { data } = await authApi.patch(
+    "/currency",
+    { currency },
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  return data;
+};
+
 export const saveSession = ({ token, user }) => {
   localStorage.setItem("psc_token", token);
   localStorage.setItem("psc_user", JSON.stringify(user));
@@ -46,6 +58,21 @@ export const getSession = () => {
   const token = localStorage.getItem("psc_token");
   const user = localStorage.getItem("psc_user");
   return token && user ? { token, user: JSON.parse(user) } : null;
+};
+
+// Patch just the currency on the stored session user, so a page refresh (and
+// anything reading the session directly, like the Navbar) stays in sync
+// after a currency switch — without needing a full re-login.
+export const updateStoredUserCurrency = (currency) => {
+  const raw = localStorage.getItem("psc_user");
+  if (!raw) return;
+  try {
+    const user = JSON.parse(raw);
+    user.currency = currency;
+    localStorage.setItem("psc_user", JSON.stringify(user));
+  } catch {
+    // ignore malformed session
+  }
 };
 
 export const clearSession = () => {

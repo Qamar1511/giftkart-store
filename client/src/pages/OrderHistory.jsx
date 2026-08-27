@@ -4,6 +4,7 @@ import { getMyOrders, cancelOrder, downloadInvoice } from "../services/orderServ
 import { getDisplayStatus } from "../utils/orderStatus";
 import { reorderItems } from "../utils/reorderItems";
 import { useCart } from "../context/CartContext";
+import { formatMoney } from "../data/catalog";
 import Seo from "../components/Seo";
 import "../styles/Shop.css";
 
@@ -129,8 +130,8 @@ const OrderHistory = () => {
                     <p className="order-row-meta">
                       {new Date(order.createdAt).toLocaleString("en-IN")} ·{" "}
                       {(order.paymentMethod || "").replace("_", " ").toUpperCase()} · #
-                      {order.invoiceNumber || order._id.slice(-6)} · Total: {order.currency || "INR"}{" "}
-                      {(order.totalAmount ?? 0).toLocaleString("en-IN")}
+                      {order.invoiceNumber || order._id.slice(-6)} · Total:{" "}
+                      {formatMoney(order.totalAmount ?? 0, order.currency || "INR")}
                     </p>
                   </div>
                   <span className={`order-status-pill status-${status.key}`}>{status.label}</span>

@@ -1,24 +1,31 @@
 const Order = require("../models/Order");
+const User = require("../models/User");
 const generateInvoiceNumber = require("../utils/generateInvoiceNumber");
 const streamInvoicePDF = require("../utils/pdfInvoice");
-const { getBrand, INR_TO_USD_RATE } = require("../config/catalog");
+const {
+  getBrand,
+  priceFor,
+  CURRENCY_CODES,
+  CURRENCY_PAYMENT_METHODS,
+  DEFAULT_CURRENCY,
+} = require("../config/catalog");
 const { refundRazorpayPayment, refundPaypalCapture } = require("./paymentController");
 const { getAvailableCount, reserveStockForOrder, releaseStockForOrder } = require("../utils/stockReservation");
 
-const ALLOWED_PAYMENT_METHODS = ["razorpay", "card", "debit_card", "upi_manual", "usdt", "paypal"];
-const FOREIGN_CURRENCY_METHODS = ["paypal", "usdt"]; // charged in USD, not INR
 const MAX_QUANTITY_PER_ITEM = 10;
 
 // @route  POST /api/orders
 // @access Private
 // Creates the order (one or more cart line items) in "placed / pending
-// payment" state. Pricing is always computed server-side from `items` —
-// we never trust a client-supplied amount. Stock is also checked here,
-// against real-time available codes — so a customer can never pay for
-// more units than we can actually deliver (see the delivery step in
-// utils/deliverGiftCard.js, which pulls from the same pool). The actual
-// payment (Razorpay / PayPal / USDT / manual UPI) is created and confirmed
-// in separate calls that reference this order's _id.
+// payment" state. Pricing is always computed server-side from `items` +
+// the buyer's saved currency — we never trust a client-supplied amount or
+// currency. The buying currency comes from the User document (chosen at
+// signup, switchable from the navbar) and decides BOTH the price of each
+// denomination (INR = face × 1.1, USDT = face × 0.011) and which payment
+// methods are allowed (INR → UPI/cards, USDT → crypto). Stock is checked
+// here too, against real-time available codes, so a customer can never pay
+// for more units than we can deliver. The actual payment is created and
+// confirmed in separate calls that reference this order's _id.
 exports.createOrder = async (req, res) => {
   try {
     const { items, paymentMethod, address } = req.body;
@@ -29,12 +36,28 @@ exports.createOrder = async (req, res) => {
     if (!address || !address.line1 || !address.city || !address.pincode) {
       return res.status(400).json({ message: "A complete address is required" });
     }
-    if (!ALLOWED_PAYMENT_METHODS.includes(paymentMethod)) {
-      return res.status(400).json({ message: "Invalid payment method" });
+
+    // Buying currency is a server-side truth: read it from the user's saved
+    // preference, never from the request body.
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    const currency = CURRENCY_CODES.includes(user.currency)
+      ? user.currency
+      : DEFAULT_CURRENCY;
+
+    // The payment method must be valid for that currency (INR is paid in
+    // rupees, USDT is paid on-chain) — reject any mismatch.
+    const allowedMethods = CURRENCY_PAYMENT_METHODS[currency] || [];
+    if (!allowedMethods.includes(paymentMethod)) {
+      return res
+        .status(400)
+        .json({ message: `That payment method isn't available for ${currency} orders.` });
     }
 
     const orderItems = [];
-    let totalInr = 0;
+    let totalAmount = 0;
 
     for (const rawItem of items) {
       const brandSlug = rawItem.brand;
@@ -81,15 +104,16 @@ exports.createOrder = async (req, res) => {
         brandName: brand.name,
         denomination,
         quantity,
-        unitPrice: denomination,
+        unitPrice: priceFor(denomination, currency),
         giftCardCodes: [],
       });
-      totalInr += denomination * quantity;
+      totalAmount += priceFor(denomination, currency) * quantity;
     }
 
-    const isForeignCurrency = FOREIGN_CURRENCY_METHODS.includes(paymentMethod);
-    const totalAmount = isForeignCurrency ? +(totalInr * INR_TO_USD_RATE).toFixed(2) : totalInr;
-    const currency = isForeignCurrency ? "USD" : "INR";
+    // INR is charged in whole rupees; USDT keeps 2 decimals. Round the summed
+    // total to kill any floating-point drift from the per-unit USDT prices.
+    totalAmount =
+      currency === "INR" ? Math.round(totalAmount) : +totalAmount.toFixed(2);
 
     const order = await Order.create({
       user: req.user.id,

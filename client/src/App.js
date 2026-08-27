@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import "./styles/theme.css";
 import { CartProvider } from "./context/CartContext";
 import { ThemeProvider } from "./context/ThemeContext";
+import { CurrencyProvider } from "./context/CurrencyContext";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -35,8 +36,9 @@ import AdminBlogEditor from "./pages/admin/AdminBlogEditor";
 function App() {
   return (
     <ThemeProvider>
-      <CartProvider>
-        <BrowserRouter>
+      <CurrencyProvider>
+        <CartProvider>
+          <BrowserRouter>
         <ScrollToTop />
         <Routes>
           {/* Auth pages are full-screen, no Navbar/Footer */}
@@ -129,7 +131,8 @@ function App() {
           </Route>
         </Routes>
       </BrowserRouter>
-      </CartProvider>
+        </CartProvider>
+      </CurrencyProvider>
     </ThemeProvider>
   );
 }

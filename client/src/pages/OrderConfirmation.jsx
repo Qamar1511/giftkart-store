@@ -4,6 +4,7 @@ import { getOrderById, downloadInvoice } from "../services/orderService";
 import { getDisplayStatus } from "../utils/orderStatus";
 import { reorderItems } from "../utils/reorderItems";
 import { useCart } from "../context/CartContext";
+import { formatMoney } from "../data/catalog";
 import Seo from "../components/Seo";
 import "../styles/Shop.css";
 
@@ -122,6 +123,10 @@ const OrderConfirmation = () => {
   const copy = STATUS_COPY[status.key] || STATUS_COPY.placed;
   const showUtrPending = order.paymentMethod === "upi_manual" && order.verificationStatus === "submitted";
   const items = (Array.isArray(order.items) ? order.items : []).filter((item) => item && item.denomination != null);
+  // A historical order is shown in the currency it was actually charged in,
+  // using the unit price snapshotted at order time — never the shopper's
+  // current active currency (which may have changed since).
+  const currency = order.currency || "INR";
 
   return (
     <div className="buy-page">
@@ -147,13 +152,13 @@ const OrderConfirmation = () => {
               <span>
                 {item.brandName || "Gift Card"} ₹{item.denomination.toLocaleString("en-IN")} × {item.quantity ?? 1}
               </span>
-              <strong>₹{(item.denomination * (item.quantity ?? 1)).toLocaleString("en-IN")}</strong>
+              <strong>{formatMoney((item.unitPrice ?? item.denomination) * (item.quantity ?? 1), currency)}</strong>
             </div>
           ))}
           <div className="confirmation-row" style={{ borderTop: "1px solid var(--card-border)", marginTop: "0.5rem", paddingTop: "0.5rem" }}>
             <span>Total paid</span>
             <strong>
-              {order.currency || "INR"} {(order.totalAmount ?? 0).toLocaleString("en-IN")}
+              {formatMoney(order.totalAmount ?? 0, currency)}
             </strong>
           </div>
           <div className="confirmation-row">

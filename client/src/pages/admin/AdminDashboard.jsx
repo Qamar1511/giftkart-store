@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getSession } from "../../services/authService";
 import { getAdminOrders, getStockSummary, getContactQueries } from "../../services/adminService";
+import { formatMoney, CURRENCY_CODES } from "../../data/catalog";
 
 const LOW_STOCK_THRESHOLD = 5;
 
@@ -36,10 +37,20 @@ const AdminDashboard = () => {
   // Orders / Stock / Queries pages already use — no extra backend route
   // needed) ----
   const totalOrders = orders?.length || 0;
-  const totalRevenue =
+  // Orders can be placed in INR or USDT, so revenue can't be a single summed
+  // number — we total each currency separately and show them side by side
+  // (e.g. "₹12,100 · $55").
+  const revenueByCurrency =
     orders
       ?.filter((o) => o.paymentStatus === "paid")
-      .reduce((sum, o) => sum + (o.totalAmount || 0), 0) || 0;
+      .reduce((acc, o) => {
+        const cur = o.currency || "INR";
+        acc[cur] = (acc[cur] || 0) + (o.totalAmount || 0);
+        return acc;
+      }, {}) || {};
+  const revenueLabel =
+    CURRENCY_CODES.filter((c) => revenueByCurrency[c]).map((c) => formatMoney(revenueByCurrency[c], c)).join(" · ") ||
+    formatMoney(0, "INR");
   const pendingVerification =
     orders?.filter((o) => o.paymentMethod === "upi_manual" && o.verificationStatus === "submitted")
       .length || 0;
@@ -59,7 +70,7 @@ const AdminDashboard = () => {
     },
     {
       label: "Revenue collected",
-      value: `₹${totalRevenue.toLocaleString("en-IN")}`,
+      value: revenueLabel,
       icon: "💰",
       to: "/admin/orders?status=all",
     },

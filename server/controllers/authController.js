@@ -2,12 +2,30 @@ const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const User = require("../models/User");
 const { sendEmail, isEmailConfigured } = require("../utils/sendEmail");
+const { CURRENCY_CODES, DEFAULT_CURRENCY } = require("../config/catalog");
 
 const generateToken = (userId, role) => {
   return jwt.sign({ id: userId, role }, process.env.JWT_SECRET, {
     expiresIn: "7d",
   });
 };
+
+// The user fields we hand back to the client after auth. Kept in one place
+// so signup / verify / login / profile all return the same shape (and so
+// `currency` is never accidentally dropped from one of them). Mirrors what
+// the frontend persists in its session — see authService.saveSession.
+const publicUser = (user) => ({
+  id: user._id,
+  fullName: user.fullName,
+  email: user.email,
+  phone: user.phone,
+  role: user.role,
+  currency: user.currency || DEFAULT_CURRENCY,
+});
+
+// Normalise a client-supplied currency to a valid code, defaulting safely.
+const normaliseCurrency = (value) =>
+  CURRENCY_CODES.includes(value) ? value : DEFAULT_CURRENCY;
 
 const generateOtp = () => String(Math.floor(100000 + Math.random() * 900000)); // 6 digits
 
@@ -29,7 +47,7 @@ const sendOtpEmail = (user, otp) =>
 // @access Public
 exports.signup = async (req, res) => {
   try {
-    const { fullName, email, phone, password, confirmPassword } = req.body;
+    const { fullName, email, phone, password, confirmPassword, currency } = req.body;
 
     if (!fullName || !email || !phone || !password) {
       return res.status(400).json({ message: "All fields are required" });
@@ -38,6 +56,8 @@ exports.signup = async (req, res) => {
     if (confirmPassword !== undefined && password !== confirmPassword) {
       return res.status(400).json({ message: "Passwords do not match" });
     }
+
+    const chosenCurrency = normaliseCurrency(currency);
 
     const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
@@ -60,6 +80,7 @@ exports.signup = async (req, res) => {
       const retryOtp = generateOtp();
       existingUser.otp = hashOtp(retryOtp);
       existingUser.otpExpires = Date.now() + 10 * 60 * 1000;
+      existingUser.currency = chosenCurrency; // honour a (possibly changed) choice on retry
       await existingUser.save();
 
       try {
@@ -78,7 +99,7 @@ exports.signup = async (req, res) => {
       });
     }
 
-    const user = await User.create({ fullName, email, phone, password });
+    const user = await User.create({ fullName, email, phone, password, currency: chosenCurrency });
 
     // If email isn't configured on this server, there's no way to deliver
     // an OTP — fall back to the old instant-signup behaviour so the store
@@ -92,13 +113,7 @@ exports.signup = async (req, res) => {
         requiresVerification: false,
         message: "Account created successfully",
         token,
-        user: {
-          id: user._id,
-          fullName: user.fullName,
-          email: user.email,
-          phone: user.phone,
-          role: user.role,
-        },
+        user: publicUser(user),
       });
     }
 
@@ -151,13 +166,7 @@ exports.verifyOtp = async (req, res) => {
       return res.status(200).json({
         message: "Account already verified",
         token,
-        user: {
-          id: user._id,
-          fullName: user.fullName,
-          email: user.email,
-          phone: user.phone,
-          role: user.role,
-        },
+        user: publicUser(user),
       });
     }
 
@@ -178,13 +187,7 @@ exports.verifyOtp = async (req, res) => {
     res.status(200).json({
       message: "Account verified successfully",
       token,
-      user: {
-        id: user._id,
-        fullName: user.fullName,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-      },
+      user: publicUser(user),
     });
   } catch (error) {
     console.error("Verify OTP error:", error);
@@ -259,13 +262,7 @@ exports.login = async (req, res) => {
     res.status(200).json({
       message: "Logged in successfully",
       token,
-      user: {
-        id: user._id,
-        fullName: user.fullName,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-      },
+      user: publicUser(user),
     });
   } catch (error) {
     console.error("Login error:", error);
@@ -288,6 +285,31 @@ exports.getProfile = async (req, res) => {
   }
 };
 
+// @route  PATCH /api/auth/currency
+// @access Private
+// Lets a logged-in customer switch their buying currency (INR <-> USDT)
+// from the navbar. Returns the refreshed public user so the client can
+// update its stored session.
+exports.updateCurrency = async (req, res) => {
+  try {
+    const { currency } = req.body;
+    if (!CURRENCY_CODES.includes(currency)) {
+      return res.status(400).json({ message: "Unsupported currency" });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    user.currency = currency;
+    await user.save();
+
+    res.status(200).json({ message: "Currency updated", user: publicUser(user) });
+  } catch (error) {
+    console.error("Update currency error:", error);
+    res.status(500).json({ message: "Couldn't update your currency. Please try again." });
+  }
+};
+
 // @route  POST /api/auth/forgot-password
 // @access Public
 // Generates a one-time reset token valid for 1 hour. In production this
@@ -304,14 +326,11 @@ exports.forgotPassword = async (req, res) => {
 
     const user = await User.findOne({ email: email.toLowerCase() });
 
-    // Always respond the same way whether or not the account exists, so
-    // this endpoint can't be used to enumerate registered emails.
-    const genericMessage =
-      "If an account exists for that email, a password reset link has been sent.";
-
     if (!user) {
-      return res.status(200).json({ message: genericMessage });
+      return res.status(404).json({ message: "This email isn't registered with us." });
     }
+
+    const genericMessage = "A password reset link has been sent to your email.";
 
     const rawToken = crypto.randomBytes(32).toString("hex");
     const hashedToken = crypto.createHash("sha256").update(rawToken).digest("hex");

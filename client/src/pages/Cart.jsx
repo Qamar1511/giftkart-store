@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
+import { useCurrency } from "../context/CurrencyContext";
 import { getSession } from "../services/authService";
 import { getGiftCardProducts } from "../services/productService";
 import { getBrand } from "../data/catalog";
@@ -10,7 +11,8 @@ import Seo from "../components/Seo";
 
 const Cart = () => {
   const navigate = useNavigate();
-  const { items, setQuantity, removeFromCart, totalItems, totalAmount } = useCart();
+  const { items, setQuantity, removeFromCart, totalItems } = useCart();
+  const { formatMoney, formatPrice, priceFor, totalFor } = useCurrency();
   const [stockByKey, setStockByKey] = useState(null);
 
   // Load live stock so the +/- stepper here can never go above what's
@@ -77,7 +79,7 @@ const Cart = () => {
               <div className="cart-row-info">
                 <p className="cart-row-title">{brand.name} — ₹{item.denomination.toLocaleString("en-IN")}</p>
                 <p className="order-row-meta">
-                  ₹{item.denomination.toLocaleString("en-IN")} each
+                  {formatPrice(item.denomination)} each
                   {available != null && available < 5 && (
                     <span className="cart-row-stock-warning"> · Only {available} left</span>
                   )}
@@ -98,7 +100,7 @@ const Cart = () => {
                 </button>
               </div>
               <p className="cart-row-subtotal">
-                ₹{(item.denomination * item.quantity).toLocaleString("en-IN")}
+                {formatMoney(priceFor(item.denomination) * item.quantity)}
               </p>
               <button
                 className="cart-row-remove"
@@ -115,7 +117,7 @@ const Cart = () => {
       <div className="cart-summary">
         <div>
           <span>Total</span>
-          <strong>₹{totalAmount.toLocaleString("en-IN")}</strong>
+          <strong>{formatMoney(totalFor(items))}</strong>
         </div>
         <button className="auth-submit" onClick={handleCheckout}>
           Proceed to checkout

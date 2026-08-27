@@ -32,6 +32,14 @@ const userSchema = new mongoose.Schema(
       enum: ["customer", "admin"],
       default: "customer",
     },
+    // Buying currency the customer chose at signup; switchable later from
+    // the navbar. Drives which prices they see and the currency their
+    // orders are charged in. INR = pay in rupees (UPI/cards), USDT = crypto.
+    currency: {
+      type: String,
+      enum: ["INR", "USDT"],
+      default: "INR",
+    },
     // Default address, used to prefill the buy flow. Orders can still store
     // their own address snapshot separately.
     defaultAddress: {

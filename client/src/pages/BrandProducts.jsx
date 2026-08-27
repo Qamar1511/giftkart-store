@@ -74,7 +74,7 @@ const BrandProducts = () => {
               offers: {
                 "@type": "Offer",
                 priceCurrency: "INR",
-                price: product.denomination,
+                price: product.pricing?.INR ?? product.denomination,
                 availability: product.inStock
                   ? "https://schema.org/InStock"
                   : "https://schema.org/OutOfStock",

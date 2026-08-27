@@ -293,6 +293,62 @@
   color: #4b5468;
 }
 
+/* Currency choice on the signup form (segmented two-option control) */
+.auth-currency-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+
+.auth-currency-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: 0.7rem;
+  border: 1px solid var(--card-border);
+  background: rgba(15, 23, 42, 0.03);
+  color: var(--text-primary);
+  font-size: 0.98rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease,
+    box-shadow 0.15s ease, transform 0.1s ease;
+}
+
+.auth-currency-option:hover:not(.is-selected):not(:disabled) {
+  border-color: var(--accent-blue);
+  transform: translateY(-1px);
+}
+
+.auth-currency-option.is-selected {
+  border-color: transparent;
+  background: linear-gradient(120deg, var(--accent-blue), var(--accent-violet));
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(59, 123, 246, 0.25);
+}
+
+.auth-currency-option:disabled {
+  cursor: default;
+  opacity: 0.65;
+}
+
+.auth-currency-symbol {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.auth-currency-name {
+  letter-spacing: 0.03em;
+}
+
+.auth-currency-hint {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
 .auth-password-wrap {
   position: relative;
   display: flex;

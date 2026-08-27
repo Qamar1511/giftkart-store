@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { signupUser, verifyOtp, resendOtp, saveSession } from "../services/authService";
-import { BRANDS } from "../data/catalog";
+import { BRANDS, DEFAULT_CURRENCY } from "../data/catalog";
+import { useCurrency } from "../context/CurrencyContext";
 import "../styles/Auth.css";
 import Seo from "../components/Seo";
 
@@ -13,11 +14,13 @@ const initialForm = {
   phone: "",
   password: "",
   confirmPassword: "",
+  currency: DEFAULT_CURRENCY,
 };
 
 const Signup = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { currencies, currencyCodes, syncFromUser } = useCurrency();
   const [form, setForm] = useState(initialForm);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -82,6 +85,7 @@ const Signup = () => {
         // Email sending isn't configured on the server — account is
         // already fully verified and logged in, nothing more to do.
         saveSession(data);
+        syncFromUser(data.user);
         navigate("/");
       }
     } catch (err) {
@@ -104,6 +108,7 @@ const Signup = () => {
     try {
       const data = await verifyOtp(form.email, otp);
       saveSession(data);
+      syncFromUser(data.user);
       navigate("/");
     } catch (err) {
       const message = err.response?.data?.message || "Couldn't verify that code. Please try again.";
@@ -195,6 +200,35 @@ const Signup = () => {
           )}
 
           <form onSubmit={handleFormSubmit} noValidate>
+            <div className="auth-field auth-currency-field">
+              <span>Which currency do you want to buy in?</span>
+              <div
+                className="auth-currency-toggle"
+                role="group"
+                aria-label="Choose your buying currency"
+              >
+                {currencyCodes.map((code) => (
+                  <button
+                    type="button"
+                    key={code}
+                    className={`auth-currency-option ${form.currency === code ? "is-selected" : ""}`}
+                    onClick={() => setForm((f) => ({ ...f, currency: code }))}
+                    disabled={otpSent}
+                    aria-pressed={form.currency === code}
+                  >
+                    <span className="auth-currency-symbol">{currencies[code].symbol}</span>
+                    <span className="auth-currency-name">{currencies[code].short || code}</span>
+                  </button>
+                ))}
+              </div>
+              <small className="auth-currency-hint">
+                {form.currency === "USDT"
+                  ? "Prices show in $ and you pay with USDT (crypto)."
+                  : "Prices show in ₹ and you pay via UPI."}{" "}
+                You can switch anytime after logging in.
+              </small>
+            </div>
+
             <label className="auth-field">
               <span>Full name</span>
               <input

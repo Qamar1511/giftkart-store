@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { loginUser, saveSession } from "../services/authService";
 import { BRANDS } from "../data/catalog";
+import { useCurrency } from "../context/CurrencyContext";
 import "../styles/Auth.css";
 import Seo from "../components/Seo";
 
@@ -10,6 +11,7 @@ const FEATURED_BRANDS = BRANDS.slice(0, 5);
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { syncFromUser } = useCurrency();
   const redirectTo = location.state?.from?.pathname || "/";
   const [form, setForm] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
@@ -36,6 +38,7 @@ const Login = () => {
     try {
       const data = await loginUser(form);
       saveSession(data);
+      syncFromUser(data.user);
       navigate(redirectTo, { replace: true });
     } catch (err) {
       const message =

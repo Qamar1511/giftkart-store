@@ -19,12 +19,12 @@
 }
 
 .navbar-inner {
-  max-width: 78rem;
+  max-width: 82rem;
   margin: 0 auto;
-  padding: 0.9rem 1.75rem;
+  padding: 0.75rem 1.5rem;
   display: flex;
   align-items: center;
-  gap: 2rem;
+  gap: 1.25rem;
 }
 
 .navbar-logo {
@@ -35,43 +35,273 @@
   color: var(--text-primary);
   text-decoration: none;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .navbar-logo-accent {
   color: var(--accent-cyan);
 }
 
-.navbar-links {
+/* ---------- Search ---------- */
+.navbar-search {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.navbar-search-box {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  height: 2.9rem;
+  padding: 0 1rem;
+  border-radius: 999px;
+  background: var(--bg-panel-raised);
+  border: 1px solid var(--card-border);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.navbar-search-box:focus-within {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(47, 111, 237, 0.12);
+}
+
+.navbar-search-icon {
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.navbar-search-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: var(--text-primary);
+}
+
+.navbar-search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.navbar-search-clear {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 0.1rem;
+  border-radius: 50%;
+}
+
+.navbar-search-clear:hover {
+  color: var(--text-primary);
+}
+
+.navbar-search-results {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  right: 0;
+  background: var(--bg-panel);
+  border: 1px solid var(--card-border);
+  border-radius: 0.9rem;
+  padding: 0.4rem;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
+  z-index: 60;
+  max-height: 22rem;
+  overflow-y: auto;
+}
+
+.navbar-search-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 0.6rem;
+  padding: 0.55rem 0.6rem;
+  cursor: pointer;
+  color: var(--text-primary);
+}
+
+.navbar-search-item.is-active,
+.navbar-search-item:hover {
+  background: var(--overlay-hover);
+}
+
+.navbar-search-thumb {
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 0.5rem;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid var(--card-border);
+  background: #fff;
+}
+
+.navbar-search-thumb-fallback {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 1.6rem;
+  color: #fff;
+  font-family: "Rajdhani", sans-serif;
+  font-weight: 700;
+  border: none;
+}
+
+.navbar-search-item-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
   flex: 1;
 }
 
-.navbar-link {
+.navbar-search-item-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.navbar-search-item-sub {
+  font-size: 0.76rem;
   color: var(--text-muted);
-  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.navbar-search-item-go {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  opacity: 0;
+}
+
+.navbar-search-item.is-active .navbar-search-item-go {
+  opacity: 1;
+}
+
+.navbar-search-empty {
+  margin: 0;
+  padding: 0.9rem 0.7rem;
+  font-size: 0.86rem;
+  color: var(--text-muted);
+}
+
+/* ---------- Dropdown menus (Explore / Specials / Gifting / Offers) ---------- */
+.navbar-menu {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  flex-shrink: 0;
+}
+
+.navbar-menu-item {
+  position: relative;
+}
+
+.navbar-menu-trigger,
+.navbar-menu-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-primary);
+  font-family: inherit;
   font-size: 0.92rem;
-  font-weight: 500;
-  padding: 0.3rem 0;
-  border-bottom: 2px solid transparent;
-  transition: color 0.15s ease, border-color 0.15s ease;
+  font-weight: 600;
+  text-decoration: none;
+  padding: 0.5rem 0.7rem;
+  border-radius: 0.5rem;
+  white-space: nowrap;
+  transition: color 0.15s ease;
 }
 
-.navbar-link:hover {
-  color: var(--text-primary);
+.navbar-menu-trigger:hover,
+.navbar-menu-link:hover {
+  color: var(--accent-blue);
 }
 
-.navbar-link.is-active {
+.navbar-menu-chevron {
+  transition: transform 0.15s ease;
+}
+
+.navbar-menu-trigger[aria-expanded="true"] .navbar-menu-chevron {
+  transform: rotate(180deg);
+}
+
+.navbar-menu-panel {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  left: 0;
+  min-width: 13rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--card-border);
+  border-radius: 0.75rem;
+  padding: 0.4rem;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
+  z-index: 60;
+}
+
+/* Anchor the last menu's panel to the right so it never overflows the edge */
+.navbar-menu-item:last-of-type .navbar-menu-panel {
+  left: auto;
+  right: 0;
+}
+
+.navbar-menu-panel-link {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: 0.5rem;
+  font-size: 0.88rem;
   color: var(--text-primary);
-  border-bottom-color: var(--accent-cyan);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.navbar-menu-panel-link:hover {
+  background: var(--overlay-hover);
+  color: var(--accent-blue);
+}
+
+.navbar-menu-panel-thumb {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 0.35rem;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid var(--card-border);
+  background: #fff;
+  font-size: 0.72rem;
+}
+
+.navbar-menu-panel-divider {
+  height: 1px;
+  background: var(--card-border);
+  margin: 0.35rem 0.2rem;
 }
 
 .navbar-actions {
   display: flex;
   align-items: center;
   gap: 0.9rem;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .navbar-theme-toggle {
@@ -139,6 +369,57 @@
   display: flex;
   align-items: center;
   padding: 0.2rem;
+  transition: color 0.15s ease;
+}
+
+.navbar-cart-link:hover {
+  color: var(--accent-blue);
+}
+
+/* Currency switcher (logged-in only) — a compact segmented pill */
+.navbar-currency {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.15rem;
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  background: var(--bg-panel-raised);
+}
+
+.navbar-currency-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+  cursor: pointer;
+  line-height: 1;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.navbar-currency-option:hover:not(.is-active):not(:disabled) {
+  color: var(--text-primary);
+}
+
+.navbar-currency-option.is-active {
+  background: linear-gradient(120deg, var(--accent-blue), var(--accent-violet));
+  color: #fff;
+}
+
+.navbar-currency-option:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.navbar-currency-symbol {
+  font-size: 0.92rem;
 }
 
 .navbar-cart-badge {
@@ -281,6 +562,57 @@
   border-radius: 2px;
 }
 
+/* ---------- Mobile drawer (holds the menus on small screens) ---------- */
+.navbar-drawer {
+  display: none;
+  border-top: 1px solid var(--card-border);
+  background: var(--bg-panel-raised);
+  padding: 0.5rem 1.5rem 1.1rem;
+}
+
+.navbar-drawer.is-open {
+  display: block;
+}
+
+.navbar-drawer-group {
+  padding: 0.2rem 0;
+}
+
+.navbar-drawer-title {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  font-weight: 700;
+  margin: 0.7rem 0 0.2rem;
+}
+
+.navbar-drawer-link {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.55rem 0.3rem;
+  color: var(--text-primary);
+  text-decoration: none;
+  font-size: 0.94rem;
+  border-radius: 0.4rem;
+}
+
+.navbar-drawer-link:hover {
+  background: var(--overlay-hover);
+}
+
+.navbar-drawer-solo {
+  font-weight: 600;
+}
+
+/* Never leak the drawer onto desktop, even if it was left open on resize */
+@media (min-width: 981px) {
+  .navbar-drawer {
+    display: none !important;
+  }
+}
+
 /* ---------- Footer ---------- */
 .site-footer {
   background: var(--bg-panel);
@@ -359,56 +691,45 @@
 }
 
 /* ---------- Responsive ---------- */
-@media (max-width: 860px) {
-  .navbar-inner {
-    justify-content: space-between;
-  }
-
-  .navbar-logo {
+/* Collapse the dropdown menus into the hamburger drawer on narrower screens */
+@media (max-width: 980px) {
+  .navbar-menu {
     display: none;
-  }
-
-  .navbar-links {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    flex-direction: column;
-    align-items: flex-start;
-    background: var(--bg-panel-raised);
-    border-bottom: 1px solid var(--card-border);
-    padding: 1rem 1.75rem;
-    gap: 0.9rem;
-    display: none;
-  }
-
-  .navbar-links.is-open {
-    display: flex;
   }
 
   .navbar-hamburger {
     display: flex;
   }
+}
 
-  .navbar-theme-toggle {
-    display: none;
+/* Drop the search box onto its own full-width row on smaller screens */
+@media (max-width: 720px) {
+  .navbar-inner {
+    flex-wrap: wrap;
+    row-gap: 0.7rem;
   }
 
-  .navbar-mobile-theme-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+  .navbar-search {
+    order: 10;
+    flex-basis: 100%;
     width: 100%;
-    padding-top: 0.9rem;
-    margin-top: 0.2rem;
-    border-top: 1px solid var(--card-border);
-    font-size: 0.92rem;
-    font-weight: 500;
-    color: var(--text-primary);
   }
+}
 
+@media (max-width: 860px) {
   .site-footer-inner {
     grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .navbar-inner {
+    padding: 0.7rem 1rem;
+    gap: 0.8rem;
+  }
+
+  .navbar-logo {
+    font-size: 1.2rem;
   }
 }
 
@@ -423,11 +744,6 @@
 }
 
 @media (max-width: 380px) {
-  .navbar-inner {
-    padding: 0.75rem 1rem;
-    gap: 0.75rem;
-  }
-
   .navbar-actions {
     gap: 0.5rem;
   }
@@ -444,5 +760,16 @@
 
   .navbar-dropdown {
     width: min(14rem, calc(100vw - 2rem));
+  }
+
+  /* Save width: show only the currency symbols, hide the INR/USDT labels */
+  .navbar-currency-option {
+    padding: 0.3rem 0.5rem;
+    font-size: 0;
+    gap: 0;
+  }
+
+  .navbar-currency-symbol {
+    font-size: 0.95rem;
   }
 }

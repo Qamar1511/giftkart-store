@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
+import { useCurrency } from "../context/CurrencyContext";
 import { getSession } from "../services/authService";
 import { getBrand } from "../data/catalog";
 import "../styles/Shop.css";
@@ -19,7 +20,8 @@ const initialAddress = {
 
 const CheckoutAddress = () => {
   const navigate = useNavigate();
-  const { items, totalAmount } = useCart();
+  const { items } = useCart();
+  const { formatMoney, priceFor, totalFor } = useCurrency();
   const session = getSession();
 
   const [address, setAddress] = useState(() => ({
@@ -73,12 +75,12 @@ const CheckoutAddress = () => {
             <span>
               {getBrand(item.brand).name} ₹{item.denomination.toLocaleString("en-IN")} × {item.quantity}
             </span>
-            <strong>₹{(item.denomination * item.quantity).toLocaleString("en-IN")}</strong>
+            <strong>{formatMoney(priceFor(item.denomination) * item.quantity)}</strong>
           </div>
         ))}
         <div className="confirmation-row" style={{ borderTop: "1px solid var(--card-border)", marginTop: "0.5rem", paddingTop: "0.75rem" }}>
           <span>Total</span>
-          <strong>₹{totalAmount.toLocaleString("en-IN")}</strong>
+          <strong>{formatMoney(totalFor(items))}</strong>
         </div>
       </div>
 

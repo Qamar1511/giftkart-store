@@ -1,4 +1,4 @@
-const { CATEGORIES, BRANDS, getBrand } = require("../config/catalog");
+const { CATEGORIES, BRANDS, getBrand, pricesFor } = require("../config/catalog");
 const { getAvailableCount } = require("../utils/stockReservation");
 const User = require("../models/User");
 const StockNotification = require("../models/StockNotification");
@@ -20,7 +20,11 @@ exports.getGiftCardProducts = async (req, res) => {
               brand: brand.slug,
               brandName: brand.name,
               denomination,
-              currency: "INR",
+              // `denomination` is the card's face value (always ₹, what the
+              // customer redeems). `pricing` is what we actually charge in
+              // each buying currency, e.g. { INR: 1100, USDT: 11 } — the
+              // frontend shows the price for the shopper's chosen currency.
+              pricing: pricesFor(denomination),
               title: brand.tagline,
               image,
               inStock: availableStock > 0,

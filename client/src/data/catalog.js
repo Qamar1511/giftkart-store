@@ -30,3 +30,58 @@ export const BRANDS = [
 export const brandLookup = Object.fromEntries(BRANDS.map((b) => [b.slug, b]));
 
 export const getBrand = (slug) => brandLookup[slug] || { slug, name: slug, color: "#3b7bf6", image: null, category: "" };
+
+// ------------------------- Buying currencies ----------------------------
+// Mirror of server/config/catalog.js. Customers buy in INR or USDT; the
+// price is derived from a card's face-value `denomination`:
+//   INR  = denomination × 1.1     (1000 → ₹1100 … 5000 → ₹5500)
+//   USDT = denomination × 0.011   (1000 → $11   … 5000 → $55)
+// The live /api/products response also sends a `pricing` object per product
+// ({ INR, USDT }); prefer that when present, and fall back to priceFor().
+export const CURRENCIES = {
+  INR: { code: "INR", symbol: "₹", label: "INR (₹)", short: "INR", rate: 1.1, decimals: 0 },
+  USDT: { code: "USDT", symbol: "$", label: "USDT ($)", short: "USDT", rate: 0.011, decimals: 2 },
+};
+
+export const CURRENCY_CODES = Object.keys(CURRENCIES); // ["INR", "USDT"]
+export const DEFAULT_CURRENCY = "INR";
+
+// Which checkout payment methods are valid for each buying currency — mirror
+// of server/config/catalog.js. INR is paid in rupees (UPI/cards), USDT is
+// paid on-chain. Checkout shows only the methods for the shopper's currency.
+export const CURRENCY_PAYMENT_METHODS = {
+  INR: ["razorpay", "card", "debit_card", "upi_manual"],
+  USDT: ["usdt"],
+};
+
+export const isCurrency = (code) => CURRENCY_CODES.includes(code);
+
+// Price of a single denomination in a currency, correctly rounded.
+export const priceFor = (denomination, currency = DEFAULT_CURRENCY) => {
+  const cfg = CURRENCIES[currency] || CURRENCIES[DEFAULT_CURRENCY];
+  const raw = Number(denomination) * cfg.rate;
+  return cfg.decimals === 0 ? Math.round(raw) : +raw.toFixed(cfg.decimals);
+};
+
+// Format an already-computed amount for display.
+//   formatMoney(1100, "INR")  → "₹1,100"
+//   formatMoney(11, "USDT")   → "$11"      (whole amounts stay clean)
+//   formatMoney(5.5, "USDT")  → "$5.50"    (fractional → exactly 2 decimals)
+//   formatMoney(2.75, "USDT") → "$2.75"
+export const formatMoney = (amount, currency = DEFAULT_CURRENCY) => {
+  const cfg = CURRENCIES[currency] || CURRENCIES[DEFAULT_CURRENCY];
+  const n = Number(amount) || 0;
+  if (cfg.decimals === 0) {
+    return `${cfg.symbol}${Math.round(n).toLocaleString("en-IN")}`;
+  }
+  // Decimal currency (USDT): show no decimals when the amount is whole,
+  // otherwise exactly 2 decimals — "$11", "$5.50", "$1,100.50".
+  const body = Number.isInteger(n)
+    ? n.toLocaleString("en-US")
+    : n.toLocaleString("en-US", { minimumFractionDigits: cfg.decimals, maximumFractionDigits: cfg.decimals });
+  return `${cfg.symbol}${body}`;
+};
+
+// Compute AND format a denomination's price in one call.
+export const formatPrice = (denomination, currency = DEFAULT_CURRENCY) =>
+  formatMoney(priceFor(denomination, currency), currency);

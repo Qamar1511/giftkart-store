@@ -24,7 +24,7 @@ const orderItemSchema = new mongoose.Schema(
     brandName: { type: String, required: true },
     denomination: { type: Number, required: true },
     quantity: { type: Number, required: true, min: 1 },
-    unitPrice: { type: Number, required: true }, // INR, snapshotted at order time
+    unitPrice: { type: Number, required: true }, // in the order's `currency`, snapshotted at order time
     giftCardCodes: { type: [String], default: [] },
   },
   { _id: false }

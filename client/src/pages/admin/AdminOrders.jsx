@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { getAdminOrders, verifyUpiOrder, rejectUpiOrder } from "../../services/adminService";
 import { getDisplayStatus } from "../../utils/orderStatus";
+import { formatMoney } from "../../data/catalog";
 
 const FILTERS = [
   { key: "", label: "All orders" },
@@ -168,7 +169,7 @@ const AdminOrders = () => {
                         : <span className="admin-table-muted">—</span>}
                     </td>
                     <td>
-                      {order.currency || "INR"} {(order.totalAmount ?? 0).toLocaleString("en-IN")}
+                      {formatMoney(order.totalAmount ?? 0, order.currency || "INR")}
                     </td>
                     <td>{(order.paymentMethod || "—").replace("_", " ").toUpperCase()}</td>
                     <td>

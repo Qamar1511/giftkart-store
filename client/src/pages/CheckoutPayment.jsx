@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useCart } from "../context/CartContext";
+import { useCurrency } from "../context/CurrencyContext";
 import { createOrder, submitUtr, submitUsdtTx } from "../services/orderService";
 import {
   createRazorpayOrder,
@@ -12,7 +13,7 @@ import {
   mockConfirmPayment, // eslint-disable-line no-unused-vars -- kept for potential future dev/testing use
 } from "../services/paymentService";
 import { getSession } from "../services/authService";
-import { getBrand } from "../data/catalog";
+import { getBrand, CURRENCY_PAYMENT_METHODS } from "../data/catalog";
 import Seo from "../components/Seo";
 import "../styles/Shop.css";
 
@@ -105,15 +106,32 @@ const PAYMENT_METHODS = [
   },
 ];
 
+// Payment methods available for a buying currency, in tile order. INR is paid
+// in rupees (UPI/cards), USDT is paid on-chain — so we only show the tiles that
+// match the shopper's currency (see CURRENCY_PAYMENT_METHODS).
+const methodsForCurrency = (currency) => {
+  const allowed = CURRENCY_PAYMENT_METHODS[currency] || CURRENCY_PAYMENT_METHODS.INR;
+  return PAYMENT_METHODS.filter((m) => allowed.includes(m.id));
+};
+
+// The method to pre-select for a currency: the first *enabled* one for it
+// (INR → UPI, USDT → USDT), falling back to the first allowed tile.
+const defaultMethodFor = (currency) => {
+  const methods = methodsForCurrency(currency);
+  const enabled = methods.find((m) => ENABLED_METHODS.includes(m.id));
+  return (enabled || methods[0])?.id || "upi_manual";
+};
+
 const CheckoutPayment = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { items, totalAmount, clearCart } = useCart();
+  const { items, clearCart } = useCart();
+  const { currency, formatMoney, priceFor, totalFor } = useCurrency();
   const session = getSession();
 
   const address = location.state?.address;
 
-  const [paymentMethod, setPaymentMethod] = useState("upi_manual");
+  const [paymentMethod, setPaymentMethod] = useState(() => defaultMethodFor(currency));
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [usdtInvoice, setUsdtInvoice] = useState(null);
@@ -131,6 +149,18 @@ const CheckoutPayment = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // If the shopper switches buying currency (e.g. via the navbar) while on this
+  // page, the previously-selected tile may no longer be valid for that currency.
+  // Snap the selection back to that currency's default method (INR → UPI,
+  // USDT → USDT) so it always matches what the server will accept.
+  useEffect(() => {
+    const allowed = CURRENCY_PAYMENT_METHODS[currency] || [];
+    if (!allowed.includes(paymentMethod)) {
+      setPaymentMethod(defaultMethodFor(currency));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currency]);
 
   if (!address || items.length === 0) return null;
 
@@ -350,12 +380,12 @@ const CheckoutPayment = () => {
             <span>
               {getBrand(item.brand).name} ₹{item.denomination.toLocaleString("en-IN")} × {item.quantity}
             </span>
-            <strong>₹{(item.denomination * item.quantity).toLocaleString("en-IN")}</strong>
+            <strong>{formatMoney(priceFor(item.denomination) * item.quantity)}</strong>
           </div>
         ))}
         <div className="confirmation-row" style={{ borderTop: "1px solid var(--card-border)", marginTop: "0.5rem", paddingTop: "0.75rem" }}>
           <span>Total</span>
-          <strong>₹{totalAmount.toLocaleString("en-IN")}</strong>
+          <strong>{formatMoney(totalFor(items))}</strong>
         </div>
         <div className="order-row-meta delivering-to" style={{ marginTop: "0.75rem" }}>
           <span className="delivering-to-icon" aria-hidden="true">📨</span>
@@ -370,7 +400,7 @@ const CheckoutPayment = () => {
         {error && <div className="auth-error" role="alert">{error}</div>}
 
         <div className="payment-method-grid">
-          {PAYMENT_METHODS.map((method) => {
+          {methodsForCurrency(currency).map((method) => {
             const isEnabled = ENABLED_METHODS.includes(method.id);
             return (
               <button

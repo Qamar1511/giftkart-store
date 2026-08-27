@@ -160,8 +160,66 @@ function getBrand(slug) {
 // combo is validated in the controllers against getBrand().denominations.
 const ALL_DENOMINATIONS = [...new Set(BRANDS.flatMap((b) => b.denominations))];
 
-// Placeholder conversion rate for PayPal (USD) and USDT pricing.
-// Replace with a live forex rate lookup before going live.
+// Placeholder conversion rate for PayPal (USD). Replace with a live forex
+// rate lookup before going live. (USDT pricing no longer uses this — see
+// CURRENCIES below — but it's kept for the PayPal flow.)
 const INR_TO_USD_RATE = 0.012;
 
-module.exports = { CATEGORIES, BRANDS, BRAND_SLUGS, ALL_DENOMINATIONS, INR_TO_USD_RATE, getBrand };
+// -------------------------- Buying currencies ---------------------------
+// Customers pick a buying currency at signup and can switch it from the
+// navbar (see User.currency). The catalog `denomination` stays the face
+// value / stock key; the price we actually charge is DERIVED from it per
+// currency using the `rate` below:
+//
+//   INR  = denomination × 1.1     →  1000 → ₹1100, 2000 → ₹2200 … 5000 → ₹5500
+//   USDT = denomination × 0.011   →  1000 → $11,   2000 → $22   … 5000 → $55
+//
+// The 1000–5000 prices match the agreed price list exactly; any other
+// denomination (250 / 500 / 2500) follows the same formula
+// (e.g. 250 → ₹275 / $2.75, 500 → ₹550 / $5.50, 2500 → ₹2750 / $27.50).
+const CURRENCIES = {
+  INR: { code: "INR", symbol: "₹", label: "INR (₹)", rate: 1.1, decimals: 0 },
+  USDT: { code: "USDT", symbol: "$", label: "USDT ($)", rate: 0.011, decimals: 2 },
+};
+
+const CURRENCY_CODES = Object.keys(CURRENCIES); // ["INR", "USDT"]
+const DEFAULT_CURRENCY = "INR";
+
+// Which order paymentMethods are valid for each buying currency. INR is
+// paid in rupees (UPI/Razorpay/cards); USDT is paid on-chain.
+const CURRENCY_PAYMENT_METHODS = {
+  INR: ["razorpay", "card", "debit_card", "upi_manual"],
+  USDT: ["usdt"],
+};
+
+// Price of a single denomination in the given currency, correctly rounded
+// (INR = whole rupees, USDT = 2 decimals).
+function priceFor(denomination, currency = DEFAULT_CURRENCY) {
+  const cfg = CURRENCIES[currency] || CURRENCIES[DEFAULT_CURRENCY];
+  const raw = Number(denomination) * cfg.rate;
+  return cfg.decimals === 0 ? Math.round(raw) : +raw.toFixed(cfg.decimals);
+}
+
+// Both currency prices for a denomination, e.g. { INR: 1100, USDT: 11 } —
+// handy to attach to each product in the /api/products response.
+function pricesFor(denomination) {
+  return CURRENCY_CODES.reduce((acc, code) => {
+    acc[code] = priceFor(denomination, code);
+    return acc;
+  }, {});
+}
+
+module.exports = {
+  CATEGORIES,
+  BRANDS,
+  BRAND_SLUGS,
+  ALL_DENOMINATIONS,
+  INR_TO_USD_RATE,
+  CURRENCIES,
+  CURRENCY_CODES,
+  DEFAULT_CURRENCY,
+  CURRENCY_PAYMENT_METHODS,
+  priceFor,
+  pricesFor,
+  getBrand,
+};

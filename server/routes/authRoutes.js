@@ -7,6 +7,7 @@ const {
   resetPassword,
   verifyOtp,
   resendOtp,
+  updateCurrency,
 } = require("../controllers/authController");
 const { protect } = require("../middleware/authMiddleware");
 
@@ -15,6 +16,7 @@ const router = express.Router();
 router.post("/signup", signup);
 router.post("/login", login);
 router.get("/me", protect, getProfile);
+router.patch("/currency", protect, updateCurrency);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password/:token", resetPassword);
 router.post("/verify-otp", verifyOtp);

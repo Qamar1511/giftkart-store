@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart, MAX_QUANTITY_PER_ITEM } from "../context/CartContext";
+import { useCurrency } from "../context/CurrencyContext";
 import { getSession } from "../services/authService";
 import { requestStockNotification } from "../services/productService";
 import BrandBadge from "./BrandBadge";
@@ -8,6 +9,7 @@ import BrandBadge from "./BrandBadge";
 const GiftCardCard = ({ product, color }) => {
   const navigate = useNavigate();
   const { addToCart } = useCart();
+  const { formatProduct } = useCurrency();
   const maxQty = Math.max(0, Math.min(MAX_QUANTITY_PER_ITEM, product.availableStock ?? MAX_QUANTITY_PER_ITEM));
   const [quantity, setQuantity] = useState(1);
   const [justAdded, setJustAdded] = useState(false);
@@ -55,7 +57,7 @@ const GiftCardCard = ({ product, color }) => {
       <div className="giftcard-card-body">
         <p className="giftcard-card-console">{product.brandName}</p>
         <div className="giftcard-card-price-row">
-          <p className="giftcard-card-amount">₹{product.denomination.toLocaleString("en-IN")}</p>
+          <p className="giftcard-card-amount">{formatProduct(product)}</p>
           <span className={`giftcard-stock-pill ${product.inStock ? "in-stock" : "out-of-stock"}`}>
             {product.inStock ? "In stock" : "Out of stock"}
           </span>

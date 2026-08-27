@@ -1,4 +1,20 @@
 const PDFDocument = require("pdfkit");
+const { CURRENCIES } = require("../config/catalog");
+
+// Format a charged amount in the order's buying currency (INR → "₹1,100",
+// USDT → "$55" / "$5.50"). Whole USDT amounts drop the decimals; fractional
+// ones show exactly 2. Falls back to "<CODE> 0.00" for any legacy currency
+// not in the catalog (e.g. old "USD" PayPal orders).
+function formatAmount(amount, currencyCode) {
+  const n = Number(amount) || 0;
+  const cfg = CURRENCIES[currencyCode];
+  if (!cfg) return `${currencyCode} ${n.toFixed(2)}`;
+  if (cfg.decimals === 0) return `${cfg.symbol}${Math.round(n).toLocaleString("en-IN")}`;
+  const body = Number.isInteger(n)
+    ? n.toLocaleString("en-US")
+    : n.toLocaleString("en-US", { minimumFractionDigits: cfg.decimals, maximumFractionDigits: cfg.decimals });
+  return `${cfg.symbol}${body}`;
+}
 
 /**
  * Streams a PDF invoice directly into the given HTTP response.
@@ -6,6 +22,7 @@ const PDFDocument = require("pdfkit");
  */
 function streamInvoicePDF(order, res) {
   const doc = new PDFDocument({ margin: 50 });
+  const currency = order.currency || "INR";
 
   res.setHeader("Content-Type", "application/pdf");
   res.setHeader(
@@ -62,8 +79,8 @@ function streamInvoicePDF(order, res) {
     const subtotal = item.unitPrice * item.quantity;
     doc.text(`${item.brandName || "Gift Card"} - ₹${item.denomination}`, 50, y, { width: 260 });
     doc.text(String(item.quantity), 320, y);
-    doc.text(`₹${item.unitPrice.toLocaleString("en-IN")}`, 390, y);
-    doc.text(`₹${subtotal.toLocaleString("en-IN")}`, 470, y);
+    doc.text(formatAmount(item.unitPrice, currency), 390, y);
+    doc.text(formatAmount(subtotal, currency), 470, y);
     y += 22;
   });
 
@@ -73,7 +90,7 @@ function streamInvoicePDF(order, res) {
   doc
     .fontSize(12)
     .fillColor("#3b7bf6")
-    .text(`${order.currency} ${order.totalAmount.toLocaleString("en-IN")}`, 470, y);
+    .text(formatAmount(order.totalAmount, currency), 470, y);
 
   doc.moveDown(3);
   doc.fontSize(10).fillColor("#555");
