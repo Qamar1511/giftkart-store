@@ -14,7 +14,7 @@ const RefundPolicy = () => {
       <section className="legal-hero">
         <div
           className="checkout-bg-decor legal-bg-decor"
-          style={{ backgroundImage: "url(/images/hero-secure.png)" }}
+          style={{ backgroundImage: "url(/images/hero-secure.webp)" }}
           aria-hidden="true"
         />
         <span className="hero-trust-pill">🛡️ Fair, transparent, and fast</span>

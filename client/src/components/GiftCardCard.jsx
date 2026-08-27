@@ -46,6 +46,8 @@ const GiftCardCard = ({ product, color }) => {
             src={product.image}
             alt={`${product.brandName} Gift Card ₹${product.denomination}`}
             className="giftcard-card-image"
+            loading="lazy"
+            decoding="async"
           />
         ) : (
           <div className="giftcard-card-badge-wrap">

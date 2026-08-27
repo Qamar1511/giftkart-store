@@ -1,4 +1,7 @@
-@import url("https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&display=swap");
+/* Fonts (Rajdhani + Inter) are loaded once, non-blocking, from index.html
+   via <link rel="preconnect"> + <link rel="stylesheet"> with display=swap.
+   The old blocking @import that used to be on this line was removed so it no
+   longer delays first paint. */
 
 /* ---------- Light (default) theme — subtle blue-tinted page, white cards ---------- */
 :root {

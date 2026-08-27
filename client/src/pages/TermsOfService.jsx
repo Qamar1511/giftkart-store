@@ -14,7 +14,7 @@ const TermsOfService = () => {
       <section className="legal-hero">
         <div
           className="checkout-bg-decor legal-bg-decor"
-          style={{ backgroundImage: "url(/images/hero-brands.png)" }}
+          style={{ backgroundImage: "url(/images/hero-brands.webp)" }}
           aria-hidden="true"
         />
         <span className="hero-trust-pill">📄 Plain-language, no fine-print tricks</span>

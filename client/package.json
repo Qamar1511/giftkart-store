@@ -19,7 +19,7 @@
     "extends": ["react-app"]
   },
   "browserslist": {
-    "production": [">0.2%", "not dead", "not op_mini all"],
+    "production": ["chrome >= 87", "firefox >= 78", "edge >= 88", "safari >= 14", "not dead", "not op_mini all"],
     "development": ["last 1 chrome version", "last 1 firefox version", "last 1 safari version"]
   }
 }

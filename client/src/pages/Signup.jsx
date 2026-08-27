@@ -180,6 +180,8 @@ const Signup = () => {
           src="/images/auth-brand-visual.png"
           alt=""
           aria-hidden="true"
+          loading="lazy"
+          decoding="async"
         />
         <div className="auth-brand-glow" aria-hidden="true" />
       </div>

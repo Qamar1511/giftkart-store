@@ -6,16 +6,27 @@ import Seo, { SITE_URL } from "../components/Seo";
 import { useTheme } from "../context/ThemeContext";
 import "../styles/Shop.css";
 
+// Each hero carries a WebP (desktop), a smaller mobile WebP and a JPEG
+// fallback — all generated from the original art at identical framing, so
+// the visuals are unchanged. `<picture>` (below) serves the lightest one the
+// browser + viewport can use, which is the main LCP win on the homepage.
+const heroSet = (base, alt) => ({
+  webp: `/images/${base}.webp`,
+  mobile: `/images/${base}-mobile.webp`,
+  fallback: `/images/${base}.jpg`,
+  alt,
+});
+
 const HERO_IMAGES_LIGHT = [
-  { src: "/images/hero-payments.png", alt: "Pay with cards, UPI, PayPal or crypto" },
-  { src: "/images/hero-brands.png", alt: "Your favourite brands, one digital card" },
-  { src: "/images/hero-secure.png", alt: "Secure payments, complete peace of mind" },
+  heroSet("hero-payments", "Pay with cards, UPI, PayPal or crypto"),
+  heroSet("hero-brands", "Your favourite brands, one digital card"),
+  heroSet("hero-secure", "Secure payments, complete peace of mind"),
 ];
 
 const HERO_IMAGES_DARK = [
-  { src: "/images/hero-payments-dark.png", alt: "Secure payments, complete peace of mind" },
-  { src: "/images/hero-brands-dark.png", alt: "Your favourite brands, one digital card" },
-  { src: "/images/hero-secure-dark.png", alt: "Gift more, worry less, always secure" },
+  heroSet("hero-payments-dark", "Secure payments, complete peace of mind"),
+  heroSet("hero-brands-dark", "Your favourite brands, one digital card"),
+  heroSet("hero-secure-dark", "Gift more, worry less, always secure"),
 ];
 
 const CATEGORY_ICONS = {
@@ -66,7 +77,7 @@ const BrandTile = ({ brand }) => (
   <Link to={`/brand/${brand.slug}`} className="brand-tile">
     <div className="brand-tile-image-wrap">
       {brand.image ? (
-        <img src={brand.image} alt={brand.name} className="brand-tile-image" />
+        <img src={brand.image} alt={brand.name} className="brand-tile-image" loading="lazy" decoding="async" />
       ) : (
         <BrandBadge name={brand.name} color={brand.color} size="lg" />
       )}
@@ -176,18 +187,24 @@ const Home = () => {
             aria-label="Shop gift cards"
           >
             {heroImages.map((img, i) => (
-              <img
-                key={img.src}
-                src={img.src}
-                alt={img.alt}
-                className={i === slide ? "is-active" : ""}
-              />
+              <picture key={img.webp}>
+                <source media="(max-width: 768px)" srcSet={img.mobile} type="image/webp" />
+                <source srcSet={img.webp} type="image/webp" />
+                <img
+                  src={img.fallback}
+                  alt={img.alt}
+                  className={i === slide ? "is-active" : ""}
+                  decoding="async"
+                  fetchpriority={i === 0 ? "high" : "low"}
+                  loading="eager"
+                />
+              </picture>
             ))}
           </a>
           <div className="hero-carousel-dots">
             {heroImages.map((img, i) => (
               <button
-                key={img.src}
+                key={img.webp}
                 className={`hero-carousel-dot ${i === slide ? "is-active" : ""}`}
                 onClick={() => setSlide(i)}
                 aria-label={`Slide ${i + 1}`}

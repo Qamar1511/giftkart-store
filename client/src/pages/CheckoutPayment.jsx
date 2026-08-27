@@ -18,7 +18,8 @@ import Seo from "../components/Seo";
 import "../styles/Shop.css";
 
 // Only these methods are live for now — the rest render as disabled tiles.
-const ENABLED_METHODS = ["upi_manual", "usdt"];
+// "razorpay" covers Cards / UPI / Netbanking / Wallets via Razorpay Checkout.
+const ENABLED_METHODS = ["upi_manual", "usdt", "razorpay"];
 
 const PAYMENT_METHODS = [
   {

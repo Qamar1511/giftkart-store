@@ -1,5 +1,19 @@
 {
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "https://api.giftkartstore.in/sitemap.xml" }
+  ],
+  "headers": [
+    {
+      "source": "/static/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/images/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=2592000" }
+      ]
+    }
   ]
 }

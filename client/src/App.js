@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import "./styles/theme.css";
 import { CartProvider } from "./context/CartContext";
@@ -13,25 +13,30 @@ import BrandProducts from "./pages/BrandProducts";
 import Cart from "./pages/Cart";
 import CheckoutAddress from "./pages/CheckoutAddress";
 import CheckoutPayment from "./pages/CheckoutPayment";
-import OrderConfirmation from "./pages/OrderConfirmation";
-import OrderHistory from "./pages/OrderHistory";
-import PaypalReturn from "./pages/PaypalReturn";
-import Contact from "./pages/Contact";
-import RefundPolicy from "./pages/RefundPolicy";
-import TermsOfService from "./pages/TermsOfService";
-import Blog from "./pages/Blog";
-import BlogPost from "./pages/BlogPost";
 import Layout from "./components/Layout";
 import ScrollToTop from "./components/ScrollToTop";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
-import AdminLayout from "./pages/admin/AdminLayout";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminOrders from "./pages/admin/AdminOrders";
-import AdminStock from "./pages/admin/AdminStock";
-import AdminQueries from "./pages/admin/AdminQueries";
-import AdminBlog from "./pages/admin/AdminBlog";
-import AdminBlogEditor from "./pages/admin/AdminBlogEditor";
+
+// Code-split the routes that aren't part of the first-paint shopping flow, so
+// their JS is fetched only when visited. The admin panel (its own heavier
+// bundle) and the low-traffic pages below are the biggest wins; Home, brand,
+// cart, checkout and auth stay eager so the core journey has no chunk wait.
+const OrderConfirmation = lazy(() => import("./pages/OrderConfirmation"));
+const OrderHistory = lazy(() => import("./pages/OrderHistory"));
+const PaypalReturn = lazy(() => import("./pages/PaypalReturn"));
+const Contact = lazy(() => import("./pages/Contact"));
+const RefundPolicy = lazy(() => import("./pages/RefundPolicy"));
+const TermsOfService = lazy(() => import("./pages/TermsOfService"));
+const Blog = lazy(() => import("./pages/Blog"));
+const BlogPost = lazy(() => import("./pages/BlogPost"));
+const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminOrders = lazy(() => import("./pages/admin/AdminOrders"));
+const AdminStock = lazy(() => import("./pages/admin/AdminStock"));
+const AdminQueries = lazy(() => import("./pages/admin/AdminQueries"));
+const AdminBlog = lazy(() => import("./pages/admin/AdminBlog"));
+const AdminBlogEditor = lazy(() => import("./pages/admin/AdminBlogEditor"));
 
 function App() {
   return (
@@ -40,6 +45,7 @@ function App() {
         <CartProvider>
           <BrowserRouter>
         <ScrollToTop />
+        <Suspense fallback={<div style={{ minHeight: "60vh" }} aria-busy="true" />}>
         <Routes>
           {/* Auth pages are full-screen, no Navbar/Footer */}
           <Route path="/login" element={<Login />} />
@@ -130,6 +136,7 @@ function App() {
             />
           </Route>
         </Routes>
+        </Suspense>
       </BrowserRouter>
         </CartProvider>
       </CurrencyProvider>
