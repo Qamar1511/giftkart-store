@@ -1,236 +1,355 @@
-/* Fonts are loaded once, non-blocking, from index.html (preconnect + <link>).
-   The old blocking @import that used to live here has been removed. */
+/* ============================================================================
+   GIFTKART — Auth screens (Login / Signup / Forgot / Reset / OTP)
+   "V5" neon-circuit split-card look. Dark, self-contained experience that uses
+   GIFTKART's own accent palette (blue / violet / cyan) — NOT the red from the
+   reference. Fonts (Rajdhani + Inter) load non-blocking from index.html.
+   Shared by all four auth pages; the OTP boxes are styled at the bottom.
+   ============================================================================ */
 
-/* Note: color variables come from theme.css's global :root / [data-theme="dark"]
-   blocks now — don't redefine :root here, it would override the dark mode
-   toggle for the whole app (Login.jsx is statically imported, so this file's
-   CSS is always loaded, not just on the /login route). */
-
+/* Brand accent hues (kept local so the auth screen reads the same in light or
+   dark app theme — the auth experience is intentionally always dark). */
 .auth-screen {
+  /* Light-mode defaults. Dark values are overridden below under
+     [data-theme="dark"], so the auth screen now follows the app's theme
+     toggle (light by default, neon-dark when the site is in dark mode). */
+  --a-blue: #2f6fed;
+  --a-violet: #7c4fe0;
+  --a-cyan: #0891b2;
+  --a-link: #0891b2;
+  --a-ink: #12141f;
+  --a-muted: #5b6478;
+  --a-surface: rgba(255, 255, 255, 0.82);
+  --a-field: rgba(15, 23, 42, 0.035);
+  --a-field-border: rgba(15, 23, 42, 0.14);
+  --a-card-border: rgba(15, 23, 42, 0.1);
+  --a-card-shadow: 0 30px 70px rgba(15, 23, 42, 0.16);
+  --a-grid: rgba(59, 123, 246, 0.09);
+  --a-placeholder: #8a93a8;
+  --a-otp-fill: #ffffff;
+  --a-err-bg: rgba(255, 82, 82, 0.1);
+  --a-err-border: rgba(255, 82, 82, 0.35);
+  --a-err-text: #c62828;
+  --a-ok-bg: rgba(34, 197, 94, 0.1);
+  --a-ok-border: rgba(34, 197, 94, 0.3);
+  --a-ok-text: #15803d;
+  --a-screen-bg:
+    radial-gradient(60rem 42rem at 12% -6%, rgba(47, 111, 237, 0.1), transparent 60%),
+    radial-gradient(52rem 44rem at 92% 108%, rgba(124, 79, 224, 0.12), transparent 62%),
+    radial-gradient(40rem 34rem at 50% 118%, rgba(8, 145, 178, 0.08), transparent 60%),
+    linear-gradient(160deg, #eef3ff 0%, #f5f7fd 55%, #eaf0fb 100%);
+
+  position: relative;
   min-height: 100vh;
-  display: grid;
-  grid-template-columns: 1.1fr 1fr;
-  background: var(--bg-deep);
-  font-family: "Inter", sans-serif;
-  color: var(--text-primary);
-}
-
-/* Left: brand panel with an asymmetric console-style cut on its edge */
-.auth-brand-panel {
-  position: relative;
-  overflow: hidden;
-  padding: 4rem 4rem 4rem 5rem;
-  display: flex;
-  align-items: center;
-  background:
-    radial-gradient(120% 140% at 0% 0%, #e8f0ff 0%, #f2f6ff 55%, #ffffff 100%);
-  clip-path: polygon(0 0, 100% 0, 92% 100%, 0 100%);
-}
-
-.auth-brand-content {
-  position: relative;
-  z-index: 2;
-  max-width: min(26rem, 54%);
-}
-
-.auth-eyebrow {
-  display: inline-block;
-  font-family: "Rajdhani", sans-serif;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  font-size: 0.78rem;
-  color: var(--accent-cyan);
-  border: 1px solid rgba(41, 230, 255, 0.35);
-  padding: 0.35rem 0.75rem;
-  border-radius: 999px;
-  margin-bottom: 1.75rem;
-}
-
-.auth-brand-title {
-  font-family: "Rajdhani", sans-serif;
-  font-weight: 700;
-  font-size: 3.4rem;
-  line-height: 1.02;
-  letter-spacing: -0.01em;
-  margin: 0 0 1.25rem;
-  background: linear-gradient(120deg, var(--text-primary) 30%, var(--accent-blue) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.auth-brand-sub {
-  color: var(--text-muted);
-  font-size: 1.02rem;
-  line-height: 1.6;
-  margin-bottom: 2.5rem;
-  max-width: 100%;
-}
-
-/* Denomination chips - stacked with a slight cascading offset */
-.auth-chip-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-
-.auth-chip {
-  --i: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 15rem;
-  padding: 0.65rem 1rem;
-  background: rgba(15, 23, 42, 0.04);
-  border: 1px solid var(--card-border);
-  border-radius: 0.6rem;
-  backdrop-filter: blur(6px);
-  transform: translateX(calc(var(--i) * 0.55rem));
-  animation: chip-in 0.5s ease backwards;
-  animation-delay: calc(var(--i) * 70ms);
-}
-
-@keyframes chip-in {
-  from {
-    opacity: 0;
-    transform: translateX(calc(var(--i) * 0.55rem + 12px));
-  }
-  to {
-    opacity: 1;
-    transform: translateX(calc(var(--i) * 0.55rem));
-  }
-}
-
-.auth-chip-label {
-  font-family: "Rajdhani", sans-serif;
-  font-weight: 700;
-  font-size: 1.05rem;
-  color: var(--text-primary);
-}
-
-.auth-chip-tag {
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.auth-trust-strip {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1.1rem;
-  margin-top: 2rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--card-border);
-  font-size: 0.8rem;
-  color: var(--text-muted);
-}
-
-.auth-brand-glow {
-  position: absolute;
-  width: 32rem;
-  height: 32rem;
-  right: -14rem;
-  bottom: -14rem;
-  background: radial-gradient(circle, rgba(124, 79, 224, 0.16) 0%, transparent 70%);
-  filter: blur(10px);
-  z-index: 1;
-}
-
-.auth-brand-visual {
-  position: absolute;
-  z-index: 1;
-  right: -2rem;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 26rem;
-  max-width: 38%;
-  height: auto;
-  object-fit: contain;
-  pointer-events: none;
-  user-select: none;
-}
-
-@media (max-width: 1300px) {
-  .auth-brand-visual {
-    width: 20rem;
-    max-width: 34%;
-    right: -1rem;
-  }
-}
-
-@media (max-width: 1000px) {
-  .auth-brand-visual {
-    width: 15rem;
-    max-width: 30%;
-  }
-
-  .auth-brand-content {
-    max-width: 62%;
-  }
-}
-
-@media (max-width: 900px) {
-  .auth-brand-visual {
-    display: none;
-  }
-
-  .auth-brand-content {
-    max-width: 100%;
-  }
-}
-
-/* Right: form panel */
-.auth-form-panel {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 3rem;
+  padding: 2.5rem 1.5rem;
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--a-screen-bg);
+  font-family: "Inter", sans-serif;
+  color: var(--a-ink);
 }
 
-.auth-form-card {
+/* Dark mode — the original neon-circuit palette. */
+[data-theme="dark"] .auth-screen {
+  --a-blue: #3b7bf6;
+  --a-violet: #8a5cf6;
+  --a-cyan: #29e6ff;
+  --a-link: #29e6ff;
+  --a-ink: #eaf0ff;
+  --a-muted: #9aa6c2;
+  --a-surface: rgba(15, 23, 44, 0.66);
+  --a-field: rgba(255, 255, 255, 0.045);
+  --a-field-border: rgba(255, 255, 255, 0.13);
+  --a-card-border: rgba(120, 150, 255, 0.16);
+  --a-card-shadow: 0 30px 80px rgba(4, 8, 20, 0.6);
+  --a-grid: rgba(120, 160, 255, 0.05);
+  --a-placeholder: #6b7590;
+  --a-otp-fill: rgba(15, 23, 44, 0.9);
+  --a-err-bg: rgba(255, 82, 82, 0.12);
+  --a-err-border: rgba(255, 82, 82, 0.4);
+  --a-err-text: #ff9d9d;
+  --a-ok-bg: rgba(34, 197, 94, 0.12);
+  --a-ok-border: rgba(34, 197, 94, 0.35);
+  --a-ok-text: #9be7b4;
+  --a-screen-bg:
+    radial-gradient(60rem 42rem at 12% -6%, rgba(59, 123, 246, 0.18), transparent 60%),
+    radial-gradient(52rem 44rem at 92% 108%, rgba(138, 92, 246, 0.2), transparent 62%),
+    radial-gradient(40rem 34rem at 50% 118%, rgba(41, 230, 255, 0.12), transparent 60%),
+    linear-gradient(160deg, #070b16 0%, #0a1024 55%, #070a15 100%);
+}
+
+/* ---------- Neon circuit-board backdrop (purely decorative) ---------- */
+.auth-bg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Faint tech grid */
+.auth-bg::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  background-image:
+    linear-gradient(var(--a-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--a-grid) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: radial-gradient(120% 100% at 50% 40%, #000 45%, transparent 82%);
+  -webkit-mask-image: radial-gradient(120% 100% at 50% 40%, #000 45%, transparent 82%);
+}
+
+/* Slow drifting sheen */
+.auth-bg::after {
+  content: "";
+  position: absolute;
+  width: 60rem;
+  height: 60rem;
+  top: -20rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: radial-gradient(circle, rgba(41, 230, 255, 0.08), transparent 60%);
+  animation: auth-drift 14s ease-in-out infinite alternate;
+}
+
+@keyframes auth-drift {
+  from { transform: translateX(-58%) translateY(0); }
+  to   { transform: translateX(-42%) translateY(3rem); }
+}
+
+/* Circuit traces + glowing nodes */
+.auth-line {
+  position: absolute;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, var(--a-blue), transparent);
+  opacity: 0.5;
+  filter: drop-shadow(0 0 6px rgba(59, 123, 246, 0.6));
+}
+
+.auth-line.l1 { top: 26%; left: -6%; width: 30%; }
+.auth-line.l2 { top: 70%; right: -6%; width: 34%; background: linear-gradient(90deg, transparent, var(--a-violet), transparent); filter: drop-shadow(0 0 6px rgba(138, 92, 246, 0.6)); }
+.auth-line.l3 { top: 12%; right: 8%; width: 18%; background: linear-gradient(90deg, transparent, var(--a-cyan), transparent); filter: drop-shadow(0 0 6px rgba(41, 230, 255, 0.6)); }
+
+.auth-node {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--a-cyan);
+  box-shadow: 0 0 12px 2px rgba(41, 230, 255, 0.8);
+  animation: auth-pulse 2.6s ease-in-out infinite;
+}
+
+.auth-node.n1 { top: calc(26% - 4px); left: 24%; background: var(--a-blue); box-shadow: 0 0 12px 2px rgba(59, 123, 246, 0.85); }
+.auth-node.n2 { top: calc(70% - 4px); right: 28%; background: var(--a-violet); box-shadow: 0 0 12px 2px rgba(138, 92, 246, 0.85); animation-delay: 0.8s; }
+.auth-node.n3 { top: calc(12% - 4px); right: 8%; animation-delay: 1.4s; }
+.auth-node.n4 { bottom: 16%; left: 12%; animation-delay: 2s; }
+
+@keyframes auth-pulse {
+  0%, 100% { opacity: 0.45; transform: scale(0.85); }
+  50%      { opacity: 1; transform: scale(1.15); }
+}
+
+/* ---------- The split card ---------- */
+.auth-card {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 100%;
+  max-width: 60rem;
+  min-height: 32rem;
+  border-radius: 1.4rem;
+  overflow: hidden;
+  background: var(--a-surface);
+  border: 1px solid var(--a-card-border);
+  box-shadow:
+    var(--a-card-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  animation: auth-card-in 0.5s ease both;
+}
+
+@keyframes auth-card-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.985); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Login variant puts the accent on the right; signup keeps it on the left.
+   DOM order per page controls which side each panel lands on. */
+
+/* ---------- Accent (welcome) panel ---------- */
+.auth-card-accent {
+  position: relative;
+  flex: 0 0 42%;
+  padding: 3.25rem 2.75rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.9rem;
+  color: #fff;
+  overflow: hidden;
+  background:
+    radial-gradient(90% 120% at 20% 0%, rgba(41, 230, 255, 0.28), transparent 55%),
+    linear-gradient(150deg, var(--a-blue) 0%, var(--a-violet) 92%);
+}
+
+/* Diagonal cut on the edge that faces the form (reel-style overlap). */
+.auth-card--accent-left .auth-card-accent {
+  clip-path: polygon(0 0, 100% 0, 86% 100%, 0 100%);
+  margin-right: -3.5rem;
+}
+
+.auth-card--accent-right .auth-card-accent {
+  order: 2;
+  clip-path: polygon(14% 0, 100% 0, 100% 100%, 0 100%);
+  margin-left: -3.5rem;
+}
+
+.auth-card-accent::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 34px 34px;
+  mask-image: radial-gradient(120% 100% at 30% 20%, #000 30%, transparent 75%);
+  -webkit-mask-image: radial-gradient(120% 100% at 30% 20%, #000 30%, transparent 75%);
+  pointer-events: none;
+}
+
+.auth-accent-body { position: relative; z-index: 1; max-width: 18rem; }
+
+.auth-accent-eyebrow {
+  display: inline-block;
+  font-family: "Rajdhani", sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  margin-bottom: 1.25rem;
+}
+
+.auth-accent-title {
+  font-family: "Rajdhani", sans-serif;
+  font-weight: 700;
+  font-size: 2.5rem;
+  line-height: 1.02;
+  margin: 0 0 0.75rem;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.25);
+}
+
+.auth-accent-sub {
+  font-size: 0.96rem;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.92);
+  margin: 0 0 1.6rem;
+}
+
+.auth-accent-cta {
+  align-self: flex-start;
+  display: inline-block;
+  padding: 0.7rem 1.6rem;
+  border-radius: 999px;
+  border: 1.5px solid rgba(255, 255, 255, 0.85);
+  color: #fff;
+  text-decoration: none;
+  font-family: "Rajdhani", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  font-size: 0.95rem;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+
+.auth-accent-cta:hover {
+  background: #fff;
+  color: var(--a-violet);
+  transform: translateY(-1px);
+}
+
+.auth-accent-trust {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  margin-top: 1.75rem;
+  font-size: 0.76rem;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* ---------- Form panel ---------- */
+.auth-card-form {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 3rem 3rem 3.25rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.auth-card--accent-right .auth-card-form { order: 1; }
+
+/* Scrollable inner area for the long signup form without stretching the card. */
+.auth-form-scroll {
   width: 100%;
   max-width: 24rem;
+  margin: 0 auto;
+  max-height: 78vh;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.auth-form-scroll::-webkit-scrollbar { width: 6px; }
+.auth-form-scroll::-webkit-scrollbar-thumb {
+  background: rgba(120, 150, 255, 0.25);
+  border-radius: 6px;
 }
 
 .auth-form-title {
   font-family: "Rajdhani", sans-serif;
-  font-size: 2rem;
+  font-size: 1.9rem;
   font-weight: 700;
-  margin: 0 0 0.35rem;
+  margin: 0 0 0.3rem;
+  color: var(--a-ink);
 }
 
 .auth-form-sub {
-  color: var(--text-muted);
-  font-size: 0.92rem;
-  margin-bottom: 1.75rem;
+  color: var(--a-muted);
+  font-size: 0.9rem;
+  margin: 0 0 1.6rem;
 }
 
 .auth-link {
-  color: var(--accent-cyan);
+  color: var(--a-link);
   text-decoration: none;
-  font-weight: 500;
+  font-weight: 600;
 }
 
-.auth-link:hover {
-  text-decoration: underline;
-}
+.auth-link:hover { text-decoration: underline; }
 
 .auth-error {
-  background: rgba(255, 82, 82, 0.1);
-  border: 1px solid rgba(255, 82, 82, 0.35);
-  color: #c62828;
-  font-size: 0.88rem;
+  background: var(--a-err-bg);
+  border: 1px solid var(--a-err-border);
+  color: var(--a-err-text);
+  font-size: 0.86rem;
   padding: 0.65rem 0.85rem;
-  border-radius: 0.5rem;
-  margin-bottom: 1.25rem;
+  border-radius: 0.55rem;
+  margin-bottom: 1.1rem;
 }
 
 .auth-success {
-  background: rgba(34, 197, 94, 0.1);
-  border: 1px solid rgba(34, 197, 94, 0.3);
-  color: #15803d;
+  background: var(--a-ok-bg);
+  border: 1px solid var(--a-ok-border);
+  color: var(--a-ok-text);
   font-size: 0.9rem;
   line-height: 1.55;
   padding: 1rem 1.1rem;
@@ -240,7 +359,7 @@
 .auth-dev-note {
   margin-top: 0.75rem;
   padding-top: 0.75rem;
-  border-top: 1px dashed rgba(21, 128, 61, 0.3);
+  border-top: 1px dashed rgba(155, 231, 180, 0.3);
   font-size: 0.82rem;
 }
 
@@ -248,9 +367,9 @@
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
-  margin-bottom: 1.1rem;
-  font-size: 0.85rem;
-  color: var(--text-muted);
+  margin-bottom: 1.05rem;
+  font-size: 0.82rem;
+  color: var(--a-muted);
 }
 
 .auth-field-row {
@@ -260,41 +379,36 @@
   gap: 0.75rem;
 }
 
-.auth-forgot-link {
-  font-size: 0.8rem;
-  font-weight: 500;
-}
+.auth-forgot-link { font-size: 0.8rem; font-weight: 600; }
 
 .auth-field input,
 .auth-field textarea {
-  background: rgba(15, 23, 42, 0.03);
-  border: 1px solid var(--card-border);
-  border-radius: 0.55rem;
-  padding: 0.75rem 0.9rem;
-  color: var(--text-primary);
+  background: var(--a-field);
+  border: 1px solid var(--a-field-border);
+  border-radius: 0.6rem;
+  padding: 0.8rem 0.95rem;
+  color: var(--a-ink);
   font-size: 0.95rem;
   font-family: "Inter", sans-serif;
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 
-.auth-field textarea {
-  resize: vertical;
-  min-height: 6rem;
-}
+.auth-field textarea { resize: vertical; min-height: 6rem; }
 
 .auth-field input:focus,
 .auth-field textarea:focus {
-  border-color: var(--accent-blue);
-  box-shadow: 0 0 0 3px rgba(59, 123, 246, 0.18);
+  border-color: var(--a-cyan);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 0 3px rgba(41, 230, 255, 0.18);
 }
 
 .auth-field input::placeholder,
-.auth-field textarea::placeholder {
-  color: #4b5468;
-}
+.auth-field textarea::placeholder { color: var(--a-placeholder); }
 
-/* Currency choice on the signup form (segmented two-option control) */
+.auth-field input:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* Currency choice (segmented two-option control) */
 .auth-currency-toggle {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -306,59 +420,36 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.8rem 0.9rem;
+  padding: 0.75rem 0.9rem;
   border-radius: 0.7rem;
-  border: 1px solid var(--card-border);
-  background: rgba(15, 23, 42, 0.03);
-  color: var(--text-primary);
-  font-size: 0.98rem;
+  border: 1px solid var(--a-field-border);
+  background: var(--a-field);
+  color: var(--a-ink);
+  font-size: 0.95rem;
   font-weight: 700;
   cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease,
-    box-shadow 0.15s ease, transform 0.1s ease;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
 }
 
 .auth-currency-option:hover:not(.is-selected):not(:disabled) {
-  border-color: var(--accent-blue);
+  border-color: var(--a-blue);
   transform: translateY(-1px);
 }
 
 .auth-currency-option.is-selected {
   border-color: transparent;
-  background: linear-gradient(120deg, var(--accent-blue), var(--accent-violet));
+  background: linear-gradient(120deg, var(--a-blue), var(--a-violet));
   color: #fff;
-  box-shadow: 0 6px 18px rgba(59, 123, 246, 0.25);
+  box-shadow: 0 6px 18px rgba(59, 123, 246, 0.35);
 }
 
-.auth-currency-option:disabled {
-  cursor: default;
-  opacity: 0.65;
-}
+.auth-currency-option:disabled { cursor: default; opacity: 0.6; }
+.auth-currency-symbol { font-size: 1.2rem; line-height: 1; }
+.auth-currency-name { letter-spacing: 0.03em; }
+.auth-currency-hint { color: var(--a-muted); font-size: 0.78rem; line-height: 1.4; }
 
-.auth-currency-symbol {
-  font-size: 1.2rem;
-  line-height: 1;
-}
-
-.auth-currency-name {
-  letter-spacing: 0.03em;
-}
-
-.auth-currency-hint {
-  color: var(--text-muted);
-  font-size: 0.78rem;
-  line-height: 1.4;
-}
-
-.auth-password-wrap {
-  position: relative;
-  display: flex;
-}
-
-.auth-password-wrap input {
-  flex: 1;
-  padding-right: 3.5rem;
-}
+.auth-password-wrap { position: relative; display: flex; }
+.auth-password-wrap input { flex: 1; padding-right: 3.5rem; }
 
 .auth-toggle-visibility {
   position: absolute;
@@ -367,127 +458,175 @@
   transform: translateY(-50%);
   background: none;
   border: none;
-  color: var(--accent-cyan);
+  color: var(--a-link);
   font-size: 0.78rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
 }
 
-.auth-inline-verify-wrap {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.auth-inline-verify-wrap input {
-  flex: 1;
-}
+.auth-inline-verify-wrap { display: flex; gap: 0.5rem; }
+.auth-inline-verify-wrap input { flex: 1; }
 
 .auth-inline-verify-btn {
   flex-shrink: 0;
   padding: 0 1rem;
   border: none;
-  border-radius: 0.55rem;
+  border-radius: 0.6rem;
   font-family: "Rajdhani", sans-serif;
   font-weight: 700;
   font-size: 0.85rem;
   color: #fff;
-  background: linear-gradient(120deg, var(--accent-blue), var(--accent-violet));
+  background: linear-gradient(120deg, var(--a-blue), var(--a-violet));
   cursor: pointer;
   white-space: nowrap;
 }
 
-.auth-inline-verify-btn:hover:not(:disabled) {
-  filter: brightness(1.1);
-}
-
-.auth-inline-verify-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.auth-otp-inline {
-  background: rgba(41, 230, 255, 0.06);
-  border: 1px dashed rgba(41, 230, 255, 0.4);
-  border-radius: 0.6rem;
-  padding: 0.9rem 1rem 1rem;
-  margin: -0.3rem 0 1.1rem;
-}
-
-.auth-otp-inline .auth-field {
-  margin-bottom: 0.7rem;
-}
+.auth-inline-verify-btn:hover:not(:disabled) { filter: brightness(1.12); }
+.auth-inline-verify-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .auth-submit {
   width: 100%;
-  margin-top: 0.5rem;
-  padding: 0.85rem 1rem;
+  margin-top: 0.4rem;
+  padding: 0.9rem 1rem;
   border: none;
-  border-radius: 0.6rem;
+  border-radius: 0.7rem;
   font-family: "Rajdhani", sans-serif;
   font-weight: 700;
   font-size: 1.05rem;
   letter-spacing: 0.02em;
-  color: #ffffff;
-  background: linear-gradient(120deg, var(--accent-blue), var(--accent-violet));
+  color: #fff;
+  background: linear-gradient(120deg, var(--a-blue, var(--accent-blue, #2f6fed)), var(--a-violet, var(--accent-violet, #7c4fe0)));
+  box-shadow: 0 10px 26px rgba(59, 123, 246, 0.3);
   cursor: pointer;
-  transition: filter 0.15s ease, transform 0.1s ease;
+  transition: filter 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
 }
 
-.auth-submit:hover:not(:disabled) {
-  filter: brightness(1.1);
-}
+.auth-submit:hover:not(:disabled) { filter: brightness(1.12); box-shadow: 0 12px 30px rgba(138, 92, 246, 0.4); }
+.auth-submit:active:not(:disabled) { transform: translateY(1px); }
+.auth-submit:disabled { opacity: 0.65; cursor: not-allowed; }
 
-.auth-submit:active:not(:disabled) {
-  transform: translateY(1px);
-}
-
-.auth-submit:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
-}
-
-/* Keyboard focus visibility */
 .auth-toggle-visibility:focus-visible,
 .auth-submit:focus-visible,
+.auth-accent-cta:focus-visible,
 .auth-link:focus-visible {
-  outline: 2px solid var(--accent-cyan);
+  outline: 2px solid var(--a-cyan);
   outline-offset: 2px;
 }
 
-/* Responsive: stack panels on smaller screens, drop the diagonal cut */
-@media (max-width: 900px) {
-  .auth-screen {
-    grid-template-columns: 1fr;
+/* ---------- OTP "V2" verification block ---------- */
+.auth-otp-inline {
+  background: rgba(41, 230, 255, 0.05);
+  border: 1px solid rgba(41, 230, 255, 0.25);
+  border-radius: 0.9rem;
+  padding: 1.1rem 1.1rem 1.15rem;
+  margin: 0.2rem 0 1.1rem;
+}
+
+.auth-otp-heading {
+  font-family: "Rajdhani", sans-serif;
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: var(--a-ink);
+  margin: 0 0 0.2rem;
+}
+
+.auth-otp-caption {
+  font-size: 0.82rem;
+  color: var(--a-muted);
+  line-height: 1.5;
+  margin: 0 0 1rem;
+}
+
+.auth-otp-caption strong { color: var(--a-ink); font-weight: 600; }
+
+.otp-boxes {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.otp-box {
+  width: 3rem;
+  height: 3.4rem;
+  text-align: center;
+  font-family: "Rajdhani", sans-serif;
+  font-weight: 700;
+  font-size: 1.5rem;
+  color: var(--a-ink);
+  background: var(--a-field);
+  border: 1.5px solid rgba(41, 230, 255, 0.35);
+  border-radius: 0.7rem;
+  outline: none;
+  box-shadow: 0 0 10px rgba(41, 230, 255, 0.12), inset 0 0 8px rgba(41, 230, 255, 0.06);
+  animation: otp-idle-glow 2.4s ease-in-out infinite;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.12s ease, background 0.15s ease;
+}
+
+@keyframes otp-idle-glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(41, 230, 255, 0.1), inset 0 0 6px rgba(41, 230, 255, 0.05); }
+  50%      { box-shadow: 0 0 16px rgba(41, 230, 255, 0.28), inset 0 0 10px rgba(41, 230, 255, 0.1); }
+}
+
+.otp-box:focus {
+  border-color: var(--a-cyan);
+  background: rgba(41, 230, 255, 0.08);
+  box-shadow: 0 0 0 3px rgba(41, 230, 255, 0.22), 0 0 18px rgba(41, 230, 255, 0.4);
+  transform: translateY(-2px);
+  animation: none;
+}
+
+.otp-box.is-filled {
+  border-color: transparent;
+  background:
+    linear-gradient(var(--a-otp-fill), var(--a-otp-fill)) padding-box,
+    linear-gradient(140deg, var(--a-blue), var(--a-violet)) border-box;
+  border: 1.5px solid transparent;
+  box-shadow: 0 0 14px rgba(138, 92, 246, 0.35);
+  animation: none;
+}
+
+.otp-box:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ---------- Responsive: stack the card on small screens ---------- */
+@media (max-width: 860px) {
+  .auth-screen { padding: 1.5rem 1rem; align-items: stretch; }
+
+  .auth-card {
+    flex-direction: column;
+    min-height: 0;
+    max-width: 30rem;
+    margin: auto;
   }
 
-  .auth-brand-panel {
+  .auth-card-accent,
+  .auth-card--accent-left .auth-card-accent,
+  .auth-card--accent-right .auth-card-accent {
+    flex: none;
+    order: 0;
     clip-path: none;
-    padding: 3rem 1.75rem;
+    margin: 0;
+    padding: 2.25rem 1.75rem;
   }
 
-  .auth-brand-title {
-    font-size: 2.4rem;
-  }
+  .auth-card--accent-right .auth-card-form { order: 1; }
 
-  .auth-chip-stack {
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
+  .auth-accent-body { max-width: 100%; }
+  .auth-accent-title { font-size: 2rem; }
+  .auth-accent-trust { display: none; }
 
-  .auth-chip {
-    width: auto;
-    flex: 1 1 8rem;
-    transform: none;
-  }
+  .auth-card-form { padding: 2rem 1.6rem 2.4rem; }
+  .auth-form-scroll { max-height: none; }
+}
 
-  .auth-form-panel {
-    padding: 2.5rem 1.75rem 3.5rem;
-  }
+@media (max-width: 420px) {
+  .otp-box { width: 2.5rem; height: 3rem; font-size: 1.3rem; }
+  .otp-boxes { gap: 0.4rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .auth-chip {
-    animation: none;
-  }
+  .auth-card,
+  .auth-node,
+  .auth-bg::after,
+  .otp-box { animation: none; }
 }
