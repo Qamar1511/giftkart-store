@@ -1,7 +1,49 @@
 const Order = require("../models/Order");
 const GiftCardStock = require("../models/GiftCardStock");
+const StockNotification = require("../models/StockNotification");
 const deliverGiftCard = require("../utils/deliverGiftCard");
+const { sendEmail } = require("../utils/sendEmail");
 const { BRANDS } = require("../config/catalog");
+
+// Emails everyone who clicked "Notify me" for this brand+denomination, then
+// marks them notified so we never email the same person twice for the same
+// restock. Safe to call even when email isn't configured (sendEmail just
+// no-ops and returns false in that case).
+async function notifyWaitingCustomers(brandSlug, denomination) {
+  const waiting = await StockNotification.find({ brand: brandSlug, denomination, notified: false });
+  if (waiting.length === 0) return;
+
+  const brandDef = BRANDS.find((b) => b.slug === brandSlug);
+  const brandName = brandDef?.name || brandSlug;
+
+  for (const sub of waiting) {
+    let sent;
+    try {
+      sent = await sendEmail({
+        to: sub.email,
+        subject: `Back in stock: ${brandName} ₹${denomination} gift card`,
+        html: `
+          <p>Good news — <strong>${brandName} ₹${denomination}</strong> is back in stock on GIFTKART.</p>
+          <p><a href="${process.env.CLIENT_URL}">Grab it before it runs out again →</a></p>
+        `,
+      });
+    } catch (err) {
+      console.error(`Couldn't notify ${sub.email}:`, err.message);
+      continue; // don't let one bad address block the rest of the batch
+    }
+
+    // sendEmail resolves to `false` (no throw) when Brevo isn't configured —
+    // don't mark this subscriber notified in that case, or they'd silently
+    // never get an email even after the config is fixed.
+    if (!sent) {
+      console.error(`Skipped notifying ${sub.email}: email isn't configured (BREVO_API_KEY/EMAIL_FROM missing).`);
+      continue;
+    }
+
+    sub.notified = true;
+    await sub.save();
+  }
+}
 
 // @route  GET /api/admin/orders
 // @access Admin
@@ -198,6 +240,14 @@ exports.addStockCodes = async (req, res) => {
 
     const insertedCount = Array.isArray(result) ? result.length : docs.length;
     const skipped = lines.length - insertedCount;
+
+    if (insertedCount > 0) {
+      // Fire-and-forget-ish: don't let email hiccups block the admin's
+      // response, but do await so we can log failures server-side.
+      notifyWaitingCustomers(brand, denomNum).catch((err) =>
+        console.error("Stock notification email batch failed:", err)
+      );
+    }
 
     res.status(200).json({
       message:
