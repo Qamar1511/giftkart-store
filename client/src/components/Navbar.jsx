@@ -134,6 +134,26 @@ const Navbar = () => {
   const profileRef = useRef(null);
   const searchRef = useRef(null);
   const menuRef = useRef(null);
+  // Grace timer for the hover dropdowns: closing is delayed a beat so the
+  // pointer has time to travel from the trigger down onto a panel link
+  // without the menu snapping shut mid-move.
+  const menuCloseTimer = useRef(null);
+
+  const openMenuNow = (key) => {
+    if (menuCloseTimer.current) {
+      clearTimeout(menuCloseTimer.current);
+      menuCloseTimer.current = null;
+    }
+    setOpenMenu(key);
+  };
+
+  const scheduleMenuClose = () => {
+    if (menuCloseTimer.current) clearTimeout(menuCloseTimer.current);
+    menuCloseTimer.current = setTimeout(() => setOpenMenu(null), 280);
+  };
+
+  // Clear the pending close timer if the component unmounts mid-hover.
+  useEffect(() => () => clearTimeout(menuCloseTimer.current), []);
 
   // Re-check session + close everything whenever the route changes.
   useEffect(() => {
@@ -347,8 +367,8 @@ const Navbar = () => {
               <div
                 key={group.key}
                 className="navbar-menu-item"
-                onMouseEnter={() => setOpenMenu(group.key)}
-                onMouseLeave={() => setOpenMenu(null)}
+                onMouseEnter={() => openMenuNow(group.key)}
+                onMouseLeave={scheduleMenuClose}
               >
                 <button
                   type="button"

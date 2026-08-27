@@ -256,6 +256,19 @@
   z-index: 60;
 }
 
+/* Invisible bridge that fills the small gap between the trigger and the
+   panel, so moving the pointer down onto a link never leaves the hover
+   area (which would otherwise close the menu before a click lands). */
+.navbar-menu-panel::before {
+  content: "";
+  position: absolute;
+  top: -0.35rem;
+  left: 0;
+  right: 0;
+  height: 0.35rem;
+  background: transparent;
+}
+
 /* Anchor the last menu's panel to the right so it never overflows the edge */
 .navbar-menu-item:last-of-type .navbar-menu-panel {
   left: auto;
