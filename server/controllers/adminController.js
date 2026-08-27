@@ -11,6 +11,7 @@ const { BRANDS } = require("../config/catalog");
 // no-ops and returns false in that case).
 async function notifyWaitingCustomers(brandSlug, denomination) {
   const waiting = await StockNotification.find({ brand: brandSlug, denomination, notified: false });
+  console.log(`[notify] ${waiting.length} subscriber(s) waiting for ${brandSlug} ₹${denomination}`);
   if (waiting.length === 0) return;
 
   const brandDef = BRANDS.find((b) => b.slug === brandSlug);
@@ -40,6 +41,7 @@ async function notifyWaitingCustomers(brandSlug, denomination) {
       continue;
     }
 
+    console.log(`[notify] Email sent to ${sub.email} for ${brandSlug} ₹${denomination}`);
     sub.notified = true;
     await sub.save();
   }
@@ -244,6 +246,7 @@ exports.addStockCodes = async (req, res) => {
     if (insertedCount > 0) {
       // Fire-and-forget-ish: don't let email hiccups block the admin's
       // response, but do await so we can log failures server-side.
+      console.log(`[notify] Stock added for ${brand} ₹${denomNum} — checking for waiting subscribers…`);
       notifyWaitingCustomers(brand, denomNum).catch((err) =>
         console.error("Stock notification email batch failed:", err)
       );
