@@ -1,21 +1,40 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { getBlogPostBySlug, resolveImageUrl } from "../services/blogService";
+import { getBlogPostBySlug, getCachedBlogPost, resolveImageUrl } from "../services/blogService";
 import Seo, { SITE_URL } from "../components/Seo";
 import "../styles/Shop.css";
 
 const formatDate = (dateStr) =>
   new Date(dateStr).toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric" });
 
+// Mirrors the real article's shape — cover, title, byline, body lines — so the
+// page doesn't collapse to a single centred "Loading…" line and then expand.
+const PostSkeleton = () => (
+  <div className="shop-page blog-post-page" aria-busy="true" aria-label="Loading post">
+    <div className="skeleton-block skeleton-block-wide" style={{ borderRadius: "0.9rem" }} />
+    <div className="skeleton-line" style={{ width: "70%", height: "2rem", marginTop: "1.25rem" }} />
+    <div className="skeleton-line" style={{ width: "30%", marginTop: "0.9rem" }} />
+    <div style={{ marginTop: "2rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+      {["100%", "96%", "88%", "100%", "72%", "94%", "60%"].map((width, i) => (
+        <div className="skeleton-line" key={i} style={{ width }} />
+      ))}
+    </div>
+  </div>
+);
+
 const BlogPost = () => {
   const { slug } = useParams();
-  const [post, setPost] = useState(null);
+  // If this post was opened before (or its slug is already cached from a
+  // previous view), render it immediately instead of flashing a loader.
+  const [post, setPost] = useState(() => getCachedBlogPost(slug));
   const [notFound, setNotFound] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!getCachedBlogPost(slug));
 
   useEffect(() => {
-    setLoading(true);
+    const cached = getCachedBlogPost(slug);
+    setPost(cached);
     setNotFound(false);
+    setLoading(!cached);
     getBlogPostBySlug(slug)
       .then(setPost)
       .catch(() => setNotFound(true))
@@ -23,11 +42,7 @@ const BlogPost = () => {
   }, [slug]);
 
   if (loading) {
-    return (
-      <div className="shop-page">
-        <p className="shop-status">Loading…</p>
-      </div>
-    );
+    return <PostSkeleton />;
   }
 
   if (notFound || !post) {

@@ -1748,6 +1748,13 @@
 .skeleton-line {
   height: 0.85rem;
 }
+
+/* Blog covers are 16/9 (see .blog-card-image and .blog-post-cover), not the
+   5/4 of a gift-card tile, so their placeholders need the matching ratio or
+   the layout shifts when the real image arrives. */
+.skeleton-block-wide {
+  aspect-ratio: 16 / 9;
+}
 /* ---------- Blog ---------- */
 .blog-grid {
   display: grid;

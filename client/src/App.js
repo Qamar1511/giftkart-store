@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from "react";
+import React, { Suspense, lazy, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import "./styles/theme.css";
 import { CartProvider } from "./context/CartContext";
@@ -22,14 +22,22 @@ import AdminRoute from "./components/AdminRoute";
 // their JS is fetched only when visited. The admin panel (its own heavier
 // bundle) and the low-traffic pages below are the biggest wins; Home, brand,
 // cart, checkout and auth stay eager so the core journey has no chunk wait.
+//
+// The two blog imports are named because they're also prefetched during idle
+// time (see useEffect in App). Without that, clicking "Blog" meant waiting for
+// a chunk download BEFORE the page could even start fetching posts — a blank
+// Suspense box followed by a loading state.
+const importBlog = () => import("./pages/Blog");
+const importBlogPost = () => import("./pages/BlogPost");
+
 const OrderConfirmation = lazy(() => import("./pages/OrderConfirmation"));
 const OrderHistory = lazy(() => import("./pages/OrderHistory"));
 const PaypalReturn = lazy(() => import("./pages/PaypalReturn"));
 const Contact = lazy(() => import("./pages/Contact"));
 const RefundPolicy = lazy(() => import("./pages/RefundPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
-const Blog = lazy(() => import("./pages/Blog"));
-const BlogPost = lazy(() => import("./pages/BlogPost"));
+const Blog = lazy(importBlog);
+const BlogPost = lazy(importBlogPost);
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminOrders = lazy(() => import("./pages/admin/AdminOrders"));
@@ -40,6 +48,23 @@ const AdminBlog = lazy(() => import("./pages/admin/AdminBlog"));
 const AdminBlogEditor = lazy(() => import("./pages/admin/AdminBlogEditor"));
 
 function App() {
+  // Warm the blog chunks once the browser is idle. This runs after first paint,
+  // so it can't compete with the homepage LCP, and it means a later click on
+  // "Blog" renders the page shell immediately instead of downloading JS first.
+  useEffect(() => {
+    const prefetch = () => {
+      importBlog();
+      importBlogPost();
+    };
+    if (typeof window.requestIdleCallback === "function") {
+      const id = window.requestIdleCallback(prefetch, { timeout: 4000 });
+      return () => window.cancelIdleCallback(id);
+    }
+    // Safari has no requestIdleCallback — a timeout is close enough here.
+    const timer = setTimeout(prefetch, 2500);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <ThemeProvider>
       <CurrencyProvider>
