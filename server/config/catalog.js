@@ -192,8 +192,53 @@ const CURRENCY_PAYMENT_METHODS = {
   USDT: ["usdt"],
 };
 
+// ---------------------- Admin-editable price rates ----------------------
+// The two `rate` values above are only DEFAULTS. Admin can change them from
+// Admin → Pricing, which persists them in the PricingSetting singleton and
+// then calls setRates() here so the whole server uses the new multipliers
+// immediately — no redeploy.
+//
+// Why an in-memory cache instead of reading Mongo inside priceFor(): priceFor
+// is synchronous and called from dozens of places (product listing, order
+// creation, invoices, emails). Making it async would ripple through the whole
+// codebase. So instead we mutate CURRENCIES[code].rate in place and hydrate it
+// once at boot (see hydratePricing in server.js) plus on every admin save.
+const DEFAULT_RATES = Object.freeze(
+  CURRENCY_CODES.reduce((acc, code) => {
+    acc[code] = CURRENCIES[code].rate;
+    return acc;
+  }, {})
+);
+
+// Currently active multipliers, e.g. { INR: 1.1, USDT: 0.011 }.
+function getRates() {
+  return CURRENCY_CODES.reduce((acc, code) => {
+    acc[code] = CURRENCIES[code].rate;
+    return acc;
+  }, {});
+}
+
+// Overwrite the live multipliers. Only positive finite numbers for known
+// currency codes are accepted; anything else is ignored so a bad value can
+// never zero out the store's prices. Returns the rates actually in effect.
+function setRates(next = {}) {
+  CURRENCY_CODES.forEach((code) => {
+    const value = Number(next[code]);
+    if (Number.isFinite(value) && value > 0) {
+      CURRENCIES[code].rate = value;
+    }
+  });
+  return getRates();
+}
+
+// Back to the hardcoded defaults (used by the admin "Reset" action).
+function resetRates() {
+  return setRates(DEFAULT_RATES);
+}
+
 // Price of a single denomination in the given currency, correctly rounded
-// (INR = whole rupees, USDT = 2 decimals).
+// (INR = whole rupees, USDT = 2 decimals). Reads the LIVE rate, so it always
+// reflects whatever admin last saved.
 function priceFor(denomination, currency = DEFAULT_CURRENCY) {
   const cfg = CURRENCIES[currency] || CURRENCIES[DEFAULT_CURRENCY];
   const raw = Number(denomination) * cfg.rate;
@@ -242,6 +287,10 @@ module.exports = {
   CURRENCY_CODES,
   DEFAULT_CURRENCY,
   CURRENCY_PAYMENT_METHODS,
+  DEFAULT_RATES,
+  getRates,
+  setRates,
+  resetRates,
   MAX_CARDS_PER_ORDER,
   MONTHLY_SPEND_LIMIT_INR,
   MONTHLY_WINDOW_DAYS,

@@ -56,6 +56,44 @@ export const CURRENCY_PAYMENT_METHODS = {
 
 export const isCurrency = (code) => CURRENCY_CODES.includes(code);
 
+/* ------------------- Live (admin-editable) price rates -------------------
+   The `rate` values in CURRENCIES above are only DEFAULTS / offline fallback.
+   Admin can change them from Admin → Pricing, which saves them server-side.
+   CurrencyContext fetches the live rates once on app start and calls
+   applyRates() so every client-side price calculation — including the cart
+   and checkout totals, which are computed here rather than read off the
+   server response — matches exactly what the server will charge.
+------------------------------------------------------------------------- */
+export const DEFAULT_RATES = Object.freeze(
+  CURRENCY_CODES.reduce((acc, code) => {
+    acc[code] = CURRENCIES[code].rate;
+    return acc;
+  }, {})
+);
+
+// Currently active multipliers, e.g. { INR: 1.1, USDT: 0.011 }.
+export const getRates = () =>
+  CURRENCY_CODES.reduce((acc, code) => {
+    acc[code] = CURRENCIES[code].rate;
+    return acc;
+  }, {});
+
+// Overwrite the live multipliers from a server response. Ignores anything that
+// isn't a positive finite number, so a bad/absent value can never zero out
+// prices — the previous (or default) rate simply stays in effect.
+// Returns true if any rate actually changed.
+export const applyRates = (rates = {}) => {
+  let changed = false;
+  CURRENCY_CODES.forEach((code) => {
+    const value = Number(rates?.[code]);
+    if (Number.isFinite(value) && value > 0 && value !== CURRENCIES[code].rate) {
+      CURRENCIES[code].rate = value;
+      changed = true;
+    }
+  });
+  return changed;
+};
+
 // Price of a single denomination in a currency, correctly rounded.
 export const priceFor = (denomination, currency = DEFAULT_CURRENCY) => {
   const cfg = CURRENCIES[currency] || CURRENCIES[DEFAULT_CURRENCY];

@@ -1,12 +1,15 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from "react";
 import {
   CURRENCIES,
   CURRENCY_CODES,
   DEFAULT_CURRENCY,
   isCurrency,
+  applyRates,
+  getRates,
   priceFor as priceForCurrency,
   formatMoney as formatMoneyCurrency,
 } from "../data/catalog";
+import { getCurrencyConfig } from "../services/productService";
 import {
   getSession,
   updateCurrency as updateCurrencyApi,
@@ -20,6 +23,9 @@ import {
 // rule (INR = face × 1.1, USDT = face × 0.011).
 const CurrencyContext = createContext(null);
 const STORAGE_KEY = "psc_currency";
+// How stale the cached price multipliers may get before we re-check them when
+// the tab regains focus.
+const RATE_RECHECK_MS = 2 * 60 * 1000;
 
 function loadInitialCurrency() {
   try {
@@ -37,6 +43,51 @@ function loadInitialCurrency() {
 
 export const CurrencyProvider = ({ children }) => {
   const [currency, setCurrencyState] = useState(loadInitialCurrency);
+
+  // Bumped whenever the live price multipliers change (admin edited them in
+  // Admin → Pricing). The rates themselves live in data/catalog.js as plain
+  // module state; this counter is what tells React to recompute the memoized
+  // price helpers below so every displayed price refreshes.
+  const [ratesVersion, setRatesVersion] = useState(0);
+
+  // Pull the admin-configured multipliers once on app start. Until this
+  // resolves the hardcoded defaults are used, so prices are never blank —
+  // and if the request fails we simply keep those defaults.
+  // Pass { maxAgeMs } to skip the request when the rates were fetched recently.
+  const lastFetchedRef = useRef(0);
+  const refreshRates = useCallback(async ({ maxAgeMs = 0 } = {}) => {
+    if (maxAgeMs > 0 && Date.now() - lastFetchedRef.current < maxAgeMs) {
+      return getRates();
+    }
+    try {
+      const data = await getCurrencyConfig();
+      const rates = data?.rates || {};
+      lastFetchedRef.current = Date.now();
+      if (applyRates(rates)) setRatesVersion((v) => v + 1);
+      return rates;
+    } catch {
+      return getRates(); // offline / server down — defaults stay in effect
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshRates();
+
+    // A tab left open for hours would otherwise keep showing old prices after
+    // admin changes them — and the server always charges the CURRENT rate. So
+    // re-check (at most every 2 minutes) whenever the tab comes back into view.
+    const recheck = () => {
+      if (document.visibilityState === "visible") {
+        refreshRates({ maxAgeMs: RATE_RECHECK_MS });
+      }
+    };
+    window.addEventListener("focus", recheck);
+    document.addEventListener("visibilitychange", recheck);
+    return () => {
+      window.removeEventListener("focus", recheck);
+      document.removeEventListener("visibilitychange", recheck);
+    };
+  }, [refreshRates]);
 
   const persistLocal = useCallback((code) => {
     try {
@@ -94,12 +145,15 @@ export const CurrencyProvider = ({ children }) => {
 
   const config = CURRENCIES[currency] || CURRENCIES[DEFAULT_CURRENCY];
 
-  // Display helpers bound to the active currency.
-  const priceFor = useCallback((denomination) => priceForCurrency(denomination, currency), [currency]);
-  const formatMoney = useCallback((amount) => formatMoneyCurrency(amount, currency), [currency]);
+  // Display helpers bound to the active currency. `ratesVersion` is in the
+  // dependency lists on purpose: the multipliers can change at runtime (admin
+  // pricing update), and these callbacks must be rebuilt when they do.
+  /* eslint-disable react-hooks/exhaustive-deps */
+  const priceFor = useCallback((denomination) => priceForCurrency(denomination, currency), [currency, ratesVersion]);
+  const formatMoney = useCallback((amount) => formatMoneyCurrency(amount, currency), [currency, ratesVersion]);
   const formatPrice = useCallback(
     (denomination) => formatMoneyCurrency(priceForCurrency(denomination, currency), currency),
-    [currency]
+    [currency, ratesVersion]
   );
 
   // Prefer the server-sent per-product `pricing` map when present (products
@@ -112,7 +166,7 @@ export const CurrencyProvider = ({ children }) => {
       }
       return priceForCurrency(product?.denomination, currency);
     },
-    [currency]
+    [currency, ratesVersion]
   );
   const formatProduct = useCallback(
     (product) => formatMoneyCurrency(priceForProduct(product), currency),
@@ -131,8 +185,9 @@ export const CurrencyProvider = ({ children }) => {
       );
       return currency === "INR" ? Math.round(raw) : +raw.toFixed(2);
     },
-    [currency]
+    [currency, ratesVersion]
   );
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   const value = {
     currency,
@@ -142,6 +197,8 @@ export const CurrencyProvider = ({ children }) => {
     symbol: config.symbol,
     currencies: CURRENCIES,
     currencyCodes: CURRENCY_CODES,
+    rates: getRates(),
+    refreshRates,
     priceFor,
     formatMoney,
     formatPrice,

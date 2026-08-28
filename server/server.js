@@ -12,11 +12,17 @@ const adminRoutes = require("./routes/adminRoutes");
 const blogRoutes = require("./routes/blogRoutes");
 const { generateSitemap } = require("./utils/generateSitemap");
 const { cancelAbandonedOrders } = require("./utils/stockReservation");
+const { hydratePricing } = require("./utils/pricing");
 
 const app = express();
 
 // Connect to MongoDB
 connectDB();
+
+// Load the admin-configured price multipliers (Admin → Pricing) into the
+// in-memory cache that config/catalog.js priceFor() reads. Falls back to the
+// hardcoded defaults if nothing is saved yet.
+hydratePricing();
 
 // Middleware
 app.use(cors());

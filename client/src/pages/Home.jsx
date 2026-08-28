@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { getCatalog } from "../services/productService";
+import { BRANDS as STATIC_BRANDS, CATEGORIES as STATIC_CATEGORIES } from "../data/catalog";
 import BrandBadge from "../components/BrandBadge";
 import Seo, { SITE_URL } from "../components/Seo";
 import { useTheme } from "../context/ThemeContext";
@@ -73,6 +74,15 @@ const FaqItem = ({ faq, isOpen, onToggle }) => (
   </div>
 );
 
+// `inStock` is the only part of a tile that needs the network. Until the live
+// catalog arrives it's undefined, and we show the brand's tagline in that slot
+// instead of guessing — same line, same height, so nothing shifts when the
+// real stock status replaces it.
+const stockLabel = (brand) => {
+  if (brand.inStock === undefined) return brand.tagline || "View amounts";
+  return brand.inStock ? "Instant code" : "Out of stock";
+};
+
 const BrandTile = ({ brand }) => (
   <Link to={`/brand/${brand.slug}`} className="brand-tile">
     <div className="brand-tile-image-wrap">
@@ -84,7 +94,7 @@ const BrandTile = ({ brand }) => (
     </div>
     <div className="brand-tile-body">
       <p className="brand-tile-name">{brand.name}</p>
-      <p className="brand-tile-meta">{brand.inStock ? "Instant code" : "Out of stock"}</p>
+      <p className="brand-tile-meta">{stockLabel(brand)}</p>
     </div>
   </Link>
 );
@@ -93,9 +103,14 @@ const Home = () => {
   const location = useLocation();
   const { theme } = useTheme();
   const heroImages = theme === "dark" ? HERO_IMAGES_DARK : HERO_IMAGES_LIGHT;
-  const [categories, setCategories] = useState([]);
-  const [brands, setBrands] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // Seeded from the bundled catalog mirror (data/catalog.js) rather than
+  // starting empty. Brand names, images, colours and categories are static
+  // config — only live stock needs the network — so the grid can paint on the
+  // very first render instead of holding a skeleton until /api/products
+  // answers. The mirror lists brands and categories in the same order the API
+  // returns them, so nothing reshuffles when the live data lands.
+  const [categories, setCategories] = useState(STATIC_CATEGORIES);
+  const [brands, setBrands] = useState(STATIC_BRANDS);
   const [error, setError] = useState("");
   const [openFaq, setOpenFaq] = useState(0);
   const [slide, setSlide] = useState(0);
@@ -107,9 +122,10 @@ const Home = () => {
         setCategories(data.categories);
         setBrands(data.brands);
       } catch (err) {
-        setError("Couldn't load gift cards right now. Please refresh.");
-      } finally {
-        setLoading(false);
+        // The tiles are already on screen, so a failed catalog fetch is a soft
+        // failure now: keep them and say stock status is unknown, instead of
+        // replacing the whole page with an error.
+        setError("Couldn't check live availability right now — stock labels may be out of date.");
       }
     };
     load();
@@ -117,22 +133,18 @@ const Home = () => {
 
   // React Router doesn't auto-scroll to a URL hash, so the navbar's
   // category links (e.g. /#cat-gaming, possibly clicked from another page)
-  // would otherwise land here without moving anywhere. Once the catalog
-  // has loaded (so the target section actually exists in the DOM), scroll
-  // to it manually. Re-runs on every hash change, including clicks made
-  // while already on this page.
+  // would otherwise land here without moving anywhere. The category sections
+  // render on first paint now, so the target id always exists — a small
+  // timeout is still enough to let React commit before we scroll.
+  // Re-runs on every hash change, including clicks made while already here.
   useEffect(() => {
-    if (loading || !location.hash) return;
+    if (!location.hash) return;
     const id = location.hash.slice(1);
     const timer = setTimeout(() => {
       document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 60);
     return () => clearTimeout(timer);
-  }, [loading, location.hash]);
-
-  // If we navigated here from another page via a "/#cat-xxx" link, scroll
-  // to that section once the catalog (and its section ids) has rendered.
-
+  }, [location.hash]);
   // Auto-rotate the hero carousel every 5s
   useEffect(() => {
     const timer = setInterval(() => setSlide((s) => (s + 1) % heroImages.length), 5000);
@@ -230,73 +242,55 @@ const Home = () => {
         ))}
       </nav>
 
-      {loading && (
-        <section className="shop-page" style={{ paddingBottom: "1rem" }}>
-          <div className="skeleton-line skeleton-heading" />
-          <div className="products-grid">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div className="skeleton-card" key={i}>
-                <div className="skeleton-block" />
-                <div className="skeleton-line" style={{ width: "60%" }} />
-                <div className="skeleton-line" style={{ width: "40%" }} />
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
       {error && (
-        <p className="shop-status shop-status-error" style={{ textAlign: "center", padding: "2rem" }}>
+        <p className="shop-status shop-status-error" style={{ textAlign: "center", padding: "0 1rem" }}>
           {error}
         </p>
       )}
 
-      {!loading && !error && (
-        <>
-          {/* ---------- Featured brands ---------- */}
-          <section className="shop-page" style={{ paddingBottom: "1rem" }} id="catalog">
-            <h2 className="section-heading">Featured gift cards</h2>
-            <div className="featured-row">
-              {featuredBrands.map((brand) => (
-                <BrandTile key={brand.slug} brand={brand} />
-              ))}
-            </div>
-          </section>
+      {/* ---------- Featured brands ---------- */}
+      <section className="shop-page" style={{ paddingBottom: "1rem" }} id="catalog">
+        <h2 className="section-heading">Featured gift cards</h2>
+        <div className="featured-row">
+          {featuredBrands.map((brand) => (
+            <BrandTile key={brand.slug} brand={brand} />
+          ))}
+        </div>
+      </section>
 
-          {/* ---------- How it works ---------- */}
-          <section className="how-it-works-wrap">
-            <h2 className="section-heading">How to buy gift cards</h2>
-            <p className="how-it-works-sub">Brand → amount → checkout → code</p>
-            <div className="how-it-works">
-              {HOW_IT_WORKS.map((item) => (
-                <div className="how-step" key={item.step}>
-                  <span className="how-step-num">{item.step}</span>
-                  <h3>{item.title}</h3>
-                  <p>{item.desc}</p>
-                </div>
-              ))}
+      {/* ---------- How it works ---------- */}
+      <section className="how-it-works-wrap">
+        <h2 className="section-heading">How to buy gift cards</h2>
+        <p className="how-it-works-sub">Brand → amount → checkout → code</p>
+        <div className="how-it-works">
+          {HOW_IT_WORKS.map((item) => (
+            <div className="how-step" key={item.step}>
+              <span className="how-step-num">{item.step}</span>
+              <h3>{item.title}</h3>
+              <p>{item.desc}</p>
             </div>
-          </section>
+          ))}
+        </div>
+      </section>
 
-          {/* ---------- All gift cards, grouped by category ---------- */}
-          <section className="shop-page" style={{ paddingTop: "1rem" }}>
-            <h2 className="section-heading">All gift cards</h2>
-            {categories.map((cat) => {
-              const catBrands = brands.filter((b) => b.category === cat.slug);
-              if (catBrands.length === 0) return null;
-              return (
-                <div className="category-block" id={`cat-${cat.slug}`} key={cat.slug}>
-                  <h3 className="category-block-title">{cat.label}</h3>
-                  <div className="brand-grid">
-                    {catBrands.map((brand) => (
-                      <BrandTile key={brand.slug} brand={brand} />
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </section>
-        </>
-      )}
+      {/* ---------- All gift cards, grouped by category ---------- */}
+      <section className="shop-page" style={{ paddingTop: "1rem" }}>
+        <h2 className="section-heading">All gift cards</h2>
+        {categories.map((cat) => {
+          const catBrands = brands.filter((b) => b.category === cat.slug);
+          if (catBrands.length === 0) return null;
+          return (
+            <div className="category-block" id={`cat-${cat.slug}`} key={cat.slug}>
+              <h3 className="category-block-title">{cat.label}</h3>
+              <div className="brand-grid">
+                {catBrands.map((brand) => (
+                  <BrandTile key={brand.slug} brand={brand} />
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </section>
 
       {/* ---------- FAQ ---------- */}
       <section className="faq-section">

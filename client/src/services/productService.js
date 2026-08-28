@@ -60,6 +60,14 @@ export const getGiftCardProducts = async () => {
   return { categories, brands, products };
 };
 
+// Live currency configs + the price multipliers admin last saved. Fetched once
+// on app start by CurrencyContext, which mirrors them into data/catalog.js so
+// client-side price math (cart & checkout totals) matches the server.
+export const getCurrencyConfig = async () => {
+  const { data } = await axios.get(`${API_BASE_URL}/products/currencies`);
+  return data;
+};
+
 // "Notify me" on an out-of-stock card. Requires login (uses the logged-in
 // user's email server-side) — GiftCardCard.jsx sends people to /login first
 // if they're not signed in yet.

@@ -49,4 +49,11 @@ const giftCardStockSchema = new mongoose.Schema(
 // Fast lookup of the next available/reservable code for a brand + denomination
 giftCardStockSchema.index({ brand: 1, denomination: 1, isUsed: 1, reservedFor: 1 });
 
+// Same four fields, availability first, for the catalog's bulk stock-count
+// aggregation (utils/stockReservation.js → getAvailableCounts). The index above
+// can't serve it: that query filters on isUsed/reservedFor without a brand, so
+// it isn't an index prefix and Mongo would scan the collection. With this
+// ordering the whole count is answered from the index alone.
+giftCardStockSchema.index({ isUsed: 1, reservedFor: 1, brand: 1, denomination: 1 });
+
 module.exports = mongoose.model("GiftCardStock", giftCardStockSchema);

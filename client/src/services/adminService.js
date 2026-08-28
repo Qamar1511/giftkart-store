@@ -35,6 +35,28 @@ export const deleteStockCode = async (codeId) => {
   return data;
 };
 
+/* ------------------------------ Pricing --------------------------------
+   Store-wide price multipliers: every card's price = denomination × rate
+   for the shopper's currency, so one number reprices the whole catalog.
+   Payload: { rates, defaults, currencies, preview, updatedAt, updatedBy }
+----------------------------------------------------------------------- */
+export const getPricing = async () => {
+  const { data } = await apiClient.get("/admin/pricing");
+  return data;
+};
+
+// rates: { INR: 1.1, USDT: 0.011 }
+export const updatePricing = async (rates) => {
+  const { data } = await apiClient.put("/admin/pricing", { rates });
+  return data;
+};
+
+// Restore the hardcoded defaults (INR 1.1 / USDT 0.011).
+export const resetPricing = async () => {
+  const { data } = await apiClient.put("/admin/pricing", { reset: true });
+  return data;
+};
+
 export const getContactQueries = async () => {
   const { data } = await apiClient.get("/contact");
   return data.submissions;

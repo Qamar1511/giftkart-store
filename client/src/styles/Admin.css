@@ -403,6 +403,7 @@
   color: var(--text-muted);
 }
 
+.admin-field input,
 .admin-field select,
 .admin-field textarea {
   background: rgba(15, 23, 42, 0.03);
@@ -415,6 +416,7 @@
   outline: none;
 }
 
+.admin-field input:focus,
 .admin-field select:focus,
 .admin-field textarea:focus {
   border-color: var(--accent-blue);

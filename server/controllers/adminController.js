@@ -3,7 +3,8 @@ const GiftCardStock = require("../models/GiftCardStock");
 const StockNotification = require("../models/StockNotification");
 const deliverGiftCard = require("../utils/deliverGiftCard");
 const { sendEmail } = require("../utils/sendEmail");
-const { BRANDS } = require("../config/catalog");
+const { BRANDS, CURRENCIES, CURRENCY_CODES, ALL_DENOMINATIONS, getRates, priceFor } = require("../config/catalog");
+const { savePricing, readPricingDoc, DEFAULT_RATES } = require("../utils/pricing");
 
 // Emails everyone who clicked "Notify me" for this brand+denomination, then
 // marks them notified so we never email the same person twice for the same
@@ -280,5 +281,118 @@ exports.deleteStockCode = async (req, res) => {
   } catch (error) {
     console.error("Delete stock code error:", error);
     res.status(500).json({ message: "Couldn't remove this code." });
+  }
+};
+
+/* ============================== PRICING =================================
+   Store-wide prices are DERIVED, not stored per product: every card's price
+   is its face value (denomination) × a per-currency multiplier.
+
+       INR  price = denomination × rates.INR    (1.1   → ₹1000 face = ₹1100)
+       USDT price = denomination × rates.USDT   (0.011 → ₹1000 face = $11)
+
+   So changing one number here reprices the entire catalog at once — no
+   redeploy, no per-brand editing. The saved rates live in the PricingSetting
+   singleton and are mirrored into config/catalog.js's in-memory cache (see
+   utils/pricing.js) which priceFor() reads synchronously everywhere.
+   ======================================================================= */
+
+// Everything the Admin → Pricing screen needs, including a live price preview
+// so admin can see the effect before/after saving.
+async function buildPricingPayload() {
+  const rates = getRates();
+  const denominations = [...ALL_DENOMINATIONS].sort((a, b) => a - b);
+
+  let doc = null;
+  try {
+    doc = await readPricingDoc();
+  } catch (error) {
+    // A missing/unreadable settings doc just means "never customised".
+    console.error("Read pricing doc error:", error.message);
+  }
+
+  return {
+    rates,
+    defaults: DEFAULT_RATES,
+    currencies: CURRENCY_CODES.map((code) => ({
+      code,
+      symbol: CURRENCIES[code].symbol,
+      label: CURRENCIES[code].label,
+      decimals: CURRENCIES[code].decimals,
+      rate: rates[code],
+      defaultRate: DEFAULT_RATES[code],
+    })),
+    // [{ denomination: 1000, prices: { INR: 1100, USDT: 11 } }, ...]
+    preview: denominations.map((denomination) => ({
+      denomination,
+      prices: CURRENCY_CODES.reduce((acc, code) => {
+        acc[code] = priceFor(denomination, code);
+        return acc;
+      }, {}),
+    })),
+    updatedAt: doc?.updatedAt || null,
+    updatedBy: doc?.updatedBy
+      ? { name: doc.updatedBy.name, email: doc.updatedBy.email }
+      : null,
+  };
+}
+
+// @route  GET /api/admin/pricing
+// @access Admin
+exports.getPricing = async (req, res) => {
+  try {
+    res.status(200).json(await buildPricingPayload());
+  } catch (error) {
+    console.error("Get pricing error:", error);
+    res.status(500).json({ message: "Couldn't load pricing settings." });
+  }
+};
+
+// @route  PUT /api/admin/pricing
+// @access Admin
+// Body: { rates: { INR: 1.1, USDT: 0.011 } }  — or  { reset: true }
+exports.updatePricing = async (req, res) => {
+  try {
+    if (req.body?.reset === true) {
+      const applied = await savePricing(DEFAULT_RATES, req.user?._id);
+      return res.status(200).json({
+        message: "Prices reset to the default rates.",
+        ...(await buildPricingPayload()),
+        rates: applied,
+      });
+    }
+
+    const incoming = req.body?.rates;
+    if (!incoming || typeof incoming !== "object") {
+      return res.status(400).json({ message: "Send a `rates` object, e.g. { INR: 1.1, USDT: 0.011 }." });
+    }
+
+    // Validate BEFORE touching anything — a bad rate must not partially apply.
+    const cleaned = {};
+    for (const code of CURRENCY_CODES) {
+      if (incoming[code] === undefined || incoming[code] === null || incoming[code] === "") {
+        return res.status(400).json({ message: `Rate for ${code} is required.` });
+      }
+      const value = Number(incoming[code]);
+      if (!Number.isFinite(value) || value <= 0) {
+        return res.status(400).json({ message: `Rate for ${code} must be a number greater than 0.` });
+      }
+      // Sanity ceiling — a stray keystroke like 110 instead of 1.1 would
+      // multiply every price 100×, so refuse anything wildly out of range.
+      if (value > 1000) {
+        return res.status(400).json({ message: `Rate for ${code} looks wrong (${value}). Maximum allowed is 1000.` });
+      }
+      cleaned[code] = value;
+    }
+
+    await savePricing(cleaned, req.user?._id);
+
+    res.status(200).json({
+      message: "Prices updated. The whole catalog now uses the new rates.",
+      ...(await buildPricingPayload()),
+    });
+  } catch (error) {
+    console.error("Update pricing error:", error);
+    res.status(500).json({ message: "Couldn't save pricing settings." });
   }
 };

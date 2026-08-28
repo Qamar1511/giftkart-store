@@ -14,6 +14,28 @@ async function getAvailableCount(brand, denomination) {
   return GiftCardStock.countDocuments({ brand, denomination, isUsed: false, reservedFor: null });
 }
 
+// Bulk version of the above, for the catalog endpoint. GET /api/products used
+// to call getAvailableCount() once per brand+denomination — 42 separate round
+// trips to Atlas on every homepage load, which is what kept the "Featured gift
+// cards" section sitting on a loading skeleton. This does it in one
+// aggregation instead.
+//
+// Returns a plain object keyed `${brand}:${denomination}`. Pairs with no
+// sellable units left produce no group at all, so callers must treat a missing
+// key as 0 rather than assuming every pair is present.
+async function getAvailableCounts() {
+  const rows = await GiftCardStock.aggregate([
+    { $match: { isUsed: false, reservedFor: null } },
+    { $group: { _id: { brand: "$brand", denomination: "$denomination" }, count: { $sum: 1 } } },
+  ]);
+
+  const counts = {};
+  for (const row of rows) {
+    counts[`${row._id.brand}:${row._id.denomination}`] = row.count;
+  }
+  return counts;
+}
+
 // Atomically reserves `quantity` units per item for this order. If any item
 // comes up short, everything already reserved for this order (across all
 // its items) is released again before returning failure — so a multi-item
@@ -89,6 +111,7 @@ async function releaseAbandonedReservations() {
 
 module.exports = {
   getAvailableCount,
+  getAvailableCounts,
   reserveStockForOrder,
   releaseStockForOrder,
   cancelAbandonedOrders: releaseAbandonedReservations,

@@ -34,6 +34,7 @@ const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminOrders = lazy(() => import("./pages/admin/AdminOrders"));
 const AdminStock = lazy(() => import("./pages/admin/AdminStock"));
+const AdminPricing = lazy(() => import("./pages/admin/AdminPricing"));
 const AdminQueries = lazy(() => import("./pages/admin/AdminQueries"));
 const AdminBlog = lazy(() => import("./pages/admin/AdminBlog"));
 const AdminBlogEditor = lazy(() => import("./pages/admin/AdminBlogEditor"));
@@ -65,6 +66,7 @@ function App() {
             <Route index element={<AdminDashboard />} />
             <Route path="orders" element={<AdminOrders />} />
             <Route path="stock" element={<AdminStock />} />
+            <Route path="pricing" element={<AdminPricing />} />
             <Route path="queries" element={<AdminQueries />} />
             <Route path="blog" element={<AdminBlog />} />
             <Route path="blog/new" element={<AdminBlogEditor />} />
@@ -75,6 +77,10 @@ function App() {
           <Route element={<Layout />}>
             <Route path="/" element={<Home />} />
             <Route path="/gift-cards" element={<Navigate to="/" replace />} />
+            {/* Keyword-friendly alias used in blog content and shared links.
+                Without it the catch-all below would serve a "coming soon"
+                page, which reads as a broken link to shoppers and crawlers. */}
+            <Route path="/playstation-gift-cards" element={<Navigate to="/brand/psn" replace />} />
             <Route path="/brand/:slug" element={<BrandProducts />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/contact" element={<Contact />} />

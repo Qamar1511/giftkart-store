@@ -1853,6 +1853,9 @@
 
 .blog-post-content img {
   max-width: 100%;
+  /* Post images carry width/height attributes to reserve space (avoids layout
+     shift); height:auto keeps them undistorted once max-width kicks in. */
+  height: auto;
   border-radius: 0.6rem;
   margin: 1rem 0;
 }
