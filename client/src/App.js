@@ -4,10 +4,6 @@ import "./styles/theme.css";
 import { CartProvider } from "./context/CartContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { CurrencyProvider } from "./context/CurrencyContext";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
-import ForgotPassword from "./pages/ForgotPassword";
-import ResetPassword from "./pages/ResetPassword";
 import Home from "./pages/Home";
 import BrandProducts from "./pages/BrandProducts";
 import Cart from "./pages/Cart";
@@ -21,15 +17,29 @@ import AdminRoute from "./components/AdminRoute";
 // Code-split the routes that aren't part of the first-paint shopping flow, so
 // their JS is fetched only when visited. The admin panel (its own heavier
 // bundle) and the low-traffic pages below are the biggest wins; Home, brand,
-// cart, checkout and auth stay eager so the core journey has no chunk wait.
+// cart and checkout stay eager so the core journey has no chunk wait.
 //
-// The two blog imports are named because they're also prefetched during idle
-// time (see useEffect in App). Without that, clicking "Blog" meant waiting for
-// a chunk download BEFORE the page could even start fetching posts — a blank
-// Suspense box followed by a loading state.
+// The named imports below are also prefetched during idle time (see useEffect
+// in App). Without that, clicking through meant waiting for a chunk download
+// BEFORE the page could even start fetching data — a blank Suspense box
+// followed by a loading state.
 const importBlog = () => import("./pages/Blog");
 const importBlogPost = () => import("./pages/BlogPost");
 
+// The four auth pages are lazy too. Nobody lands on the homepage and logs in
+// within the first second, but their JS plus the 18KB of Auth.css they import
+// was sitting in the main bundle for every visitor — pure weight on mobile,
+// where JS parse time is the expensive part. Prefetched on idle like the blog,
+// so a click on "Login" still has the chunk ready.
+const importLogin = () => import("./pages/Login");
+const importSignup = () => import("./pages/Signup");
+const importForgotPassword = () => import("./pages/ForgotPassword");
+const importResetPassword = () => import("./pages/ResetPassword");
+
+const Login = lazy(importLogin);
+const Signup = lazy(importSignup);
+const ForgotPassword = lazy(importForgotPassword);
+const ResetPassword = lazy(importResetPassword);
 const OrderConfirmation = lazy(() => import("./pages/OrderConfirmation"));
 const OrderHistory = lazy(() => import("./pages/OrderHistory"));
 const PaypalReturn = lazy(() => import("./pages/PaypalReturn"));
@@ -48,13 +58,16 @@ const AdminBlog = lazy(() => import("./pages/admin/AdminBlog"));
 const AdminBlogEditor = lazy(() => import("./pages/admin/AdminBlogEditor"));
 
 function App() {
-  // Warm the blog chunks once the browser is idle. This runs after first paint,
-  // so it can't compete with the homepage LCP, and it means a later click on
-  // "Blog" renders the page shell immediately instead of downloading JS first.
+  // Warm the code-split chunks people are most likely to click, once the
+  // browser is idle. This runs after first paint, so it can't compete with the
+  // homepage LCP, and it means a later click on "Blog" or "Login" renders the
+  // page shell immediately instead of downloading JS first.
   useEffect(() => {
     const prefetch = () => {
       importBlog();
       importBlogPost();
+      importLogin();
+      importSignup();
     };
     if (typeof window.requestIdleCallback === "function") {
       const id = window.requestIdleCallback(prefetch, { timeout: 4000 });

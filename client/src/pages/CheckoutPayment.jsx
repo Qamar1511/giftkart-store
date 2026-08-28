@@ -6,6 +6,7 @@ import { createOrder, submitUtr, submitUsdtTx } from "../services/orderService";
 import {
   createRazorpayOrder,
   openRazorpayCheckout,
+  loadRazorpayCheckout,
   verifyRazorpayPayment,
   createPaypalOrder,
   getUsdtWalletDetails,
@@ -163,6 +164,17 @@ const CheckoutPayment = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currency]);
 
+  // Razorpay's checkout.js is no longer in index.html (it cost every visitor a
+  // few hundred KB of third-party JS, which hurt mobile most). Fetch it as soon
+  // as this page mounts instead: the customer still has to pick a method and
+  // press Pay, so by then it's downloaded and window.Razorpay exists. A failure
+  // here is deliberately swallowed — openRazorpayCheckout retries and surfaces
+  // the error properly, and the UPI/USDT/PayPal methods don't need the SDK at
+  // all, so a blocked script must not break the whole page.
+  useEffect(() => {
+    loadRazorpayCheckout().catch(() => {});
+  }, []);
+
   if (!address || items.length === 0) return null;
 
   const buildItemsPayload = () =>
@@ -237,7 +249,7 @@ const CheckoutPayment = () => {
 
       // razorpay / card / debit_card all go through Razorpay Checkout
       const razorpayData = await createRazorpayOrder(order._id);
-      openRazorpayCheckout({
+      await openRazorpayCheckout({
         razorpayOrderId: razorpayData.razorpayOrderId,
         amount: razorpayData.amount,
         currency: razorpayData.currency,
@@ -262,7 +274,11 @@ const CheckoutPayment = () => {
         onDismiss: () => setSubmitting(false),
       });
     } catch (err) {
-      const message = err.response?.data?.message || "Something went wrong. Please try again.";
+      // `userMessage` is set by paymentService when the Razorpay script itself
+      // can't be fetched — that's actionable for the customer, so prefer it
+      // over the generic line. Raw error messages are never shown.
+      const message =
+        err.response?.data?.message || err.userMessage || "Something went wrong. Please try again.";
       setError(message);
       setSubmitting(false);
     }

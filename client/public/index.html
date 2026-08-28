@@ -23,15 +23,26 @@
     <meta property="og:url" content="https://giftkartstore.in/" />
     <meta name="twitter:card" content="summary_large_image" />
 
-    <!-- Preconnect + non-blocking font load (replaces the blocking @import
-         that used to sit in theme.css). font-display:swap keeps text visible
-         while the webfont downloads. -->
+    <!-- Preconnect + fully non-blocking font load. A plain stylesheet <link>
+         still blocks first paint, and on a throttled mobile connection that
+         third-party round trip was costing several hundred ms of FCP. The
+         media="print" trick lets the browser fetch it at low priority without
+         blocking, then onload promotes it to all media. font-display=swap keeps
+         text visible in the fallback face meanwhile. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&display=swap"
+      media="print"
+      onload="this.media='all'; this.onload=null;"
     />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600&display=swap"
+      />
+    </noscript>
 
     <!-- Preload the homepage LCP hero (light theme, first slide) so it starts
          downloading immediately instead of after React renders. Matches the
@@ -53,9 +64,12 @@
       media="(max-width: 768px)"
     />
 
-    <!-- Razorpay Checkout SDK. `defer` takes it off the render-blocking path;
-         it still defines window.Razorpay well before any checkout click. -->
-    <script defer src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <!-- Razorpay Checkout is deliberately NOT loaded here any more. It was a
+         few hundred KB of third-party JS on every page view, including for
+         visitors who never reach checkout — the biggest mobile-only cost on the
+         site. services/paymentService.js now injects it on demand and the
+         payment page warms it on mount, so window.Razorpay is ready well before
+         anyone can press Pay. -->
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>

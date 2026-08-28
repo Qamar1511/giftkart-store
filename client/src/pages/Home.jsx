@@ -114,6 +114,24 @@ const Home = () => {
   const [error, setError] = useState("");
   const [openFaq, setOpenFaq] = useState(0);
   const [slide, setSlide] = useState(0);
+  // Slides 2 and 3 are stacked on top of slide 1 and only cross-faded in, so
+  // `loading="lazy"` can't help — the browser counts them as in-viewport and
+  // fetches them anyway. On mobile that meant ~115KB of hero art competing with
+  // the LCP image for a throttled connection, for two pictures nobody sees for
+  // another five seconds. So they aren't rendered at all until the browser goes
+  // idle; the first auto-rotate is 5s away, far longer than this takes.
+  const [showAllSlides, setShowAllSlides] = useState(false);
+
+  useEffect(() => {
+    const reveal = () => setShowAllSlides(true);
+    if (typeof window.requestIdleCallback === "function") {
+      const id = window.requestIdleCallback(reveal, { timeout: 3000 });
+      return () => window.cancelIdleCallback(id);
+    }
+    // Safari has no requestIdleCallback.
+    const timer = setTimeout(reveal, 1500);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const load = async () => {
@@ -198,27 +216,37 @@ const Home = () => {
             onClick={(e) => scrollToCategory(e, categories[0]?.slug)}
             aria-label="Shop gift cards"
           >
-            {heroImages.map((img, i) => (
-              <picture key={img.webp}>
-                <source media="(max-width: 768px)" srcSet={img.mobile} type="image/webp" />
-                <source srcSet={img.webp} type="image/webp" />
-                <img
-                  src={img.fallback}
-                  alt={img.alt}
-                  className={i === slide ? "is-active" : ""}
-                  decoding="async"
-                  fetchpriority={i === 0 ? "high" : "low"}
-                  loading="eager"
-                />
-              </picture>
-            ))}
+            {heroImages.map((img, i) => {
+              // Slide 0 is the LCP element and paints immediately; the rest are
+              // held back until the browser is idle (see showAllSlides).
+              if (i > 0 && !showAllSlides) return null;
+              return (
+                <picture key={img.webp}>
+                  <source media="(max-width: 768px)" srcSet={img.mobile} type="image/webp" />
+                  <source srcSet={img.webp} type="image/webp" />
+                  <img
+                    src={img.fallback}
+                    alt={img.alt}
+                    className={i === slide ? "is-active" : ""}
+                    decoding="async"
+                    fetchpriority={i === 0 ? "high" : "low"}
+                    loading="eager"
+                  />
+                </picture>
+              );
+            })}
           </a>
           <div className="hero-carousel-dots">
             {heroImages.map((img, i) => (
               <button
                 key={img.webp}
                 className={`hero-carousel-dot ${i === slide ? "is-active" : ""}`}
-                onClick={() => setSlide(i)}
+                onClick={() => {
+                  // Someone tapping a dot within the first moment would
+                  // otherwise select a slide that isn't mounted yet.
+                  setShowAllSlides(true);
+                  setSlide(i);
+                }}
                 aria-label={`Slide ${i + 1}`}
               />
             ))}
