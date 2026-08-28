@@ -18,6 +18,48 @@ const initialAddress = {
   country: "India",
 };
 
+// All Indian states + union territories, for the State dropdown. Country is
+// fixed to India (digital delivery — address is only used on the invoice).
+const INDIAN_STATES = [
+  "Andhra Pradesh",
+  "Arunachal Pradesh",
+  "Assam",
+  "Bihar",
+  "Chhattisgarh",
+  "Goa",
+  "Gujarat",
+  "Haryana",
+  "Himachal Pradesh",
+  "Jharkhand",
+  "Karnataka",
+  "Kerala",
+  "Madhya Pradesh",
+  "Maharashtra",
+  "Manipur",
+  "Meghalaya",
+  "Mizoram",
+  "Nagaland",
+  "Odisha",
+  "Punjab",
+  "Rajasthan",
+  "Sikkim",
+  "Tamil Nadu",
+  "Telangana",
+  "Tripura",
+  "Uttar Pradesh",
+  "Uttarakhand",
+  "West Bengal",
+  // Union Territories
+  "Andaman and Nicobar Islands",
+  "Chandigarh",
+  "Dadra and Nagar Haveli and Daman and Diu",
+  "Delhi",
+  "Jammu and Kashmir",
+  "Ladakh",
+  "Lakshadweep",
+  "Puducherry",
+];
+
 const CheckoutAddress = () => {
   const navigate = useNavigate();
   const { items } = useCart();
@@ -115,7 +157,21 @@ const CheckoutAddress = () => {
           </label>
           <label className="auth-field">
             <span>State</span>
-            <input name="state" value={address.state} onChange={handleChange} />
+            <select
+              name="state"
+              value={address.state}
+              onChange={handleChange}
+              className="address-select"
+            >
+              <option value="" disabled>
+                Select a state
+              </option>
+              {INDIAN_STATES.map((st) => (
+                <option key={st} value={st}>
+                  {st}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="auth-field">
             <span>Pincode</span>

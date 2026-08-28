@@ -11,7 +11,7 @@ import Seo from "../components/Seo";
 
 const Cart = () => {
   const navigate = useNavigate();
-  const { items, setQuantity, removeFromCart, totalItems } = useCart();
+  const { items, setQuantity, removeFromCart, totalItems, cartFull, maxCardsPerOrder } = useCart();
   const { formatMoney, formatPrice, priceFor, totalFor } = useCurrency();
   const [stockByKey, setStockByKey] = useState(null);
 
@@ -70,7 +70,9 @@ const Cart = () => {
         {items.map((item) => {
           const brand = getBrand(item.brand);
           const available = stockByKey?.get(`${item.brand}-${item.denomination}`);
-          const atMax = available != null && item.quantity >= available;
+          const atStockMax = available != null && item.quantity >= available;
+          // Can't add another card once the whole order is at the cap.
+          const atMax = atStockMax || cartFull;
           return (
             <div className="cart-row" key={`${item.brand}-${item.denomination}`}>
               <div className="cart-row-image-wrap">
@@ -94,7 +96,13 @@ const Cart = () => {
                   type="button"
                   onClick={() => setQuantity(item.brand, item.denomination, item.quantity + 1, available)}
                   disabled={atMax}
-                  title={atMax ? "That's all we have in stock" : undefined}
+                  title={
+                    cartFull && !atStockMax
+                      ? `Limit is ${maxCardsPerOrder} cards per order`
+                      : atStockMax
+                      ? "That's all we have in stock"
+                      : undefined
+                  }
                 >
                   +
                 </button>

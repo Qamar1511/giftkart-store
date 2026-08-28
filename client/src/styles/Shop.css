@@ -718,6 +718,13 @@
   margin: 0.4rem 0 0;
 }
 
+.giftcard-card-limit-hint {
+  font-size: 0.76rem;
+  color: #e5484d;
+  font-weight: 600;
+  margin: 0.4rem 0 0;
+}
+
 /* ---------- Buy page ---------- */
 .buy-page {
   position: relative;
@@ -840,6 +847,71 @@
 
 .address-full-width {
   grid-column: 1 / -1;
+}
+
+/* State dropdown — styled to match the address text inputs, with a custom
+   caret. Uses global theme tokens so it reads correctly in light + dark. */
+.address-select {
+  width: 100%;
+  background-color: var(--bg-panel-raised, #eef1f9);
+  border: 1px solid var(--card-border);
+  border-radius: 0.6rem;
+  padding: 0.8rem 2.4rem 0.8rem 0.95rem;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-family: "Inter", sans-serif;
+  line-height: 1.2;
+  outline: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%235b6478' d='M1.41 0 6 4.58 10.59 0 12 1.42l-6 6-6-6z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.95rem center;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.address-select:focus {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(47, 111, 237, 0.18);
+}
+
+.address-select option {
+  color: var(--text-primary);
+  background: var(--bg-panel);
+}
+
+/* The address text inputs relied on auth-only CSS variables that don't exist
+   on the checkout page, so they rendered with no border/background (nearly
+   invisible until focused). Give them the same visible treatment as the
+   State dropdown, using global theme tokens. */
+.address-grid input {
+  width: 100%;
+  background-color: var(--bg-panel-raised, #eef1f9);
+  border: 1px solid var(--card-border);
+  border-radius: 0.6rem;
+  padding: 0.8rem 0.95rem;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-family: "Inter", sans-serif;
+  line-height: 1.2;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.address-grid input::placeholder {
+  color: var(--text-muted);
+}
+
+.address-grid input:focus {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(47, 111, 237, 0.18);
+}
+
+.address-grid input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* ---------- Contact page ---------- */

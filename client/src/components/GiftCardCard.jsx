@@ -1,23 +1,46 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useCart, MAX_QUANTITY_PER_ITEM } from "../context/CartContext";
+import { useCart, MAX_QUANTITY_PER_ITEM, MAX_CARDS_PER_ORDER } from "../context/CartContext";
 import { useCurrency } from "../context/CurrencyContext";
 import { getSession } from "../services/authService";
 import { requestStockNotification } from "../services/productService";
+import flyToCart from "../utils/flyToCart";
 import BrandBadge from "./BrandBadge";
 
 const GiftCardCard = ({ product, color }) => {
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const { formatProduct } = useCurrency();
-  const maxQty = Math.max(0, Math.min(MAX_QUANTITY_PER_ITEM, product.availableStock ?? MAX_QUANTITY_PER_ITEM));
+  // A single order can hold at most MAX_CARDS_PER_ORDER cards, so there's no
+  // point letting the stepper climb past that here either.
+  const maxQty = Math.max(
+    0,
+    Math.min(MAX_QUANTITY_PER_ITEM, MAX_CARDS_PER_ORDER, product.availableStock ?? MAX_QUANTITY_PER_ITEM)
+  );
   const [quantity, setQuantity] = useState(1);
   const [justAdded, setJustAdded] = useState(false);
+  const [limitHint, setLimitHint] = useState("");
   const [notifyState, setNotifyState] = useState("idle"); // idle | sending | done | error
   const [notifyError, setNotifyError] = useState("");
+  const imageRef = useRef(null);
 
   const handleAdd = () => {
-    addToCart(product.brand, product.denomination, quantity, product.availableStock);
+    const { added } = addToCart(product.brand, product.denomination, quantity, product.availableStock);
+
+    // Cart is already at the per-order card limit — don't fake a success or
+    // fly an item that never landed; nudge the shopper instead.
+    if (added <= 0) {
+      setLimitHint(`Limit is ${MAX_CARDS_PER_ORDER} cards per order`);
+      setTimeout(() => setLimitHint(""), 2500);
+      return;
+    }
+
+    // Fly a shrinking clone of the card image up into the navbar cart icon.
+    flyToCart(imageRef.current, {
+      imageSrc: product.image,
+      color,
+      label: product.brandName,
+    });
     setJustAdded(true);
     setTimeout(() => setJustAdded(false), 1500);
   };
@@ -40,7 +63,7 @@ const GiftCardCard = ({ product, color }) => {
 
   return (
     <div className="giftcard-card">
-      <div className="giftcard-card-image-wrap">
+      <div className="giftcard-card-image-wrap" ref={imageRef}>
         {product.image ? (
           <img
             src={product.image}
@@ -103,6 +126,8 @@ const GiftCardCard = ({ product, color }) => {
         )}
 
         {notifyState === "error" && <p className="giftcard-card-notify-error">{notifyError}</p>}
+
+        {limitHint && <p className="giftcard-card-limit-hint">{limitHint}</p>}
 
         {product.inStock && product.availableStock < 5 && (
           <p className="giftcard-card-stock-hint">Only {product.availableStock} left</p>

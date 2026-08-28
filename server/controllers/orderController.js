@@ -8,6 +8,10 @@ const {
   CURRENCY_CODES,
   CURRENCY_PAYMENT_METHODS,
   DEFAULT_CURRENCY,
+  MAX_CARDS_PER_ORDER,
+  MONTHLY_SPEND_LIMIT_INR,
+  MONTHLY_WINDOW_DAYS,
+  orderInrValue,
 } = require("../config/catalog");
 const { refundRazorpayPayment, refundPaypalCapture } = require("./paymentController");
 const { getAvailableCount, reserveStockForOrder, releaseStockForOrder } = require("../utils/stockReservation");
@@ -114,6 +118,55 @@ exports.createOrder = async (req, res) => {
     // total to kill any floating-point drift from the per-unit USDT prices.
     totalAmount =
       currency === "INR" ? Math.round(totalAmount) : +totalAmount.toFixed(2);
+
+    // ----------------------------- Purchase limits -----------------------
+    // These caps are enforced here, on the server, because the client cart
+    // can be bypassed. See config/catalog.js for the values.
+    //
+    // (1) At most MAX_CARDS_PER_ORDER gift cards in a single order — counted
+    //     as the sum of every line's quantity.
+    const totalCards = orderItems.reduce((n, it) => n + it.quantity, 0);
+    if (totalCards > MAX_CARDS_PER_ORDER) {
+      return res.status(400).json({
+        message: `You can buy a maximum of ${MAX_CARDS_PER_ORDER} gift cards in a single order. Please lower the quantity in your cart.`,
+        limit: MAX_CARDS_PER_ORDER,
+        totalCards,
+      });
+    }
+
+    // (2) At most MONTHLY_SPEND_LIMIT_INR of purchases per user in any rolling
+    //     MONTHLY_WINDOW_DAYS window. We measure in an INR-equivalent value so
+    //     the same cap applies to USDT buyers. Orders still counting toward
+    //     the tally are the user's non-cancelled orders in the window that are
+    //     either paid or awaiting payment (pending) — pending orders count so
+    //     a buyer can't slip past the cap by stacking unpaid orders; cancelled,
+    //     failed and refunded orders are excluded.
+    const since = new Date(Date.now() - MONTHLY_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+    const recentOrders = await Order.find({
+      user: req.user.id,
+      createdAt: { $gte: since },
+      paymentStatus: { $in: ["pending", "paid"] },
+      orderStatus: { $ne: "cancelled" },
+    }).select("items");
+    const spentInr = Math.round(
+      recentOrders.reduce((sum, o) => sum + orderInrValue(o.items), 0)
+    );
+    const thisOrderInr = Math.round(orderInrValue(orderItems));
+    if (spentInr + thisOrderInr > MONTHLY_SPEND_LIMIT_INR) {
+      const remaining = Math.max(0, MONTHLY_SPEND_LIMIT_INR - spentInr);
+      const limitStr = MONTHLY_SPEND_LIMIT_INR.toLocaleString("en-IN");
+      return res.status(400).json({
+        message:
+          remaining > 0
+            ? `This order would take you over your monthly purchase limit of ₹${limitStr}. You can still spend ₹${remaining.toLocaleString(
+                "en-IN"
+              )} this month — please lower the quantity in your cart.`
+            : `You've reached your monthly purchase limit of ₹${limitStr}. Please try again next month.`,
+        monthlyLimitInr: MONTHLY_SPEND_LIMIT_INR,
+        spentInr,
+        remainingInr: remaining,
+      });
+    }
 
     const order = await Order.create({
       user: req.user.id,

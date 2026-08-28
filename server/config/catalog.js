@@ -209,6 +209,29 @@ function pricesFor(denomination) {
   }, {});
 }
 
+// -------------------------- Purchase limits -----------------------------
+// Anti-abuse caps enforced authoritatively in orderController.createOrder
+// (and mirrored as UX guardrails in the client cart):
+//   • At most 3 gift cards per single order (sum of item quantities).
+//   • At most ₹10,000 of purchases per user in any rolling 30-day window.
+// The monthly cap is always measured in an INR-equivalent value so it
+// applies identically to USDT buyers (USDT orders are converted back to
+// their INR face-based price for the tally).
+const MAX_CARDS_PER_ORDER = 3;
+const MONTHLY_SPEND_LIMIT_INR = 10000;
+const MONTHLY_WINDOW_DAYS = 30;
+
+// INR-equivalent value of a set of order items — face × 1.1 per unit,
+// regardless of the order's actual buying currency. Used only for the
+// per-user monthly spend cap so the limit is currency-agnostic.
+function orderInrValue(items = []) {
+  return items.reduce(
+    (sum, it) =>
+      sum + priceFor(Number(it.denomination), "INR") * Number(it.quantity || 0),
+    0
+  );
+}
+
 module.exports = {
   CATEGORIES,
   BRANDS,
@@ -219,6 +242,10 @@ module.exports = {
   CURRENCY_CODES,
   DEFAULT_CURRENCY,
   CURRENCY_PAYMENT_METHODS,
+  MAX_CARDS_PER_ORDER,
+  MONTHLY_SPEND_LIMIT_INR,
+  MONTHLY_WINDOW_DAYS,
+  orderInrValue,
   priceFor,
   pricesFor,
   getBrand,
