@@ -18,11 +18,25 @@ import { getBrand, CURRENCY_PAYMENT_METHODS } from "../data/catalog";
 import Seo from "../components/Seo";
 import "../styles/Shop.css";
 
-// Only these methods are live for now — the rest render as disabled tiles.
-// "razorpay" covers Cards / UPI / Netbanking / Wallets via Razorpay Checkout.
+// Only these methods are live. Anything listed in PAYMENT_METHODS but missing
+// here is hidden, not shown greyed out with "Coming soon" — that tile sat on
+// the payment page at the exact moment a shopper decides whether to trust the
+// store, and it advertised an unfinished site for no gain. Nothing is lost by
+// hiding them: the Razorpay tile already takes cards, netbanking and wallets.
 const ENABLED_METHODS = ["upi_manual", "usdt", "razorpay"];
 
 const PAYMENT_METHODS = [
+  {
+    id: "razorpay",
+    label: "Razorpay",
+    hint: "Cards, UPI, Netbanking, Wallets",
+    iconBg: "#eef2ff",
+    icon: (
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
+        <path d="M15.5 2 6 14.5h5.2L9.5 22 18 9.5h-5.2L15.5 2Z" fill="#3b82f6" />
+      </svg>
+    ),
+  },
   {
     id: "upi_manual",
     label: "UPI (Scan QR)",
@@ -48,17 +62,6 @@ const PAYMENT_METHODS = [
           d="M13 9.6v-2h4V6H7v1.6h4v2c-3.2.15-5.6.8-5.6 1.55S7.8 12.5 11 12.65v4.35h2v-4.35c3.2-.15 5.6-.8 5.6-1.55S16.2 9.75 13 9.6Zm-1 2.65c-2.9 0-5.25-.5-5.25-1.1s2.35-1.1 5.25-1.1 5.25.5 5.25 1.1-2.35 1.1-5.25 1.1Z"
           fill="#fff"
         />
-      </svg>
-    ),
-  },
-  {
-    id: "razorpay",
-    label: "Razorpay",
-    hint: "Cards, UPI, Netbanking, Wallets",
-    iconBg: "#eef2ff",
-    icon: (
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
-        <path d="M15.5 2 6 14.5h5.2L9.5 22 18 9.5h-5.2L15.5 2Z" fill="#3b82f6" />
       </svg>
     ),
   },
@@ -108,21 +111,18 @@ const PAYMENT_METHODS = [
   },
 ];
 
-// Payment methods available for a buying currency, in tile order. INR is paid
-// in rupees (UPI/cards), USDT is paid on-chain — so we only show the tiles that
-// match the shopper's currency (see CURRENCY_PAYMENT_METHODS).
+// Payment tiles to show for a buying currency, in tile order: the ones allowed
+// for that currency (INR is paid in rupees, USDT on-chain — see
+// CURRENCY_PAYMENT_METHODS) narrowed to the ones that actually work today.
 const methodsForCurrency = (currency) => {
   const allowed = CURRENCY_PAYMENT_METHODS[currency] || CURRENCY_PAYMENT_METHODS.INR;
-  return PAYMENT_METHODS.filter((m) => allowed.includes(m.id));
+  return PAYMENT_METHODS.filter((m) => allowed.includes(m.id) && ENABLED_METHODS.includes(m.id));
 };
 
-// The method to pre-select for a currency: the first *enabled* one for it
-// (INR → UPI, USDT → USDT), falling back to the first allowed tile.
-const defaultMethodFor = (currency) => {
-  const methods = methodsForCurrency(currency);
-  const enabled = methods.find((m) => ENABLED_METHODS.includes(m.id));
-  return (enabled || methods[0])?.id || "upi_manual";
-};
+// The method to pre-select (INR → Razorpay, USDT → USDT). Razorpay leads the
+// INR list because it settles automatically — manual UPI still works, but it
+// needs a UTR to be checked by hand before delivery.
+const defaultMethodFor = (currency) => methodsForCurrency(currency)[0]?.id || "upi_manual";
 
 const CheckoutPayment = () => {
   const navigate = useNavigate();
@@ -154,7 +154,7 @@ const CheckoutPayment = () => {
 
   // If the shopper switches buying currency (e.g. via the navbar) while on this
   // page, the previously-selected tile may no longer be valid for that currency.
-  // Snap the selection back to that currency's default method (INR → UPI,
+  // Snap the selection back to that currency's default method (INR → Razorpay,
   // USDT → USDT) so it always matches what the server will accept.
   useEffect(() => {
     const allowed = CURRENCY_PAYMENT_METHODS[currency] || [];
@@ -417,27 +417,17 @@ const CheckoutPayment = () => {
         {error && <div className="auth-error" role="alert">{error}</div>}
 
         <div className="payment-method-grid">
-          {methodsForCurrency(currency).map((method) => {
-            const isEnabled = ENABLED_METHODS.includes(method.id);
-            return (
-              <button
-                type="button"
-                key={method.id}
-                className={`payment-method-tile ${paymentMethod === method.id ? "is-selected" : ""} ${
-                  isEnabled ? "" : "is-disabled"
-                }`}
-                onClick={() => isEnabled && setPaymentMethod(method.id)}
-                disabled={!isEnabled}
-                aria-disabled={!isEnabled}
-                title={isEnabled ? undefined : "Coming soon"}
-              >
-                <span className="payment-method-label">{method.label}</span>
-                <span className="payment-method-hint">
-                  {isEnabled ? method.hint : "Coming soon"}
-                </span>
-              </button>
-            );
-          })}
+          {methodsForCurrency(currency).map((method) => (
+            <button
+              type="button"
+              key={method.id}
+              className={`payment-method-tile ${paymentMethod === method.id ? "is-selected" : ""}`}
+              onClick={() => setPaymentMethod(method.id)}
+            >
+              <span className="payment-method-label">{method.label}</span>
+              <span className="payment-method-hint">{method.hint}</span>
+            </button>
+          ))}
         </div>
 
         <button type="submit" className="auth-submit" disabled={submitting} style={{ marginTop: "1.5rem" }}>

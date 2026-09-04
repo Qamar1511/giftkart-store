@@ -1483,6 +1483,48 @@
   padding: 2rem 2.25rem 2.5rem;
 }
 
+/* ---------- 404 / not-found page ----------
+   Reuses the legal-page shell (same hero + panel) so the 404 looks like a real
+   page of the site rather than a bare error. Only these few extras are new. */
+.notfound-badge {
+  position: relative;
+  z-index: 1;
+  display: inline-block;
+  font-family: "Rajdhani", sans-serif;
+  font-weight: 600;
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-cyan);
+  background: var(--bg-panel);
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  padding: 0.35rem 0.85rem;
+}
+
+.notfound-path {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.notfound-path code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85rem;
+  background: var(--bg-panel-raised);
+  border: 1px solid var(--card-border);
+  border-radius: 0.4rem;
+  padding: 0.15rem 0.45rem;
+  /* Junk URLs can be long and have no spaces — don't let one blow out the panel. */
+  word-break: break-all;
+}
+
+.notfound-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+}
+
 .legal-updated {
   font-size: 0.82rem;
   color: var(--text-muted);

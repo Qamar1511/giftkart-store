@@ -1,4 +1,18 @@
 {
+  "redirects": [
+    { "source": "/playstation-gift-cards", "destination": "/brand/psn", "permanent": true },
+    { "source": "/psn-gift-cards", "destination": "/brand/psn", "permanent": true },
+    { "source": "/steam-gift-cards", "destination": "/brand/steam", "permanent": true },
+    { "source": "/xbox-gift-cards", "destination": "/brand/xbox", "permanent": true },
+    { "source": "/amazon-gift-cards", "destination": "/brand/amazon", "permanent": true },
+    { "source": "/flipkart-gift-cards", "destination": "/brand/flipkart", "permanent": true },
+    { "source": "/google-play-gift-cards", "destination": "/brand/google-play", "permanent": true },
+    { "source": "/netflix-gift-cards", "destination": "/brand/netflix", "permanent": true },
+    { "source": "/swiggy-gift-cards", "destination": "/brand/swiggy", "permanent": true },
+    { "source": "/dominos-gift-cards", "destination": "/brand/dominos", "permanent": true },
+    { "source": "/paypal-gift-cards", "destination": "/brand/paypal", "permanent": true },
+    { "source": "/gift-cards", "destination": "/", "permanent": true }
+  ],
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "https://api.giftkartstore.in/sitemap.xml" }
   ],

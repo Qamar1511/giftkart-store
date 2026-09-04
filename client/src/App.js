@@ -56,6 +56,32 @@ const AdminPricing = lazy(() => import("./pages/admin/AdminPricing"));
 const AdminQueries = lazy(() => import("./pages/admin/AdminQueries"));
 const AdminBlog = lazy(() => import("./pages/admin/AdminBlog"));
 const AdminBlogEditor = lazy(() => import("./pages/admin/AdminBlogEditor"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+
+// Keyword-friendly URLs that blog copy, ads and shared links use instead of the
+// real /brand/<slug> path. Every one of these used to fall through to the
+// catch-all "Coming soon" page — a broken link for shoppers and a soft 404 for
+// Googlebot crawling the blog.
+//
+// In production Vercel redirects these with a real 301 before React even loads
+// (see the "redirects" block in client/vercel.json) — that's the version Google
+// sees. The routes below are the same map for `npm start`, where vercel.json
+// isn't applied, and for any in-app <Link> that ever points at an alias. Keep
+// the two lists in sync.
+const BRAND_URL_ALIASES = {
+  "playstation-gift-cards": "psn",
+  "psn-gift-cards": "psn",
+  "steam-gift-cards": "steam",
+  "xbox-gift-cards": "xbox",
+  "amazon-gift-cards": "amazon",
+  "flipkart-gift-cards": "flipkart",
+  "google-play-gift-cards": "google-play",
+  "netflix-gift-cards": "netflix",
+  "swiggy-gift-cards": "swiggy",
+  "dominos-gift-cards": "dominos",
+  "paypal-gift-cards": "paypal",
+};
+
 
 function App() {
   // Warm the code-split chunks people are most likely to click, once the
@@ -115,10 +141,13 @@ function App() {
           <Route element={<Layout />}>
             <Route path="/" element={<Home />} />
             <Route path="/gift-cards" element={<Navigate to="/" replace />} />
-            {/* Keyword-friendly alias used in blog content and shared links.
-                Without it the catch-all below would serve a "coming soon"
-                page, which reads as a broken link to shoppers and crawlers. */}
-            <Route path="/playstation-gift-cards" element={<Navigate to="/brand/psn" replace />} />
+            {Object.entries(BRAND_URL_ALIASES).map(([alias, slug]) => (
+              <Route
+                key={alias}
+                path={`/${alias}`}
+                element={<Navigate to={`/brand/${slug}`} replace />}
+              />
+            ))}
             <Route path="/brand/:slug" element={<BrandProducts />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/contact" element={<Contact />} />
@@ -168,16 +197,10 @@ function App() {
               }
             />
 
-            {/* Anything else falls through to a simple "coming soon" page */}
-            <Route
-              path="*"
-              element={
-                <div style={{ padding: "4rem 2rem", textAlign: "center" }}>
-                  <h2 style={{ fontFamily: "Rajdhani, sans-serif" }}>Coming soon</h2>
-                  <p style={{ color: "var(--text-muted)" }}>This page hasn't been built yet.</p>
-                </div>
-              }
-            />
+            {/* Anything else gets a real not-found page: it links back into the
+                catalogue instead of dead-ending, and sets robots noindex so
+                junk URLs stop eating crawl budget. */}
+            <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>
         </Suspense>
