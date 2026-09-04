@@ -10,7 +10,17 @@
       content="Buy digital gift cards online in India for Amazon, Steam, PlayStation, Xbox, Netflix, Flipkart, Google Play, Swiggy, Domino's & PayPal. Instant delivery, UPI & USDT accepted."
     />
     <meta name="robots" content="index, follow" />
-    <link rel="canonical" href="https://giftkartstore.in/" />
+    <!-- There is deliberately no canonical link tag and no og:url meta in this
+         file. CRA serves this one file for every route, so a hardcoded
+         canonical pointing at the homepage appeared on /brand/steam, on every
+         /blog/ post and everything else — telling Google those URLs were all
+         duplicates of the homepage, which is why nothing but the homepage
+         could get indexed. With the tag absent, Google self-canonicalises to
+         the URL it actually requested. scripts/prerender-seo.js writes an
+         explicit canonical into the per-route HTML it generates at build time,
+         and components/Seo.jsx still sets the right one once React has run.
+         Keep this comment free of real tag syntax — the prerender script
+         pattern-matches the built HTML. -->
 
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="GIFTKART" />
@@ -20,7 +30,6 @@
       content="Amazon, Steam, PlayStation, Netflix and more — instant digital delivery, UPI & USDT accepted."
     />
     <meta property="og:image" content="https://giftkartstore.in/images/hero-banner.png" />
-    <meta property="og:url" content="https://giftkartstore.in/" />
     <meta name="twitter:card" content="summary_large_image" />
 
     <!-- Preconnect + fully non-blocking font load. A plain stylesheet <link>
