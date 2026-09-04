@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const BlogPost = require("../models/BlogPost");
+const { isCloudinaryConfigured, uploadImageBuffer } = require("../utils/cloudinaryUpload");
 
 const UPLOAD_DIR = path.join(__dirname, "..", "uploads", "blog");
 
@@ -130,15 +131,32 @@ exports.deletePost = async (req, res) => {
 
 // @route  POST /api/admin/blog/upload-image
 // @access Admin
-// Accepts multipart/form-data with a single "image" field. Saves it to
-// disk under server/uploads/blog/ (served statically, see server.js) and
-// returns the URL to store as the post's coverImage.
+// Accepts multipart/form-data with a single "image" field and returns the URL to
+// store as the post's coverImage.
+//
+// Goes to Cloudinary when CLOUDINARY_* env vars are set — that's the only way an
+// uploaded cover survives, because writing to server/uploads/ puts the file on
+// the running backend's own disk, which is wiped on redeploy/restart. Two covers
+// were lost that way (found 2026-09-04): the DB still held /uploads/blog/<file>
+// but the file was gone, so the blog card rendered an empty box.
+//
+// The local-disk path below is kept only as a fallback for local dev and for a
+// deploy where the env vars haven't been added yet — it still works, it just
+// isn't durable, so it warns.
 exports.uploadCoverImage = async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: "No image was uploaded." });
     }
 
+    if (isCloudinaryConfigured()) {
+      const url = await uploadImageBuffer(req.file.buffer, req.file.mimetype, "blog");
+      return res.status(200).json({ url });
+    }
+
+    console.warn(
+      "[blog upload] CLOUDINARY_* env vars missing — saving to local disk, which is wiped on redeploy."
+    );
     fs.mkdirSync(UPLOAD_DIR, { recursive: true });
     const safeExt = path.extname(req.file.originalname).slice(0, 10) || ".jpg";
     const storedFilename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${safeExt}`;
@@ -146,7 +164,13 @@ exports.uploadCoverImage = async (req, res) => {
 
     res.status(200).json({ url: `/uploads/blog/${storedFilename}` });
   } catch (error) {
-    console.error("Upload blog image error:", error);
-    res.status(500).json({ message: "Couldn't upload this image." });
+    // Cloudinary rejections arrive as an axios error with the reason in the body.
+    const cloudinaryReason = error.response?.data?.error?.message;
+    console.error("Upload blog image error:", cloudinaryReason || error.message);
+    res.status(500).json({
+      message: cloudinaryReason
+        ? `Image host rejected the upload: ${cloudinaryReason}`
+        : "Couldn't upload this image.",
+    });
   }
 };

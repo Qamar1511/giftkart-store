@@ -1,11 +1,23 @@
 import apiClient from "./apiClient";
 
-// Cover images can be either a full external URL (old posts, pasted links)
-// or a relative path returned by the upload endpoint (/uploads/blog/…).
-// This resolves the relative case against the backend's origin.
+// Cover images come from three places, and they resolve differently:
+//   1. a full external URL (old posts, pasted links)          → used as-is
+//   2. /uploads/… returned by the admin upload endpoint        → lives on the
+//      BACKEND's disk, so it needs the API origin prefixed
+//   3. /images/… committed under client/public/images/         → served by the
+//      frontend itself, so it must be left alone
+// Case 3 used to get the API origin prefixed too, which sent it to
+// api.giftkartstore.in/images/… and 404'd — that's why seeded posts had to
+// spell out the whole https://giftkartstore.in/… URL. Both styles now work.
+//
+// Prefer case 3 for anything that must not disappear: files under /uploads are
+// written to the running backend's own filesystem, so a redeploy or restart of
+// the API host wipes any cover that wasn't committed to git, leaving the post
+// with an empty image box.
 export const resolveImageUrl = (url) => {
   if (!url) return "";
   if (/^https?:\/\//i.test(url)) return url;
+  if (!/^\/uploads\//i.test(url)) return url;
   const apiBase = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
   return `${apiBase.replace(/\/api\/?$/, "")}${url}`;
 };
