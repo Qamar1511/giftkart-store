@@ -28,18 +28,25 @@
 }
 
 .navbar-logo {
-  font-family: "Rajdhani", sans-serif;
-  font-weight: 700;
-  font-size: 1.35rem;
-  letter-spacing: 0.02em;
-  color: var(--text-primary);
-  text-decoration: none;
-  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
   flex-shrink: 0;
+  text-decoration: none;
+  border-radius: 0.4rem;
+  transition: background-color 0.15s ease, padding 0.15s ease;
 }
 
-.navbar-logo-accent {
-  color: var(--accent-cyan);
+.navbar-logo-img {
+  display: block;
+  height: 2rem;
+  width: auto;
+}
+
+/* The logo's wordmark is dark navy on a transparent background, so it
+   disappears against the dark navbar — give it a light pill to sit on. */
+[data-theme="dark"] .navbar-logo {
+  background: #ffffff;
+  padding: 0.35rem 0.6rem;
 }
 
 /* ---------- Search ---------- */
@@ -741,8 +748,8 @@
     gap: 0.8rem;
   }
 
-  .navbar-logo {
-    font-size: 1.2rem;
+  .navbar-logo-img {
+    height: 1.6rem;
   }
 }
 

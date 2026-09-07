@@ -10,7 +10,7 @@ const Footer = () => {
       <div className="site-footer-inner">
         <div className="footer-col footer-brand">
           <Link to="/" className="navbar-logo">
-            GIFT<span className="navbar-logo-accent">KART</span>
+            <img src="/images/logo.png" alt="GIFTKART" className="navbar-logo-img" />
           </Link>
           <p className="footer-blurb">
             Digital gift cards and wallet top-ups for all your favourite brands,

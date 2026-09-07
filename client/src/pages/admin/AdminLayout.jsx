@@ -27,7 +27,7 @@ const AdminLayout = () => {
       <Seo title="Admin — GIFTKART" path="/admin" noindex />
       <aside className="admin-sidebar">
         <Link to="/" className="admin-logo">
-          GIFT<span className="admin-logo-accent">KART</span>
+          <img src="/images/logo.png" alt="GIFTKART" className="admin-logo-img" />
           <span className="admin-logo-tag">Admin</span>
         </Link>
 

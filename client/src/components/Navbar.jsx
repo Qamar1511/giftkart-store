@@ -288,7 +288,7 @@ const Navbar = () => {
           className="navbar-logo"
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
         >
-          GIFT<span className="navbar-logo-accent">KART</span>
+          <img src="/images/logo.png" alt="GIFTKART" className="navbar-logo-img" />
         </Link>
 
         {/* ---------- Search ---------- */}

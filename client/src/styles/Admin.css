@@ -20,19 +20,23 @@
 
 .admin-logo {
   display: flex;
-  align-items: baseline;
-  gap: 0.4rem;
+  align-items: center;
+  gap: 0.5rem;
   flex-wrap: wrap;
-  font-family: "Rajdhani", sans-serif;
-  font-weight: 700;
-  font-size: 1.25rem;
-  color: var(--text-primary);
   text-decoration: none;
   padding: 0 0.5rem 1.5rem;
 }
 
-.admin-logo-accent {
-  color: var(--accent-cyan);
+.admin-logo-img {
+  display: block;
+  height: 1.6rem;
+  width: auto;
+  border-radius: 0.35rem;
+}
+
+[data-theme="dark"] .admin-logo-img {
+  background: #ffffff;
+  padding: 0.3rem 0.5rem;
 }
 
 .admin-logo-tag {
