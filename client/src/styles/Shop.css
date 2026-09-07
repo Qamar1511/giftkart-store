@@ -172,22 +172,40 @@
 
 /* ---------- Featured brands row (wraps, no scroll) ---------- */
 .featured-row {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   gap: 0.9rem;
+}
+
+@media (max-width: 900px) {
+  .featured-row {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 680px) {
+  .featured-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.7rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .featured-row {
+    grid-template-columns: repeat(1, 1fr);
+  }
 }
 
 /* ---------- Brand tile (used in featured row + category grids) ---------- */
 .brand-tile {
-  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   background: var(--bg-panel);
   border: 1px solid var(--card-border);
   border-radius: 0.9rem;
   overflow: hidden;
-  min-width: 17.5rem;
-  width: 17.5rem;
+  width: 100%;
+  min-width: 0;
   text-decoration: none;
   color: var(--text-primary);
   transition: transform 0.15s ease, border-color 0.15s ease;
@@ -246,8 +264,27 @@
 
 .brand-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 0.9rem;
+}
+
+@media (max-width: 900px) {
+  .brand-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 680px) {
+  .brand-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.7rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .brand-grid {
+    grid-template-columns: repeat(1, 1fr);
+  }
 }
 
 /* ---------- Brand product page header ---------- */

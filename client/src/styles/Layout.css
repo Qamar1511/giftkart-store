@@ -33,12 +33,13 @@
   flex-shrink: 0;
   text-decoration: none;
   border-radius: 0.4rem;
+  margin-right: 1rem;
   transition: background-color 0.15s ease, padding 0.15s ease;
 }
 
 .navbar-logo-img {
   display: block;
-  height: 2rem;
+  height: 2.5rem;
   width: auto;
 }
 
@@ -626,6 +627,22 @@
   font-weight: 600;
 }
 
+/* Duplicate of .navbar-currency for inside the drawer — only relevant
+   below 350px, where the top-bar version is hidden entirely. */
+.navbar-drawer-currency {
+  display: none;
+  gap: 0.4rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--card-border);
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 350px) {
+  .navbar-drawer-currency {
+    display: flex;
+  }
+}
+
 /* Never leak the drawer onto desktop, even if it was left open on resize */
 @media (min-width: 981px) {
   .navbar-drawer {
@@ -740,6 +757,10 @@
   .site-footer-inner {
     grid-template-columns: 1fr 1fr;
   }
+
+  .navbar-logo {
+    margin-right: 0.7rem;
+  }
 }
 
 @media (max-width: 520px) {
@@ -748,8 +769,12 @@
     gap: 0.8rem;
   }
 
+  .navbar-logo {
+    margin-right: 0.5rem;
+  }
+
   .navbar-logo-img {
-    height: 1.6rem;
+    height: 2.15rem;
   }
 }
 
@@ -764,6 +789,10 @@
 }
 
 @media (max-width: 380px) {
+  .navbar-logo-img {
+    height: 1.85rem;
+  }
+
   .navbar-actions {
     gap: 0.5rem;
   }
@@ -781,7 +810,9 @@
   .navbar-dropdown {
     width: min(14rem, calc(100vw - 2rem));
   }
+}
 
+@media (max-width: 466px) {
   /* Save width: show only the currency symbols, hide the INR/USDT labels */
   .navbar-currency-option {
     padding: 0.3rem 0.5rem;
@@ -791,5 +822,54 @@
 
   .navbar-currency-symbol {
     font-size: 0.95rem;
+  }
+}
+
+/* Below this, even the symbol-only pill doesn't fit next to the logo,
+   search and cart icons — drop it from the top bar entirely. It re-appears
+   inside the hamburger drawer instead (see .navbar-drawer-currency). */
+@media (max-width: 350px) {
+  .navbar-currency {
+    display: none;
+  }
+}
+
+.navbar-drawer-account {
+  padding: 0.9rem 1.25rem;
+  border-bottom: 1px solid var(--card-border);
+  display: none; /* only shown below 270px — see media query — the top-bar avatar/dropdown covers this above that */
+}
+
+.navbar-drawer-account-name {
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+  color: var(--text-primary);
+}
+
+.navbar-drawer-account .navbar-drawer-link {
+  padding: 0.5rem 0;
+}
+
+.navbar-drawer-account .navbar-drawer-link.is-danger {
+  color: #c62828;
+  background: none;
+  border: none;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  width: 100%;
+}
+
+/* Below this, the avatar + name/email dropdown in the top bar don't fit
+   next to the logo, search icon and cart — drop it entirely and surface
+   the same "My Account" info inside the hamburger drawer instead (same
+   pattern as .navbar-drawer-currency above). */
+@media (max-width: 270px) {
+  .navbar-profile {
+    display: none;
+  }
+
+  .navbar-drawer-account {
+    display: block;
   }
 }

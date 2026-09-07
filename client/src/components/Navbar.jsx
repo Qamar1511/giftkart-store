@@ -546,9 +546,37 @@ const Navbar = () => {
           )
         )}
         {session && (
-          <Link to="/orders" className="navbar-drawer-link navbar-drawer-solo" onClick={closeAll}>
-            My Orders
-          </Link>
+          <>
+            <div className="navbar-drawer-account">
+              <p className="navbar-drawer-account-name">{session.user.fullName}</p>
+              {session.user.role === "admin" && (
+                <Link to="/admin" className="navbar-drawer-link" onClick={closeAll}>
+                  Admin panel
+                </Link>
+              )}
+              <Link to="/orders" className="navbar-drawer-link" onClick={closeAll}>
+                My Orders
+              </Link>
+              <button className="navbar-drawer-link is-danger" onClick={handleLogout}>
+                Log out
+              </button>
+            </div>
+            <div className="navbar-drawer-currency" role="group" aria-label="Buying currency">
+              {currencyCodes.map((code) => (
+                <button
+                  key={code}
+                  type="button"
+                  className={`navbar-currency-option ${currency === code ? "is-active" : ""}`}
+                  onClick={() => handleCurrencyChange(code)}
+                  disabled={switchingCurrency}
+                  aria-pressed={currency === code}
+                >
+                  <span className="navbar-currency-symbol">{currencies[code].symbol}</span>
+                  {currencies[code].short || code}
+                </button>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </header>
