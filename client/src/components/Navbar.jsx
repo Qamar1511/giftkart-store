@@ -125,6 +125,10 @@ const Navbar = () => {
   const [openMenu, setOpenMenu] = useState(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [switchingCurrency, setSwitchingCurrency] = useState(false);
+  const [openDrawerSection, setOpenDrawerSection] = useState("account");
+
+  const toggleDrawerSection = (id) =>
+    setOpenDrawerSection((cur) => (cur === id ? null : id));
 
   // Search state
   const [query, setQuery] = useState("");
@@ -245,8 +249,20 @@ const Navbar = () => {
   const handleCurrencyChange = async (code) => {
     if (code === currency || switchingCurrency) return;
     setSwitchingCurrency(true);
-    await setCurrency(code); // persists to the backend + local session
+    const result = await setCurrency(code); // persists to the backend + local session
     setSwitchingCurrency(false);
+
+    // If the backend save failed, setCurrency silently rolls the UI back to
+    // the previous currency — which looks exactly like "it changed, then
+    // reverted on its own". Surface the real reason instead of staying quiet.
+    if (!result?.ok) {
+      const reason =
+        result?.error?.response?.data?.message ||
+        result?.error?.message ||
+        "Please try again.";
+      console.error("Currency update failed:", result?.error);
+      alert(`Couldn't switch currency: ${reason}`);
+    }
   };
 
   const handleCategoryClick = (e, categorySlug) => {
@@ -498,8 +514,67 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* ---------- Mobile drawer (menus collapse in here) ---------- */}
+      {/* ---------- Mobile drawer (menus collapse in here, accordion-style) ---------- */}
       <div className={`navbar-drawer ${mobileNavOpen ? "is-open" : ""}`}>
+        {session && (
+          <div className="navbar-drawer-section">
+            <button
+              type="button"
+              className="navbar-drawer-section-header"
+              onClick={() => toggleDrawerSection("account")}
+              aria-expanded={openDrawerSection === "account"}
+            >
+              My Account
+              <span className={`navbar-drawer-arrow ${openDrawerSection === "account" ? "is-open" : ""}`}>▾</span>
+            </button>
+            {openDrawerSection === "account" && (
+              <div className="navbar-drawer-section-body">
+                <p className="navbar-drawer-account-name">{session.user.fullName}</p>
+                <p className="navbar-drawer-account-email">{session.user.email}</p>
+                {session.user.role === "admin" && (
+                  <Link to="/admin" className="navbar-drawer-link" onClick={closeAll}>
+                    Admin panel
+                  </Link>
+                )}
+                <Link to="/orders" className="navbar-drawer-link" onClick={closeAll}>
+                  My Orders
+                </Link>
+                <button className="navbar-drawer-link is-danger" onClick={handleLogout}>
+                  Log out
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="navbar-drawer-section">
+          <button
+            type="button"
+            className="navbar-drawer-section-header"
+            onClick={() => toggleDrawerSection("currency")}
+            aria-expanded={openDrawerSection === "currency"}
+          >
+            Currency
+            <span className={`navbar-drawer-arrow ${openDrawerSection === "currency" ? "is-open" : ""}`}>▾</span>
+          </button>
+          {openDrawerSection === "currency" && (
+            <div className="navbar-drawer-section-body navbar-drawer-currency" role="group" aria-label="Buying currency">
+              {currencyCodes.map((code) => (
+                <button
+                  key={code}
+                  type="button"
+                  className={`navbar-currency-option ${currency === code ? "is-active" : ""}`}
+                  onClick={() => handleCurrencyChange(code)}
+                  disabled={switchingCurrency}
+                  aria-pressed={currency === code}
+                >
+                  {currencies[code].short || code}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
         {MENU.map((group) =>
           group.to ? (
             <Link
@@ -511,72 +586,51 @@ const Navbar = () => {
               {group.label}
             </Link>
           ) : (
-            <div className="navbar-drawer-group" key={group.key}>
-              <p className="navbar-drawer-title">{group.label}</p>
-              {group.kind === "categories" ? (
-                <>
-                  {CATEGORIES.map((cat) => (
-                    <a
-                      key={cat.slug}
-                      href={`#cat-${cat.slug}`}
-                      className="navbar-drawer-link"
-                      onClick={(e) => handleCategoryClick(e, cat.slug)}
-                    >
-                      {cat.label}
-                    </a>
-                  ))}
-                  <Link to="/blog" className="navbar-drawer-link" onClick={closeAll}>
-                    Blog
-                  </Link>
-                </>
-              ) : (
-                group.brands.map((brand) => (
-                  <Link
-                    key={brand.slug}
-                    to={`/brand/${brand.slug}`}
-                    className="navbar-drawer-link"
-                    onClick={closeAll}
-                  >
-                    <BrandThumb brand={brand} className="navbar-menu-panel-thumb" />
-                    {brand.name}
-                  </Link>
-                ))
+            <div className="navbar-drawer-section" key={group.key}>
+              <button
+                type="button"
+                className="navbar-drawer-section-header"
+                onClick={() => toggleDrawerSection(group.key)}
+                aria-expanded={openDrawerSection === group.key}
+              >
+                {group.label}
+                <span className={`navbar-drawer-arrow ${openDrawerSection === group.key ? "is-open" : ""}`}>▾</span>
+              </button>
+              {openDrawerSection === group.key && (
+                <div className="navbar-drawer-section-body">
+                  {group.kind === "categories" ? (
+                    <>
+                      {CATEGORIES.map((cat) => (
+                        <a
+                          key={cat.slug}
+                          href={`#cat-${cat.slug}`}
+                          className="navbar-drawer-link"
+                          onClick={(e) => handleCategoryClick(e, cat.slug)}
+                        >
+                          {cat.label}
+                        </a>
+                      ))}
+                      <Link to="/blog" className="navbar-drawer-link" onClick={closeAll}>
+                        Blog
+                      </Link>
+                    </>
+                  ) : (
+                    group.brands.map((brand) => (
+                      <Link
+                        key={brand.slug}
+                        to={`/brand/${brand.slug}`}
+                        className="navbar-drawer-link"
+                        onClick={closeAll}
+                      >
+                        <BrandThumb brand={brand} className="navbar-menu-panel-thumb" />
+                        {brand.name}
+                      </Link>
+                    ))
+                  )}
+                </div>
               )}
             </div>
           )
-        )}
-        {session && (
-          <>
-            <div className="navbar-drawer-account">
-              <p className="navbar-drawer-account-name">{session.user.fullName}</p>
-              {session.user.role === "admin" && (
-                <Link to="/admin" className="navbar-drawer-link" onClick={closeAll}>
-                  Admin panel
-                </Link>
-              )}
-              <Link to="/orders" className="navbar-drawer-link" onClick={closeAll}>
-                My Orders
-              </Link>
-              <button className="navbar-drawer-link is-danger" onClick={handleLogout}>
-                Log out
-              </button>
-            </div>
-            <div className="navbar-drawer-currency" role="group" aria-label="Buying currency">
-              {currencyCodes.map((code) => (
-                <button
-                  key={code}
-                  type="button"
-                  className={`navbar-currency-option ${currency === code ? "is-active" : ""}`}
-                  onClick={() => handleCurrencyChange(code)}
-                  disabled={switchingCurrency}
-                  aria-pressed={currency === code}
-                >
-                  <span className="navbar-currency-symbol">{currencies[code].symbol}</span>
-                  {currencies[code].short || code}
-                </button>
-              ))}
-            </div>
-          </>
         )}
       </div>
     </header>

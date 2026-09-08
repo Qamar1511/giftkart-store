@@ -627,20 +627,72 @@
   font-weight: 600;
 }
 
-/* Duplicate of .navbar-currency for inside the drawer — only relevant
-   below 350px, where the top-bar version is hidden entirely. */
-.navbar-drawer-currency {
-  display: none;
-  gap: 0.4rem;
-  padding: 0.75rem 0;
-  border-top: 1px solid var(--card-border);
-  margin-top: 0.5rem;
+/* ---------- Accordion sections (My Account, Currency, Explore, etc.) ---------- */
+.navbar-drawer-section {
+  border-bottom: 1px solid var(--card-border);
 }
 
-@media (max-width: 350px) {
-  .navbar-drawer-currency {
-    display: flex;
-  }
+.navbar-drawer-section-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  background: none;
+  border: none;
+  padding: 0.85rem 0.3rem;
+  font-size: 0.94rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+}
+
+.navbar-drawer-arrow {
+  display: inline-block;
+  transition: transform 0.18s ease;
+  color: var(--text-muted);
+}
+
+.navbar-drawer-arrow.is-open {
+  transform: rotate(180deg);
+}
+
+.navbar-drawer-section-body {
+  padding: 0 0.3rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.navbar-drawer-account-name {
+  font-weight: 700;
+  margin: 0 0 0.15rem;
+  color: var(--text-primary);
+}
+
+.navbar-drawer-account-email {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin: 0 0 0.6rem;
+}
+
+.navbar-drawer-section-body .navbar-drawer-link.is-danger {
+  color: #c62828;
+  background: none;
+  border: none;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  width: 100%;
+}
+
+/* Currency options row, inside its own accordion section now (no longer
+   width-gated — it's a normal drawer section like any other). */
+.navbar-drawer-currency {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 /* Never leak the drawer onto desktop, even if it was left open on resize */
@@ -662,7 +714,7 @@
   margin: 0 auto;
   padding: 3rem 1.75rem 2rem;
   display: grid;
-  grid-template-columns: 1.6fr 1fr 1fr 1.2fr;
+  grid-template-columns: 1.4fr 1fr 1fr 0.9fr 1.3fr;
   gap: 2rem;
 }
 
@@ -678,6 +730,30 @@
   line-height: 1.55;
   max-width: 22rem;
   margin-top: 0.5rem;
+}
+
+.footer-social-links {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.4rem;
+}
+
+.footer-social-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 999px;
+  border: 1px solid var(--card-border);
+  color: var(--text-muted);
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.footer-social-icon:hover {
+  color: #fff;
+  border-color: transparent;
+  background: linear-gradient(120deg, var(--accent-blue), var(--accent-violet));
 }
 
 .footer-heading {
@@ -712,6 +788,19 @@
   border-radius: 0.4rem;
   border: 1px solid var(--card-border);
   color: var(--text-muted);
+}
+
+.footer-legal-line {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.footer-legal-name {
+  color: var(--text-primary);
+  font-weight: 700;
+  font-size: 0.88rem;
 }
 
 .site-footer-bottom {
@@ -755,7 +844,7 @@
 
 @media (max-width: 860px) {
   .site-footer-inner {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
   }
 
   .navbar-logo {
@@ -837,13 +926,7 @@
 .navbar-drawer-account {
   padding: 0.9rem 1.25rem;
   border-bottom: 1px solid var(--card-border);
-  display: none; /* only shown below 270px — see media query — the top-bar avatar/dropdown covers this above that */
-}
-
-.navbar-drawer-account-name {
-  font-weight: 700;
-  margin: 0 0 0.5rem;
-  color: var(--text-primary);
+  display: none; /* dead weight now that the account section lives in the accordion above — kept only so nothing breaks if referenced elsewhere */
 }
 
 .navbar-drawer-account .navbar-drawer-link {
@@ -861,15 +944,10 @@
 }
 
 /* Below this, the avatar + name/email dropdown in the top bar don't fit
-   next to the logo, search icon and cart — drop it entirely and surface
-   the same "My Account" info inside the hamburger drawer instead (same
-   pattern as .navbar-drawer-currency above). */
+   next to the logo, search icon and cart — drop it entirely. The drawer's
+   own "My Account" accordion section (always present) covers this. */
 @media (max-width: 270px) {
   .navbar-profile {
     display: none;
-  }
-
-  .navbar-drawer-account {
-    display: block;
   }
 }
