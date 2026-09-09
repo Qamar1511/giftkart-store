@@ -10,6 +10,7 @@ const paymentRoutes = require("./routes/paymentRoutes");
 const contactRoutes = require("./routes/contactRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const blogRoutes = require("./routes/blogRoutes");
+const reviewRoutes = require("./routes/reviewRoutes");
 const { generateSitemap } = require("./utils/generateSitemap");
 const { cancelAbandonedOrders } = require("./utils/stockReservation");
 const { hydratePricing } = require("./utils/pricing");
@@ -39,6 +40,7 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/blog", blogRoutes);
+app.use("/api/reviews", reviewRoutes);
 
 // Not under /api — this is what giftkartstore.in/sitemap.xml proxies to
 // (see client/vercel.json). Regenerated fresh on every request from the DB.

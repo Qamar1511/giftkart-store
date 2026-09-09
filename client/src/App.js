@@ -43,6 +43,7 @@ const ResetPassword = lazy(importResetPassword);
 const OrderConfirmation = lazy(() => import("./pages/OrderConfirmation"));
 const OrderHistory = lazy(() => import("./pages/OrderHistory"));
 const PaypalReturn = lazy(() => import("./pages/PaypalReturn"));
+const PaypalCancel = lazy(() => import("./pages/PaypalCancel"));
 const Contact = lazy(() => import("./pages/Contact"));
 const RefundPolicy = lazy(() => import("./pages/RefundPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
@@ -53,6 +54,7 @@ const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminOrders = lazy(() => import("./pages/admin/AdminOrders"));
 const AdminStock = lazy(() => import("./pages/admin/AdminStock"));
 const AdminPricing = lazy(() => import("./pages/admin/AdminPricing"));
+const AdminReviews = lazy(() => import("./pages/admin/AdminReviews"));
 const AdminQueries = lazy(() => import("./pages/admin/AdminQueries"));
 const AdminBlog = lazy(() => import("./pages/admin/AdminBlog"));
 const AdminBlogEditor = lazy(() => import("./pages/admin/AdminBlogEditor"));
@@ -131,6 +133,7 @@ function App() {
             <Route path="orders" element={<AdminOrders />} />
             <Route path="stock" element={<AdminStock />} />
             <Route path="pricing" element={<AdminPricing />} />
+            <Route path="reviews" element={<AdminReviews />} />
             <Route path="queries" element={<AdminQueries />} />
             <Route path="blog" element={<AdminBlog />} />
             <Route path="blog/new" element={<AdminBlogEditor />} />
@@ -193,6 +196,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <PaypalReturn />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/paypal/cancel"
+              element={
+                <ProtectedRoute>
+                  <PaypalCancel />
                 </ProtectedRoute>
               }
             />

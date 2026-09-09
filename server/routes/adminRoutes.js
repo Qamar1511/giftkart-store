@@ -19,6 +19,7 @@ const {
   deletePost,
   uploadCoverImage,
 } = require("../controllers/adminBlogController");
+const { getAllReviews, approveReview, rejectReview } = require("../controllers/reviewController");
 const { protect, adminOnly } = require("../middleware/authMiddleware");
 
 const router = express.Router();
@@ -50,5 +51,9 @@ router.post("/blog", createPost);
 router.put("/blog/:id", updatePost);
 router.delete("/blog/:id", deletePost);
 router.post("/blog/upload-image", uploadImage.single("image"), uploadCoverImage);
+
+router.get("/reviews", getAllReviews);
+router.post("/reviews/:id/approve", approveReview);
+router.post("/reviews/:id/reject", rejectReview);
 
 module.exports = router;
