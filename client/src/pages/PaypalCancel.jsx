@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { cancelOrder } from "../services/orderService";
 import Seo from "../components/Seo";
