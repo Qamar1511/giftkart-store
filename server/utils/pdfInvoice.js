@@ -1,5 +1,22 @@
+const fs = require("fs");
+const path = require("path");
 const PDFDocument = require("pdfkit");
 const { CURRENCIES } = require("../config/catalog");
+
+// Your business details for the invoice — set these in .env (see
+// .env.example). Any left unset are simply skipped, so the invoice still
+// generates fine before you've filled them in.
+const SELLER_NAME = process.env.BUSINESS_NAME || "GIFTKART";
+const SELLER_ADDRESS = process.env.BUSINESS_ADDRESS || "";
+const SELLER_GSTIN = process.env.GST_NUMBER || "";
+const SELLER_MSME = process.env.MSME_NUMBER || "";
+
+// Drop these here and they're stamped onto every invoice automatically —
+// signature.png (personal signature) and/or stamp.png (company seal/logo
+// stamp). PNGs with a transparent background work best. Nothing breaks if
+// either file is missing — that section is just skipped.
+const SIGNATURE_PATH = path.join(__dirname, "..", "assets", "signature.png");
+const STAMP_PATH = path.join(__dirname, "..", "assets", "stamp.png");
 
 // Format a charged amount in the order's buying currency (INR → "₹1,100",
 // USDT → "$55" / "$5.50"). Whole USDT amounts drop the decimals; fractional
@@ -42,7 +59,17 @@ function streamInvoicePDF(order, res) {
 
   doc.moveDown(0.5);
   doc.fontSize(10).fillColor("#555").text("Digital Gift Cards & Wallet Top-ups");
-  doc.moveDown(1.5);
+  doc.moveDown(0.75);
+
+  // Seller details — only the lines that are actually configured show up,
+  // so this section quietly stays out of the way until you fill in
+  // BUSINESS_ADDRESS / GST_NUMBER / MSME_NUMBER in .env.
+  doc.fontSize(9).fillColor("#555");
+  doc.text(`Sold by: ${SELLER_NAME}`);
+  if (SELLER_ADDRESS) doc.text(SELLER_ADDRESS);
+  if (SELLER_GSTIN) doc.text(`GSTIN: ${SELLER_GSTIN}`);
+  if (SELLER_MSME) doc.text(`MSME/Udyam Reg. No.: ${SELLER_MSME}`);
+  doc.moveDown(1);
 
   // Invoice meta
   doc.fontSize(11).fillColor("#000");
@@ -110,6 +137,31 @@ function streamInvoicePDF(order, res) {
   }
 
   doc.moveDown(2);
+
+  // Stamp (left) and signature (right), side by side — only drawn if you've
+  // actually dropped the images into server/assets/.
+  const hasStamp = fs.existsSync(STAMP_PATH);
+  const hasSignature = fs.existsSync(SIGNATURE_PATH);
+
+  if (hasStamp || hasSignature) {
+    const blockTop = doc.y;
+    const stampSize = 80;
+    const sigWidth = 130;
+
+    if (hasStamp) {
+      doc.image(STAMP_PATH, 50, blockTop, { width: stampSize });
+      doc.fontSize(8).fillColor("#888").text("Company Seal", 50, blockTop + stampSize + 4, { width: stampSize, align: "center" });
+    }
+
+    if (hasSignature) {
+      const sigX = 550 - sigWidth;
+      doc.image(SIGNATURE_PATH, sigX, blockTop, { width: sigWidth });
+      doc.fontSize(9).fillColor("#555").text("Authorized Signatory", sigX, blockTop + 55, { width: sigWidth, align: "center" });
+    }
+
+    doc.y = blockTop + 90;
+  }
+
   doc
     .fontSize(9)
     .fillColor("#888")
