@@ -69,14 +69,17 @@ const Signup = () => {
     if (form.password !== form.confirmPassword) {
       return "Passwords do not match.";
     }
-    if (!/^\d{10}$/.test(form.phone.replace(/\D/g, ""))) {
-      return "Enter a valid 10-digit phone number.";
+    if (!/^\S+@\S+\.\S+$/.test(form.email)) {
+      return "Enter a valid email address.";
+    }
+    if (!/^[6-9]\d{9}$/.test(form.phone.replace(/\D/g, ""))) {
+      return "Enter a valid 10-digit Indian mobile number.";
     }
     return "";
   };
 
   // Triggered by the "Verify" button next to the Email field. Creates the
-  // account (all fields must be valid already) and sends the OTP.
+  // pending signup (all fields must be valid already) and emails the OTP.
   const handleSendOtp = async (e) => {
     e.preventDefault();
     const validationError = validate();
@@ -89,16 +92,8 @@ const Signup = () => {
     setError("");
     try {
       const data = await signupUser(form);
-      if (data.requiresVerification) {
-        setOtpSent(true);
-        setOtpNotice(data.message || "We've emailed you a 6-digit code.");
-      } else {
-        // Email sending isn't configured on the server — account is already
-        // fully verified and logged in, nothing more to do.
-        saveSession(data);
-        syncFromUser(data.user);
-        navigate("/");
-      }
+      setOtpSent(true);
+      setOtpNotice(data.message || "We've emailed you a 6-digit code.");
     } catch (err) {
       const message =
         err.response?.data?.message || "Couldn't create your account. Please try again.";
@@ -263,7 +258,7 @@ const Signup = () => {
                 <div className="auth-otp-inline">
                   <h3 className="auth-otp-heading">Let's verify your email</h3>
                   <p className="auth-otp-caption">
-                    We've sent a 6-digit code to <strong>{form.email}</strong>. It'll
+                    We've emailed a 6-digit code to <strong>{form.email}</strong>. It'll
                     auto-verify once entered.{" · "}
                     <button
                       type="button"
@@ -342,7 +337,7 @@ const Signup = () => {
 
               {!otpSent && (
                 <button type="submit" className="auth-submit" disabled={loading}>
-                  {loading ? "Sending code…" : "Create account"}
+                  {loading ? "Sending code…" : "Send verification code"}
                 </button>
               )}
             </form>

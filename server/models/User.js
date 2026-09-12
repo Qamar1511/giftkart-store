@@ -19,7 +19,9 @@ const userSchema = new mongoose.Schema(
     phone: {
       type: String,
       required: [true, "Phone number is required"],
+      unique: true,
       trim: true,
+      match: [/^[6-9]\d{9}$/, "Enter a valid 10-digit Indian mobile number"],
     },
     password: {
       type: String,
@@ -54,7 +56,10 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    otp: {
+    // 2Factor.in's session ID for the OTP currently in flight (signup phone
+    // verification) — not the code itself, 2Factor tracks that on their
+    // end. otpExpires is our own short client-side timeout on top of it.
+    otpSessionId: {
       type: String,
       select: false,
     },

@@ -28,6 +28,7 @@ const Login = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [unverifiedEmail, setUnverifiedEmail] = useState("");
+  const [notRegistered, setNotRegistered] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -38,6 +39,7 @@ const Login = () => {
     e.preventDefault();
     setError("");
     setUnverifiedEmail("");
+    setNotRegistered(false);
 
     if (!form.email || !form.password) {
       setError("Enter your email and password to continue.");
@@ -57,6 +59,9 @@ const Login = () => {
       if (err.response?.data?.requiresVerification) {
         setUnverifiedEmail(err.response.data.email || form.email);
       }
+      if (err.response?.data?.notRegistered) {
+        setNotRegistered(true);
+      }
     } finally {
       setLoading(false);
     }
@@ -75,6 +80,13 @@ const Login = () => {
             <p className="auth-form-sub">Log in to your GIFTKART account.</p>
 
             {error && <div className="auth-error" role="alert">{error}</div>}
+            {notRegistered && (
+              <p className="auth-form-sub" style={{ marginTop: "-0.75rem", marginBottom: "1.25rem" }}>
+                <Link to="/signup" className="auth-link">
+                  Create an account now
+                </Link>
+              </p>
+            )}
             {unverifiedEmail && (
               <p className="auth-form-sub" style={{ marginTop: "-0.75rem", marginBottom: "1.25rem" }}>
                 <Link to="/signup" state={{ verifyEmail: unverifiedEmail }} className="auth-link">

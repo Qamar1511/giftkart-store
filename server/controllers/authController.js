@@ -1,6 +1,8 @@
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
+const bcrypt = require("bcryptjs");
 const User = require("../models/User");
+const PendingSignup = require("../models/PendingSignup");
 const { sendEmail, isEmailConfigured } = require("../utils/sendEmail");
 const { CURRENCY_CODES, DEFAULT_CURRENCY } = require("../config/catalog");
 
@@ -31,20 +33,27 @@ const generateOtp = () => String(Math.floor(100000 + Math.random() * 900000)); /
 
 const hashOtp = (otp) => crypto.createHash("sha256").update(otp).digest("hex");
 
-const sendOtpEmail = (user, otp) =>
+const sendOtpEmail = (fullName, email, otp) =>
   sendEmail({
-    to: user.email,
+    to: email,
     subject: "Verify your GIFTKART account",
     html: `
-      <p>Hi ${user.fullName},</p>
+      <p>Hi ${fullName},</p>
       <p>Your GIFTKART verification code is:</p>
       <p style="font-size: 28px; font-weight: 700; letter-spacing: 4px;">${otp}</p>
-      <p>This code expires in 10 minutes. If you didn't create a GIFTKART account, you can ignore this email.</p>
+      <p>This code expires in 10 minutes. If you did not create a GIFTKART account, you can ignore this email.</p>
     `,
   });
 
 // @route  POST /api/auth/signup
 // @access Public
+//
+// Nothing is written to the User collection here. We only create a
+// PendingSignup — the account is born the moment the email OTP is
+// verified, not before. That way a code that never arrives, a typo'd
+// address, or someone abandoning the form never leaves a dangling
+// unverified User that blocks a future signup attempt with "already
+// exists".
 exports.signup = async (req, res) => {
   try {
     const { fullName, email, phone, password, confirmPassword, currency } = req.body;
@@ -57,75 +66,51 @@ exports.signup = async (req, res) => {
       return res.status(400).json({ message: "Passwords do not match" });
     }
 
-    const chosenCurrency = normaliseCurrency(currency);
-
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
-    if (existingUser) {
-      if (existingUser.isVerified) {
-        return res
-          .status(409)
-          .json({ message: "An account with this email already exists" });
-      }
-
-      // Account exists but was never verified — most likely the very first
-      // OTP email failed to send (bad SMTP config, network hiccup, etc.),
-      // leaving them stuck. Rather than reject them forever, just send a
-      // fresh code to the same (still-unverified) account.
-      if (!isEmailConfigured()) {
-        return res.status(500).json({
-          message: "Email isn't configured on this server yet. Please try again shortly.",
-        });
-      }
-
-      const retryOtp = generateOtp();
-      existingUser.otp = hashOtp(retryOtp);
-      existingUser.otpExpires = Date.now() + 10 * 60 * 1000;
-      existingUser.currency = chosenCurrency; // honour a (possibly changed) choice on retry
-      await existingUser.save();
-
-      try {
-        await sendOtpEmail(existingUser, retryOtp);
-      } catch (mailError) {
-        console.error("Failed to resend signup OTP email:", mailError);
-        return res.status(500).json({
-          message: "Couldn't send the verification email. Please try again.",
-        });
-      }
-
-      return res.status(200).json({
-        requiresVerification: true,
-        email: existingUser.email,
-        message: "This email is already registered but not verified yet — we've sent a fresh code.",
-      });
-    }
-
-    const user = await User.create({ fullName, email, phone, password, currency: chosenCurrency });
-
-    // If email isn't configured on this server, there's no way to deliver
-    // an OTP — fall back to the old instant-signup behaviour so the store
-    // still works end-to-end.
     if (!isEmailConfigured()) {
-      user.isVerified = true;
-      await user.save();
-
-      const token = generateToken(user._id, user.role);
-      return res.status(201).json({
-        requiresVerification: false,
-        message: "Account created successfully",
-        token,
-        user: publicUser(user),
+      return res.status(500).json({
+        message: "Email verification isn't configured on this server yet. Please try again shortly.",
       });
     }
+
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
+      return res.status(400).json({ message: "Enter a valid email address" });
+    }
+    if (!/^[6-9]\d{9}$/.test(phone)) {
+      return res.status(400).json({ message: "Enter a valid 10-digit Indian mobile number" });
+    }
+
+    const chosenCurrency = normaliseCurrency(currency);
+    const normalisedEmail = email.toLowerCase();
+
+    const existingUser = await User.findOne({ $or: [{ email: normalisedEmail }, { phone }] });
+    if (existingUser) {
+      const field = existingUser.email === normalisedEmail ? "email" : "phone number";
+      return res.status(409).json({ message: `An account with this ${field} already exists` });
+    }
+
+    // Clear out any stale pending attempt for this email/phone first — a
+    // retry (typo fix, expired code, etc.) should start clean rather than
+    // collide with the unique index on email.
+    await PendingSignup.deleteMany({ $or: [{ phone }, { email: normalisedEmail }] });
 
     const otp = generateOtp();
-    user.otp = hashOtp(otp);
-    user.otpExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
-    await user.save();
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    await PendingSignup.create({
+      fullName,
+      email: normalisedEmail,
+      phone,
+      passwordHash,
+      currency: chosenCurrency,
+      otpHash: hashOtp(otp),
+      otpExpires: Date.now() + 10 * 60 * 1000,
+    });
 
     try {
-      await sendOtpEmail(user, otp);
+      await sendOtpEmail(fullName, normalisedEmail, otp);
     } catch (mailError) {
       console.error("Failed to send signup OTP email:", mailError);
+      await PendingSignup.deleteOne({ email: normalisedEmail });
       return res.status(500).json({
         message: "Couldn't send the verification email. Please try again.",
       });
@@ -133,7 +118,7 @@ exports.signup = async (req, res) => {
 
     res.status(201).json({
       requiresVerification: true,
-      email: user.email,
+      email: normalisedEmail,
       message: "We've emailed you a 6-digit code — enter it to verify your account.",
     });
   } catch (error) {
@@ -142,6 +127,9 @@ exports.signup = async (req, res) => {
       const firstError = Object.values(error.errors)[0].message;
       return res.status(400).json({ message: firstError });
     }
+    if (error.code === 11000) {
+      return res.status(409).json({ message: "A signup is already in progress for this email. Please wait a moment and try again." });
+    }
     console.error("Signup error:", error);
     res.status(500).json({ message: "Something went wrong. Please try again." });
   }
@@ -149,6 +137,9 @@ exports.signup = async (req, res) => {
 
 // @route  POST /api/auth/verify-otp
 // @access Public
+//
+// The account actually gets created here, once the code checks out — this
+// is the ONLY place a User document is created via signup.
 exports.verifyOtp = async (req, res) => {
   try {
     const { email, otp } = req.body;
@@ -156,32 +147,41 @@ exports.verifyOtp = async (req, res) => {
       return res.status(400).json({ message: "Email and code are required" });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() }).select("+otp +otpExpires");
-    if (!user) {
-      return res.status(404).json({ message: "No account found for that email" });
-    }
-
-    if (user.isVerified) {
-      const token = generateToken(user._id, user.role);
-      return res.status(200).json({
-        message: "Account already verified",
-        token,
-        user: publicUser(user),
+    const normalisedEmail = email.toLowerCase();
+    const pending = await PendingSignup.findOne({ email: normalisedEmail });
+    if (!pending) {
+      return res.status(404).json({
+        message: "No pending signup found for that email — it may have expired. Please sign up again.",
       });
     }
 
-    if (!user.otp || !user.otpExpires || user.otpExpires < Date.now()) {
+    if (!pending.otpExpires || pending.otpExpires < Date.now()) {
       return res.status(400).json({ message: "This code has expired. Please request a new one." });
     }
 
-    if (hashOtp(otp) !== user.otp) {
+    if (hashOtp(otp) !== pending.otpHash) {
       return res.status(400).json({ message: "Incorrect code. Please try again." });
     }
 
-    user.isVerified = true;
-    user.otp = undefined;
-    user.otpExpires = undefined;
-    await user.save();
+    // Someone else may have taken this email/phone while this signup was
+    // pending — re-check right before actually creating the account.
+    const clash = await User.findOne({ $or: [{ email: pending.email }, { phone: pending.phone }] });
+    if (clash) {
+      await PendingSignup.deleteOne({ _id: pending._id });
+      const field = clash.email === pending.email ? "email" : "phone number";
+      return res.status(409).json({ message: `An account with this ${field} already exists` });
+    }
+
+    const user = await User.create({
+      fullName: pending.fullName,
+      email: pending.email,
+      phone: pending.phone,
+      password: pending.passwordHash, // already hashed — the pre-save hook detects and skips re-hashing
+      currency: pending.currency,
+      isVerified: true,
+    });
+
+    await PendingSignup.deleteOne({ _id: pending._id });
 
     const token = generateToken(user._id, user.role);
     res.status(200).json({
@@ -190,6 +190,9 @@ exports.verifyOtp = async (req, res) => {
       user: publicUser(user),
     });
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(409).json({ message: "An account with this email or phone number already exists" });
+    }
     console.error("Verify OTP error:", error);
     res.status(500).json({ message: "Something went wrong. Please try again." });
   }
@@ -204,23 +207,23 @@ exports.resendOtp = async (req, res) => {
       return res.status(400).json({ message: "Email is required" });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() });
-    if (!user) {
-      return res.status(404).json({ message: "No account found for that email" });
-    }
-    if (user.isVerified) {
-      return res.status(400).json({ message: "This account is already verified" });
+    const normalisedEmail = email.toLowerCase();
+    const pending = await PendingSignup.findOne({ email: normalisedEmail });
+    if (!pending) {
+      return res.status(404).json({
+        message: "No pending signup found for that email — it may have expired. Please sign up again.",
+      });
     }
     if (!isEmailConfigured()) {
-      return res.status(500).json({ message: "Email isn't configured on this server yet." });
+      return res.status(500).json({ message: "Email verification isn't configured on this server yet." });
     }
 
     const otp = generateOtp();
-    user.otp = hashOtp(otp);
-    user.otpExpires = Date.now() + 10 * 60 * 1000;
-    await user.save();
+    pending.otpHash = hashOtp(otp);
+    pending.otpExpires = Date.now() + 10 * 60 * 1000;
+    await pending.save();
 
-    await sendOtpEmail(user, otp);
+    await sendOtpEmail(pending.fullName, normalisedEmail, otp);
 
     res.status(200).json({ message: "We've sent a new code to your email." });
   } catch (error) {
@@ -241,22 +244,20 @@ exports.login = async (req, res) => {
 
     const user = await User.findOne({ email: email.toLowerCase() }).select("+password");
     if (!user) {
-      return res.status(401).json({ message: "Invalid email or password" });
+      return res.status(404).json({
+        message: "This email isn't registered with us. Please sign up first.",
+        notRegistered: true,
+      });
     }
 
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      return res.status(401).json({ message: "Invalid email or password" });
+      return res.status(401).json({ message: "Incorrect password. Please try again." });
     }
 
-    if (!user.isVerified && isEmailConfigured()) {
-      return res.status(403).json({
-        message: "Please verify your email before logging in.",
-        requiresVerification: true,
-        email: user.email,
-      });
-    }
-
+    // No unverified User documents can exist anymore — accounts are only
+    // ever created post-verification (see verifyOtp above) — so there's
+    // nothing further to check here.
     const token = generateToken(user._id, user.role);
 
     res.status(200).json({
