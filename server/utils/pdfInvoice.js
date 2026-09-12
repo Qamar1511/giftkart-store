@@ -15,8 +15,25 @@ const SELLER_MSME = process.env.MSME_NUMBER || "";
 // signature.png (personal signature) and/or stamp.png (company seal/logo
 // stamp). PNGs with a transparent background work best. Nothing breaks if
 // either file is missing — that section is just skipped.
-const SIGNATURE_PATH = path.join(__dirname, "..", "assets", "signature.png");
-const STAMP_PATH = path.join(__dirname, "..", "assets", "stamp.png");
+//
+// File names are matched case-INsensitively (checks signature.png,
+// Signature.png, SIGNATURE.PNG, etc.) — Windows doesn't care about case,
+// but the Linux server this runs on does, so a file saved as "Signature.png"
+// would otherwise silently fail to be found once deployed.
+const ASSETS_DIR = path.join(__dirname, "..", "assets");
+
+function findAssetCaseInsensitive(baseName) {
+  try {
+    const files = fs.readdirSync(ASSETS_DIR);
+    const match = files.find((f) => f.toLowerCase() === baseName.toLowerCase());
+    return match ? path.join(ASSETS_DIR, match) : null;
+  } catch {
+    return null;
+  }
+}
+
+const SIGNATURE_PATH = findAssetCaseInsensitive("signature.png");
+const STAMP_PATH = findAssetCaseInsensitive("stamp.png");
 
 // Format a charged amount in the order's buying currency (INR → "₹1,100",
 // USDT → "$55" / "$5.50"). Whole USDT amounts drop the decimals; fractional
@@ -140,8 +157,8 @@ function streamInvoicePDF(order, res) {
 
   // Stamp (left) and signature (right), side by side — only drawn if you've
   // actually dropped the images into server/assets/.
-  const hasStamp = fs.existsSync(STAMP_PATH);
-  const hasSignature = fs.existsSync(SIGNATURE_PATH);
+  const hasStamp = Boolean(STAMP_PATH);
+  const hasSignature = Boolean(SIGNATURE_PATH);
 
   if (hasStamp || hasSignature) {
     const blockTop = doc.y;
