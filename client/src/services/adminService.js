@@ -30,6 +30,32 @@ export const addStockCodes = async (brand, denomination, codes) => {
   return data;
 };
 
+/* ---------- Users ---------- */
+
+export const getAdminUsers = async () => {
+  const { data } = await apiClient.get("/admin/users");
+  return data.users;
+};
+
+export const getAdminUserDetail = async (userId) => {
+  const { data } = await apiClient.get(`/admin/users/${userId}`);
+  return data;
+};
+
+export const downloadUserInvoice = async (userId, orderId) => {
+  const response = await apiClient.get(`/admin/users/${userId}/orders/${orderId}/invoice`, {
+    responseType: "blob",
+  });
+  const url = window.URL.createObjectURL(new Blob([response.data]));
+  const link = document.createElement("a");
+  link.href = url;
+  link.setAttribute("download", `invoice-${orderId}.pdf`);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+};
+
 export const deleteStockCode = async (codeId) => {
   const { data } = await apiClient.delete(`/admin/stock/${codeId}`);
   return data;

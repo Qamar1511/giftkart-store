@@ -759,3 +759,48 @@
     padding: 0.4rem 0.7rem;
   }
 }
+
+/* ---------- Admin Users page ---------- */
+.admin-search-input {
+  width: 100%;
+  max-width: 24rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--card-border);
+  background: var(--bg-panel);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.admin-search-input:focus {
+  outline: none;
+  border-color: var(--accent-blue);
+}
+
+.admin-user-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.admin-user-profile-item {
+  background: var(--bg-panel);
+  border: 1px solid var(--card-border);
+  border-radius: 0.6rem;
+  padding: 0.9rem 1.1rem;
+}
+
+.admin-user-profile-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin: 0 0 0.3rem;
+}
+
+.admin-user-profile-value {
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}

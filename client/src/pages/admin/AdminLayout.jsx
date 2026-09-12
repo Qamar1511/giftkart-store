@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { to: "/admin/reviews", label: "Reviews", icon: "⭐" },
   { to: "/admin/queries", label: "Contact Queries", icon: "💬" },
   { to: "/admin/blog", label: "Blog", icon: "📝" },
+  { to: "/admin/users", label: "Users", icon: "👤" },
 ];
 
 const AdminLayout = () => {

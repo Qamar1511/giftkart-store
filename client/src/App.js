@@ -58,6 +58,8 @@ const AdminReviews = lazy(() => import("./pages/admin/AdminReviews"));
 const AdminQueries = lazy(() => import("./pages/admin/AdminQueries"));
 const AdminBlog = lazy(() => import("./pages/admin/AdminBlog"));
 const AdminBlogEditor = lazy(() => import("./pages/admin/AdminBlogEditor"));
+const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
+const AdminUserDetail = lazy(() => import("./pages/admin/AdminUserDetail"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Keyword-friendly URLs that blog copy, ads and shared links use instead of the
@@ -138,6 +140,8 @@ function App() {
             <Route path="blog" element={<AdminBlog />} />
             <Route path="blog/new" element={<AdminBlogEditor />} />
             <Route path="blog/:id/edit" element={<AdminBlogEditor />} />
+            <Route path="users" element={<AdminUsers />} />
+            <Route path="users/:id" element={<AdminUserDetail />} />
           </Route>
 
           {/* Everything else uses the Navbar + Footer shell */}

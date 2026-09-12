@@ -20,6 +20,7 @@ const {
   uploadCoverImage,
 } = require("../controllers/adminBlogController");
 const { getAllReviews, approveReview, rejectReview } = require("../controllers/reviewController");
+const { getAllUsers, getUserDetail, downloadUserInvoice } = require("../controllers/adminUserController");
 const { protect, adminOnly } = require("../middleware/authMiddleware");
 
 const router = express.Router();
@@ -55,5 +56,9 @@ router.post("/blog/upload-image", uploadImage.single("image"), uploadCoverImage)
 router.get("/reviews", getAllReviews);
 router.post("/reviews/:id/approve", approveReview);
 router.post("/reviews/:id/reject", rejectReview);
+
+router.get("/users", getAllUsers);
+router.get("/users/:id", getUserDetail);
+router.get("/users/:userId/orders/:orderId/invoice", downloadUserInvoice);
 
 module.exports = router;
