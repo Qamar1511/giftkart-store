@@ -1,3 +1,10 @@
+/* =========================================================================
+   GIFTKART Admin — visual language matches the storefront (Rajdhani display
+   type, Inter body, blue→violet brand gradient) but tuned for a dense,
+   data-heavy dashboard: quieter surfaces, sharper hierarchy, no decoration
+   that doesn't carry information.
+   ========================================================================= */
+
 /* ---------- Admin panel shell ---------- */
 .admin-shell {
   display: flex;
@@ -6,7 +13,7 @@
 }
 
 .admin-sidebar {
-  width: 15rem;
+  width: 15.5rem;
   flex-shrink: 0;
   background: var(--bg-panel);
   border-right: 1px solid var(--card-border);
@@ -21,15 +28,17 @@
 .admin-logo {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
   flex-wrap: wrap;
   text-decoration: none;
   padding: 0 0.5rem 1.5rem;
+  margin-bottom: 0.75rem;
+  border-bottom: 1px solid var(--card-border);
 }
 
 .admin-logo-img {
   display: block;
-  height: 1.6rem;
+  height: 1.7rem;
   width: auto;
   border-radius: 0.35rem;
 }
@@ -40,28 +49,29 @@
 }
 
 .admin-logo-tag {
-  font-size: 0.65rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: var(--text-muted);
-  background: var(--overlay-hover);
+  color: #fff;
+  background: linear-gradient(120deg, var(--accent-blue), var(--accent-violet));
   border-radius: 999px;
-  padding: 0.15rem 0.5rem;
+  padding: 0.2rem 0.6rem;
 }
 
 .admin-nav {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: 0.15rem;
   flex: 1;
 }
 
 .admin-nav-link {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.7rem;
-  padding: 0.65rem 0.75rem;
+  padding: 0.62rem 0.75rem 0.62rem 0.9rem;
   border-radius: 0.55rem;
   color: var(--text-muted);
   text-decoration: none;
@@ -82,9 +92,20 @@
 }
 
 .admin-nav-link.is-active {
-  background: rgba(59, 123, 246, 0.12);
+  background: linear-gradient(90deg, rgba(59, 123, 246, 0.12), rgba(124, 79, 224, 0.06));
   color: var(--accent-blue);
-  font-weight: 600;
+  font-weight: 700;
+}
+
+.admin-nav-link.is-active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.35rem;
+  bottom: 0.35rem;
+  width: 3px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--accent-blue), var(--accent-violet));
 }
 
 .admin-nav-icon {
@@ -98,6 +119,7 @@
   flex-direction: column;
   gap: 0.2rem;
   padding-top: 1rem;
+  margin-top: 0.5rem;
   border-top: 1px solid var(--card-border);
 }
 
@@ -122,39 +144,54 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  padding: 1.1rem 2rem;
+  padding: 1.05rem 2rem;
   background: var(--bg-panel);
   border-bottom: 1px solid var(--card-border);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  backdrop-filter: blur(6px);
 }
 
 .admin-topbar-title {
   font-family: "Rajdhani", sans-serif;
   font-weight: 700;
-  font-size: 1.05rem;
+  font-size: 1.1rem;
   color: var(--text-primary);
   white-space: nowrap;
+  letter-spacing: 0.01em;
 }
 
 .admin-topbar-user {
-  font-size: 0.88rem;
-  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--overlay-hover);
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  padding: 0.35rem 0.85rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   min-width: 0;
+  max-width: 14rem;
 }
 
 .admin-content {
   flex: 1;
   padding: 2rem;
+  max-width: 88rem;
+  width: 100%;
+  margin: 0 auto;
 }
 
 .admin-page-title {
   font-family: "Rajdhani", sans-serif;
-  font-size: 1.7rem;
+  font-size: 1.8rem;
   font-weight: 700;
   margin: 0 0 0.5rem;
   color: var(--text-primary);
+  letter-spacing: 0.01em;
 }
 
 .admin-page-sub {
@@ -177,16 +214,22 @@
   color: var(--text-muted);
   font-size: 0.85rem;
   font-weight: 600;
-  padding: 0.45rem 0.9rem;
+  padding: 0.45rem 0.95rem;
   border-radius: 999px;
   cursor: pointer;
   font-family: "Inter", sans-serif;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.admin-filter-tab:hover {
+  border-color: var(--accent-blue);
+  color: var(--text-primary);
 }
 
 .admin-filter-tab.is-active {
-  background: rgba(59, 123, 246, 0.12);
-  border-color: var(--accent-blue);
-  color: var(--accent-blue);
+  background: linear-gradient(120deg, var(--accent-blue), var(--accent-violet));
+  border-color: transparent;
+  color: #fff;
 }
 
 /* ---------- Notices ---------- */
@@ -210,13 +253,14 @@
   margin-bottom: 1rem;
 }
 
-/* ---------- Orders table ---------- */
+/* ---------- Tables ---------- */
 .admin-table-wrap {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   border: 1px solid var(--card-border);
-  border-radius: 0.75rem;
+  border-radius: 0.9rem;
   background: var(--bg-panel);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
 }
 
 .admin-table {
@@ -228,20 +272,38 @@
 
 .admin-table th {
   text-align: left;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
   color: var(--text-muted);
-  padding: 0.85rem 1rem;
+  padding: 0.9rem 1.1rem;
   border-bottom: 1px solid var(--card-border);
+  background: var(--overlay-soft);
   white-space: nowrap;
 }
 
+.admin-table th:first-child {
+  border-top-left-radius: 0.9rem;
+}
+
+.admin-table th:last-child {
+  border-top-right-radius: 0.9rem;
+}
+
 .admin-table td {
-  padding: 0.85rem 1rem;
+  padding: 0.85rem 1.1rem;
   border-bottom: 1px solid var(--card-border);
   vertical-align: top;
   color: var(--text-primary);
+}
+
+.admin-table tbody tr {
+  transition: background 0.12s ease;
+}
+
+.admin-table tbody tr:hover {
+  background: var(--overlay-soft);
 }
 
 .admin-table tr:last-child td {
@@ -249,7 +311,7 @@
 }
 
 .admin-table-mono {
-  font-family: monospace;
+  font-family: "Roboto Mono", monospace;
   font-size: 0.82rem;
 }
 
@@ -264,10 +326,11 @@
   gap: 0.4rem;
 }
 
+/* ---------- Buttons ---------- */
 .admin-btn {
   border: none;
-  border-radius: 0.4rem;
-  padding: 0.4rem 0.7rem;
+  border-radius: 0.5rem;
+  padding: 0.45rem 0.8rem;
   font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
@@ -277,6 +340,7 @@
   color: var(--text-primary);
   text-decoration: none;
   display: inline-block;
+  transition: background 0.15s ease, transform 0.1s ease;
 }
 
 .admin-btn:disabled {
@@ -287,6 +351,12 @@
 .admin-btn-approve {
   background: linear-gradient(120deg, var(--accent-blue), var(--accent-violet));
   color: #fff;
+  box-shadow: 0 2px 8px rgba(47, 111, 237, 0.25);
+}
+
+.admin-btn-approve:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(47, 111, 237, 0.35);
 }
 
 .admin-btn-reject {
@@ -295,17 +365,31 @@
   border: 1px solid rgba(255, 82, 82, 0.3);
 }
 
+.admin-btn-reject:hover:not(:disabled) {
+  background: rgba(255, 82, 82, 0.16);
+}
+
 /* Reuses the .status-* color classes from Shop.css (globally available once
    any page bundles that stylesheet) — this just adds the pill shape. */
 .admin-status-pill {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   font-size: 0.72rem;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  padding: 0.25rem 0.65rem;
+  padding: 0.28rem 0.7rem;
   border-radius: 999px;
   white-space: nowrap;
+}
+
+.admin-status-pill::before {
+  content: "";
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: currentColor;
 }
 
 .admin-status-pill.status-ok {
@@ -326,9 +410,10 @@
 .admin-card {
   background: var(--bg-panel);
   border: 1px solid var(--card-border);
-  border-radius: 0.75rem;
+  border-radius: 0.9rem;
   padding: 1.5rem;
   margin-bottom: 1.5rem;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
 }
 
 /* ---------- Dashboard stat boxes ---------- */
@@ -340,23 +425,41 @@
 }
 
 .admin-stat-card {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.5rem;
   background: var(--bg-panel);
   border: 1px solid var(--card-border);
-  border-radius: 0.9rem;
-  padding: 1.25rem 1.4rem;
+  border-radius: 1rem;
+  padding: 1.35rem 1.4rem;
   text-decoration: none;
   color: var(--text-primary);
+  overflow: hidden;
   box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
   transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.admin-stat-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent-blue), var(--accent-violet));
+  opacity: 0;
+  transition: opacity 0.15s ease;
 }
 
 .admin-stat-card:hover {
   transform: translateY(-3px);
   border-color: var(--accent-blue);
-  box-shadow: 0 10px 22px rgba(47, 111, 237, 0.15);
+  box-shadow: 0 12px 26px rgba(47, 111, 237, 0.16);
+}
+
+.admin-stat-card:hover::before {
+  opacity: 1;
 }
 
 .admin-stat-card.is-highlight {
@@ -365,13 +468,38 @@
 }
 
 .admin-stat-icon {
-  font-size: 1.4rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  font-size: 1.2rem;
+  border-radius: 0.7rem;
+  background: var(--overlay-hover);
+}
+
+/* A little variety across the grid so the row doesn't read as one repeated
+   card — cycles through the brand accents, purely decorative. */
+.admin-stat-card:nth-child(4n + 1) .admin-stat-icon {
+  background: rgba(59, 123, 246, 0.12);
+}
+
+.admin-stat-card:nth-child(4n + 2) .admin-stat-icon {
+  background: rgba(124, 79, 224, 0.12);
+}
+
+.admin-stat-card:nth-child(4n + 3) .admin-stat-icon {
+  background: rgba(8, 145, 178, 0.12);
+}
+
+.admin-stat-card:nth-child(4n + 4) .admin-stat-icon {
+  background: rgba(13, 148, 103, 0.12);
 }
 
 .admin-stat-value {
   font-family: "Rajdhani", sans-serif;
   font-weight: 700;
-  font-size: 1.9rem;
+  font-size: 1.95rem;
   line-height: 1.1;
 }
 
@@ -383,7 +511,7 @@
 .admin-card-title {
   font-family: "Rajdhani", sans-serif;
   font-weight: 700;
-  font-size: 1.1rem;
+  font-size: 1.15rem;
   margin: 0 0 1rem;
   color: var(--text-primary);
 }
@@ -410,20 +538,22 @@
 .admin-field input,
 .admin-field select,
 .admin-field textarea {
-  background: rgba(15, 23, 42, 0.03);
+  background: var(--overlay-soft);
   border: 1px solid var(--card-border);
   border-radius: 0.5rem;
-  padding: 0.6rem 0.75rem;
+  padding: 0.62rem 0.8rem;
   font-size: 0.92rem;
   color: var(--text-primary);
   font-family: "Inter", sans-serif;
   outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .admin-field input:focus,
 .admin-field select:focus,
 .admin-field textarea:focus {
   border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(59, 123, 246, 0.15);
 }
 
 .admin-field textarea {
@@ -442,7 +572,7 @@
   border: none;
   color: var(--accent-blue);
   font-size: 0.85rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   padding: 0;
 }
@@ -514,8 +644,8 @@
 .admin-btn-approve,
 .admin-btn-reject {
   border: none;
-  border-radius: 0.4rem;
-  padding: 0.5rem 0.9rem;
+  border-radius: 0.5rem;
+  padding: 0.55rem 0.95rem;
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
@@ -664,6 +794,66 @@
   margin-top: 0.5rem;
 }
 
+/* ---------- Admin Users page ---------- */
+.admin-search-input {
+  width: 100%;
+  max-width: 24rem;
+  padding: 0.62rem 0.95rem;
+  border-radius: 0.6rem;
+  border: 1px solid var(--card-border);
+  background: var(--overlay-soft);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.admin-search-input:focus {
+  outline: none;
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(59, 123, 246, 0.15);
+}
+
+.admin-user-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.admin-user-profile-item {
+  background: var(--bg-panel);
+  border: 1px solid var(--card-border);
+  border-radius: 0.7rem;
+  padding: 0.9rem 1.1rem;
+}
+
+.admin-user-profile-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin: 0 0 0.3rem;
+}
+
+.admin-user-profile-value {
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* =========================================================================
+   Responsive — tablet, mobile, and small-phone tuning. The sidebar becomes
+   a horizontally-scrollable pill bar below 860px (rather than wrapping into
+   a ragged multi-row block), so it still feels like a single deliberate
+   navigation strip at every width down to a phone.
+   ========================================================================= */
+
+@media (max-width: 1080px) {
+  .admin-content {
+    padding: 1.75rem;
+  }
+}
+
 @media (max-width: 860px) {
   .admin-shell {
     flex-direction: column;
@@ -674,25 +864,51 @@
     height: auto;
     position: static;
     flex-direction: row;
-    flex-wrap: wrap;
     align-items: center;
-    padding: 1rem;
+    padding: 0.85rem 1rem;
+    gap: 0.5rem;
   }
 
   .admin-logo {
-    padding: 0 0.5rem 0 0;
+    padding: 0 0.75rem 0 0;
+    margin-bottom: 0;
+    border-bottom: none;
+    border-right: 1px solid var(--card-border);
   }
 
   .admin-nav {
     flex-direction: row;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 0.3rem;
+    scrollbar-width: thin;
+  }
+
+  .admin-nav-link {
+    flex-shrink: 0;
+    white-space: nowrap;
+    padding: 0.5rem 0.8rem;
+  }
+
+  .admin-nav-link.is-active::before {
+    left: 0.2rem;
+    right: 0.2rem;
+    top: auto;
+    bottom: 0;
+    height: 2px;
+    width: auto;
   }
 
   .admin-sidebar-footer {
     flex-direction: row;
     border-top: none;
     padding-top: 0;
+    margin-top: 0;
     margin-left: auto;
+    flex-shrink: 0;
+    padding-left: 0.5rem;
+    border-left: 1px solid var(--card-border);
   }
 
   .admin-content {
@@ -720,6 +936,22 @@
   }
 }
 
+@media (max-width: 640px) {
+  .admin-topbar-title {
+    font-size: 1rem;
+  }
+
+  .admin-topbar-user {
+    max-width: 8rem;
+    font-size: 0.76rem;
+    padding: 0.3rem 0.7rem;
+  }
+
+  .admin-stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 @media (max-width: 480px) {
   .admin-topbar {
     padding: 0.85rem 1rem;
@@ -730,7 +962,7 @@
   }
 
   .admin-page-title {
-    font-size: 1.35rem;
+    font-size: 1.4rem;
   }
 
   .admin-stat-grid {
@@ -740,6 +972,12 @@
 
   .admin-stat-card {
     padding: 1rem 1.1rem;
+  }
+
+  .admin-stat-icon {
+    width: 2rem;
+    height: 2rem;
+    font-size: 1rem;
   }
 
   .admin-stat-value {
@@ -758,49 +996,22 @@
     font-size: 0.78rem;
     padding: 0.4rem 0.7rem;
   }
+
+  .admin-user-profile-grid {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
-/* ---------- Admin Users page ---------- */
-.admin-search-input {
-  width: 100%;
-  max-width: 24rem;
-  padding: 0.6rem 0.9rem;
-  border-radius: 0.5rem;
-  border: 1px solid var(--card-border);
-  background: var(--bg-panel);
-  color: var(--text-primary);
-  font-size: 0.9rem;
-}
+@media (max-width: 360px) {
+  .admin-stat-grid {
+    grid-template-columns: 1fr;
+  }
 
-.admin-search-input:focus {
-  outline: none;
-  border-color: var(--accent-blue);
-}
+  .admin-user-profile-grid {
+    grid-template-columns: 1fr;
+  }
 
-.admin-user-profile-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.admin-user-profile-item {
-  background: var(--bg-panel);
-  border: 1px solid var(--card-border);
-  border-radius: 0.6rem;
-  padding: 0.9rem 1.1rem;
-}
-
-.admin-user-profile-label {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-muted);
-  margin: 0 0 0.3rem;
-}
-
-.admin-user-profile-value {
-  font-weight: 700;
-  color: var(--text-primary);
-  margin: 0;
+  .admin-topbar-user {
+    display: none;
+  }
 }
