@@ -59,7 +59,7 @@ exports.getAllOrders = async (req, res) => {
     const filter = {};
 
     if (status === "upi_pending") {
-      filter.paymentMethod = { $in: ["upi_manual", "usdt"] };
+      filter.paymentMethod = { $in: ["upi_manual", "usdt", "razorpay"] };
       filter.verificationStatus = "submitted";
     } else if (status) {
       filter.orderStatus = status;
@@ -79,18 +79,18 @@ exports.getAllOrders = async (req, res) => {
 
 // @route  POST /api/admin/orders/:id/verify-upi
 // @access Admin
-// Same effect as scripts/verifyManualPayment.js — check the UTR (for UPI) or
-// the transaction hash on a block explorer (for USDT) against the real
-// payment yourself first, then click this to mark the order paid and
-// trigger gift-card delivery.
+// Same effect as scripts/verifyManualPayment.js — check the UTR (for UPI),
+// the transaction hash on a block explorer (for USDT), or the payment in
+// your Razorpay dashboard, against the real payment yourself first, then
+// click this to mark the order paid and trigger gift-card delivery.
 exports.verifyUpiPayment = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
     }
-    if (!["upi_manual", "usdt"].includes(order.paymentMethod)) {
-      return res.status(400).json({ message: "This order isn't a manual UPI/USDT order." });
+    if (!["upi_manual", "usdt", "razorpay"].includes(order.paymentMethod)) {
+      return res.status(400).json({ message: "This order isn't a manual-review order." });
     }
     if (order.paymentStatus === "paid") {
       return res.status(400).json({ message: "This order is already marked paid." });
@@ -98,7 +98,10 @@ exports.verifyUpiPayment = async (req, res) => {
 
     order.paymentStatus = "paid";
     order.verificationStatus = "verified";
-    order.providerPaymentId = order.utrNumber || order.usdtTxId || `MANUAL-${Date.now()}`;
+    // Razorpay orders already have their real providerPaymentId set from the
+    // signature-verify step — don't clobber it with a manual placeholder.
+    order.providerPaymentId =
+      order.providerPaymentId || order.utrNumber || order.usdtTxId || `MANUAL-${Date.now()}`;
     await order.save({ validateModifiedOnly: true });
 
     const delivered = await deliverGiftCard(order);
@@ -118,9 +121,8 @@ exports.verifyUpiPayment = async (req, res) => {
 
 // @route  POST /api/admin/orders/:id/reject-upi
 // @access Admin
-// For when the UTR/transaction ID the customer submitted doesn't match
-// anything in your bank/UPI statement or block explorer — marks the order
-// failed instead of silently ignoring it.
+// For when the UTR/transaction ID/Razorpay payment the customer submitted
+// doesn't check out — marks the order failed instead of silently ignoring it.
 exports.rejectUpiPayment = async (req, res) => {
   try {
     const { reason } = req.body;
@@ -128,8 +130,8 @@ exports.rejectUpiPayment = async (req, res) => {
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
     }
-    if (!["upi_manual", "usdt"].includes(order.paymentMethod)) {
-      return res.status(400).json({ message: "This order isn't a manual UPI/USDT order." });
+    if (!["upi_manual", "usdt", "razorpay"].includes(order.paymentMethod)) {
+      return res.status(400).json({ message: "This order isn't a manual-review order." });
     }
 
     order.verificationStatus = "rejected";

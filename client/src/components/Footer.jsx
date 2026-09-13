@@ -59,7 +59,17 @@ const Footer = () => {
 
         <div className="footer-col">
           <h4 className="footer-heading">Quick Links</h4>
-          <Link to="/" className="footer-link">Home</Link>
+          <Link
+            to="/"
+            className="footer-link"
+            onClick={() => {
+              document.documentElement.scrollTop = 0;
+              document.body.scrollTop = 0;
+              window.scrollTo(0, 0);
+            }}
+          >
+            Home
+          </Link>
           <Link to="/blog" className="footer-link">Blog</Link>
           <Link to="/orders" className="footer-link">My Orders</Link>
           <Link to="/cart" className="footer-link">Cart</Link>
@@ -81,17 +91,6 @@ const Footer = () => {
               </span>
             ))}
           </div>
-        </div>
-
-        <div className="footer-col">
-          <h4 className="footer-heading">Legal Info</h4>
-          <p className="footer-legal-line footer-legal-name">GIFTKART STORE</p>
-          <p className="footer-legal-line">GSTIN: 01NDVPS8840D1ZX</p>
-          <p className="footer-legal-line">Udyam Reg. No: UDYAM-JK-14-0011191</p>
-          <p className="footer-legal-line">
-            40, Galhuta Road, Near Raza Nagar Masjid, Eidgah, Galhuta, Poonch,
-            Jammu &amp; Kashmir – 185211
-          </p>
         </div>
       </div>
 

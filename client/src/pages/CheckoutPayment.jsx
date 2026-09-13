@@ -407,7 +407,7 @@ const CheckoutPayment = () => {
         <div className="order-row-meta delivering-to" style={{ marginTop: "0.75rem" }}>
           <span className="delivering-to-icon" aria-hidden="true">📨</span>
           <span>
-            Delivering to: {address.fullName}, {address.city}
+            Delivering to: {address.fullName} ({address.email})
           </span>
         </div>
       </div>

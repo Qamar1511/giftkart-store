@@ -160,7 +160,7 @@ through a chat app and can't produce an invoice has nothing holding them to the 
 
 <h3>5. Purchase limits</h3>
 
-<p>GIFTKART caps orders at three gift cards per order and ₹10,000 per customer in any
+<p>GIFTKART caps orders at three gift cards per order and ₹15,200 per customer in any
 rolling 30-day window. These are anti-fraud limits rather than upsell friction, and they
 protect genuine buyers from account misuse. Plan a larger top-up around them.</p>
 
@@ -252,7 +252,7 @@ are on the <a href="/refund-policy">refund policy page</a>.</p>
 
 <h3>How many cards can I buy at once?</h3>
 
-<p>Up to three gift cards per order, within a ₹10,000 limit per customer over a rolling
+<p>Up to three gift cards per order, within a ₹15,200 limit per customer over a rolling
 30-day period.</p>
 
 <h3>Do wallet funds expire?</h3>

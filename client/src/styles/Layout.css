@@ -714,7 +714,7 @@
   margin: 0 auto;
   padding: 3rem 1.75rem 2rem;
   display: grid;
-  grid-template-columns: 1.4fr 1fr 1fr 0.9fr 1.3fr;
+  grid-template-columns: 1.6fr 1fr 1fr 1.2fr;
   gap: 2rem;
 }
 
@@ -844,7 +844,7 @@
 
 @media (max-width: 860px) {
   .site-footer-inner {
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr;
   }
 
   .navbar-logo {

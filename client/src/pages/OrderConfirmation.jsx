@@ -121,7 +121,11 @@ const OrderConfirmation = () => {
 
   const status = getDisplayStatus(order);
   const copy = STATUS_COPY[status.key] || STATUS_COPY.placed;
-  const showUtrPending = order.paymentMethod === "upi_manual" && order.verificationStatus === "submitted";
+  // Every manual-review payment method (UPI, USDT, and now Razorpay too —
+  // no order auto-delivers anymore) shows the same "we're checking it"
+  // state until an admin verifies it in the dashboard.
+  const isManualReview = ["upi_manual", "usdt", "razorpay"].includes(order.paymentMethod);
+  const showUtrPending = isManualReview && order.verificationStatus === "submitted";
   const items = (Array.isArray(order.items) ? order.items : []).filter((item) => item && item.denomination != null);
   // A historical order is shown in the currency it was actually charged in,
   // using the unit price snapshotted at order time — never the shopper's
@@ -138,7 +142,7 @@ const OrderConfirmation = () => {
         <h1 className="confirmation-heading">{copy.heading}</h1>
         <p className="auth-form-sub">
           {showUtrPending
-            ? "We've received your UTR — we'll verify it against our bank statement and deliver your code shortly."
+            ? "We've received your payment details — we'll verify it and deliver your code shortly."
             : copy.sub}
         </p>
 

@@ -258,12 +258,12 @@ function pricesFor(denomination) {
 // Anti-abuse caps enforced authoritatively in orderController.createOrder
 // (and mirrored as UX guardrails in the client cart):
 //   • At most 3 gift cards per single order (sum of item quantities).
-//   • At most ₹10,000 of purchases per user in any rolling 30-day window.
+//   • At most ₹15,200 of purchases per user in any rolling 30-day window.
 // The monthly cap is always measured in an INR-equivalent value so it
 // applies identically to USDT buyers (USDT orders are converted back to
 // their INR face-based price for the tally).
 const MAX_CARDS_PER_ORDER = 3;
-const MONTHLY_SPEND_LIMIT_INR = 10000;
+const MONTHLY_SPEND_LIMIT_INR = 15200;
 const MONTHLY_WINDOW_DAYS = 30;
 
 // INR-equivalent value of a set of order items — face × 1.1 per unit,

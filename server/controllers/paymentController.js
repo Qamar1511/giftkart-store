@@ -47,6 +47,11 @@ exports.createRazorpayOrder = async (req, res) => {
 // @route  POST /api/payments/razorpay/verify
 // @access Private
 // Called by the frontend from the Razorpay Checkout success handler.
+//
+// This does NOT auto-deliver the gift card. Like the manual UPI/USDT
+// flow, every Razorpay payment is checked by an admin in the dashboard
+// before delivery — this just confirms the payment signature is genuine
+// and puts the order in the "awaiting verification" queue.
 exports.verifyRazorpayPayment = async (req, res) => {
   try {
     const { orderId, razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
@@ -65,14 +70,18 @@ exports.verifyRazorpayPayment = async (req, res) => {
       return res.status(400).json({ message: "Payment verification failed" });
     }
 
-    order.paymentStatus = "paid";
+    // Signature checks out — the payment is genuine — but we still hold off
+    // on delivery until an admin confirms it in the dashboard, same as
+    // manual UPI/USDT. paymentStatus stays as-is (not "paid" yet).
     order.providerPaymentId = razorpay_payment_id;
     order.providerSignature = razorpay_signature;
+    order.verificationStatus = "submitted";
     await order.save();
 
-    const deliveredOrder = await deliverGiftCard(order);
-
-    res.status(200).json({ message: "Payment verified", order: deliveredOrder });
+    res.status(200).json({
+      message: "Payment received — we'll verify it and deliver your code shortly.",
+      order,
+    });
   } catch (error) {
     console.error("Razorpay verify error:", error);
     res.status(500).json({ message: "Couldn't verify the payment." });

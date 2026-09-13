@@ -100,12 +100,7 @@ function streamInvoicePDF(order, res) {
   doc.fontSize(11);
   doc.text(order.address.fullName);
   doc.text(order.address.phone);
-  doc.text(
-    [order.address.line1, order.address.line2].filter(Boolean).join(", ")
-  );
-  doc.text(
-    `${order.address.city}, ${order.address.state} - ${order.address.pincode}`
-  );
+  doc.text(order.address.email);
   doc.text(order.address.country);
   doc.moveDown(1.5);
 

@@ -98,8 +98,9 @@ const AdminOrders = () => {
     <div>
       <h1 className="admin-page-title">Orders</h1>
       <p className="admin-page-sub">
-        Manual UPI and USDT orders need a quick check against your bank/UPI app or block explorer
-        before you verify them — the UTR / transaction ID the customer typed in is shown below for each one.
+        Every order — manual UPI, USDT, and Razorpay — needs a quick check before it delivers.
+        For UPI/USDT, check the UTR / transaction ID shown below against your bank/UPI app or
+        block explorer. For Razorpay, check the payment in your Razorpay dashboard.
       </p>
 
       <div className="admin-filter-tabs">
@@ -141,7 +142,7 @@ const AdminOrders = () => {
               {orders.map((order) => {
                 const status = getDisplayStatus(order);
                 const isUpiPending =
-                  ["upi_manual", "usdt"].includes(order.paymentMethod) &&
+                  ["upi_manual", "usdt", "razorpay"].includes(order.paymentMethod) &&
                   order.verificationStatus === "submitted";
                 const items = Array.isArray(order.items) ? order.items : [];
                 return (
@@ -173,7 +174,9 @@ const AdminOrders = () => {
                     </td>
                     <td>{(order.paymentMethod || "—").replace("_", " ").toUpperCase()}</td>
                     <td>
-                      <span className={`admin-status-pill status-${status.key}`}>{status.label}</span>
+                      <span className={`admin-status-pill status-${isUpiPending ? "refund_pending" : status.key}`}>
+                        {isUpiPending ? "Verification pending" : status.label}
+                      </span>
                     </td>
                     <td className="admin-table-mono">{order.utrNumber || order.usdtTxId || "—"}</td>
                     <td>

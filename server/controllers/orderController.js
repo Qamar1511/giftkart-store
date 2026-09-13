@@ -37,8 +37,8 @@ exports.createOrder = async (req, res) => {
     if (!Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ message: "Your cart is empty" });
     }
-    if (!address || !address.line1 || !address.city || !address.pincode) {
-      return res.status(400).json({ message: "A complete address is required" });
+    if (!address || !address.fullName || !address.phone || !address.email || !address.country) {
+      return res.status(400).json({ message: "Name, phone, email and country are required" });
     }
 
     // Buying currency is a server-side truth: read it from the user's saved
