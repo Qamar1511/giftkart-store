@@ -286,6 +286,33 @@ exports.deleteStockCode = async (req, res) => {
   }
 };
 
+// @route  DELETE /api/admin/stock/:brand/:denomination
+// @access Admin
+// Removes every still-in-stock (isUsed: false) code for this brand +
+// denomination in one go. Codes already delivered to a customer's order
+// (isUsed: true) are never touched — those stay as a permanent record of
+// what was actually sent out.
+exports.deleteAllStockCodes = async (req, res) => {
+  try {
+    const { brand, denomination } = req.params;
+    const denomNum = Number(denomination);
+
+    const result = await GiftCardStock.deleteMany({
+      brand,
+      denomination: denomNum,
+      isUsed: false,
+    });
+
+    res.status(200).json({
+      message: `Removed ${result.deletedCount} unsold code${result.deletedCount !== 1 ? "s" : ""}.`,
+      deletedCount: result.deletedCount,
+    });
+  } catch (error) {
+    console.error("Delete all stock codes error:", error);
+    res.status(500).json({ message: "Couldn't remove these codes." });
+  }
+};
+
 /* ============================== PRICING =================================
    Store-wide prices are DERIVED, not stored per product: every card's price
    is its face value (denomination) × a per-currency multiplier.

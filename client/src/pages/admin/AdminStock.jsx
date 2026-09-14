@@ -4,6 +4,7 @@ import {
   getStockCodes,
   addStockCodes,
   deleteStockCode,
+  deleteAllStockCodes,
 } from "../../services/adminService";
 
 const LOW_STOCK = 5;
@@ -99,6 +100,29 @@ const AdminStock = () => {
       loadSummary();
     } catch (err) {
       alert(err.response?.data?.message || "Couldn't remove this code.");
+    }
+  };
+
+  const [deletingAll, setDeletingAll] = useState(false);
+
+  const handleDeleteAllCodes = async (brand, denomination, brandName) => {
+    if (
+      !window.confirm(
+        `Delete all unsold ${brandName} ₹${denomination} codes? Codes already delivered to a customer are never touched — only what's still sitting in stock.`
+      )
+    ) {
+      return;
+    }
+    setDeletingAll(true);
+    try {
+      const result = await deleteAllStockCodes(brand, denomination);
+      alert(result.message);
+      setExpandedCodes([]);
+      loadSummary();
+    } catch (err) {
+      alert(err.response?.data?.message || "Couldn't remove these codes.");
+    } finally {
+      setDeletingAll(false);
     }
   };
 
@@ -218,21 +242,32 @@ const AdminStock = () => {
                           ) : expandedCodes.length === 0 ? (
                             "No codes in stock for this combo."
                           ) : (
-                            <ul className="admin-code-list">
-                              {expandedCodes.map((c) => (
-                                <li key={c._id}>
-                                  <code>{c.code}</code>
-                                  <button
-                                    type="button"
-                                    className="admin-code-remove"
-                                    onClick={() => handleDeleteCode(c._id, row.brand, row.denomination)}
-                                    aria-label="Remove code"
-                                  >
-                                    ×
-                                  </button>
-                                </li>
-                              ))}
-                            </ul>
+                            <>
+                              <button
+                                type="button"
+                                className="admin-btn-reject"
+                                disabled={deletingAll}
+                                onClick={() => handleDeleteAllCodes(row.brand, row.denomination, row.brandName)}
+                                style={{ marginBottom: "0.75rem" }}
+                              >
+                                {deletingAll ? "Deleting…" : `Delete all ${expandedCodes.length} unsold codes`}
+                              </button>
+                              <ul className="admin-code-list">
+                                {expandedCodes.map((c) => (
+                                  <li key={c._id}>
+                                    <code>{c.code}</code>
+                                    <button
+                                      type="button"
+                                      className="admin-code-remove"
+                                      onClick={() => handleDeleteCode(c._id, row.brand, row.denomination)}
+                                      aria-label="Remove code"
+                                    >
+                                      ×
+                                    </button>
+                                  </li>
+                                ))}
+                              </ul>
+                            </>
                           )}
                         </td>
                       </tr>

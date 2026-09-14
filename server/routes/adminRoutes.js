@@ -8,6 +8,7 @@ const {
   getStockCodes,
   addStockCodes,
   deleteStockCode,
+  deleteAllStockCodes,
   getPricing,
   updatePricing,
 } = require("../controllers/adminController");
@@ -40,6 +41,7 @@ router.get("/stock", getStockSummary);
 router.get("/stock/:brand/:denomination", getStockCodes);
 router.post("/stock", addStockCodes);
 router.delete("/stock/:codeId", deleteStockCode);
+router.delete("/stock/:brand/:denomination/all", deleteAllStockCodes);
 
 // Store-wide price multipliers (Admin → Pricing). One number per currency
 // reprices the entire catalog.

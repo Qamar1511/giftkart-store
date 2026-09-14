@@ -61,6 +61,11 @@ export const deleteStockCode = async (codeId) => {
   return data;
 };
 
+export const deleteAllStockCodes = async (brand, denomination) => {
+  const { data } = await apiClient.delete(`/admin/stock/${brand}/${denomination}/all`);
+  return data;
+};
+
 /* ------------------------------ Pricing --------------------------------
    Store-wide price multipliers: every card's price = denomination × rate
    for the shopper's currency, so one number reprices the whole catalog.
