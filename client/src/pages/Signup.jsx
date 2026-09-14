@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { signupUser, verifyOtp, resendOtp, saveSession } from "../services/authService";
 import { DEFAULT_CURRENCY } from "../data/catalog";
@@ -23,11 +23,65 @@ const AuthBackdrop = () => (
 const initialForm = {
   fullName: "",
   email: "",
+  countryCode: "+91",
   phone: "",
   password: "",
   confirmPassword: "",
   currency: DEFAULT_CURRENCY,
 };
+
+// Common country codes for the phone field — India first/default since
+// that's the large majority of our customers.
+const COUNTRY_CODES = [
+  { code: "+91", country: "India" },
+  { code: "+1", country: "USA/Canada" },
+  { code: "+44", country: "UK" },
+  { code: "+61", country: "Australia" },
+  { code: "+971", country: "UAE" },
+  { code: "+966", country: "Saudi Arabia" },
+  { code: "+974", country: "Qatar" },
+  { code: "+965", country: "Kuwait" },
+  { code: "+968", country: "Oman" },
+  { code: "+973", country: "Bahrain" },
+  { code: "+92", country: "Pakistan" },
+  { code: "+880", country: "Bangladesh" },
+  { code: "+94", country: "Sri Lanka" },
+  { code: "+977", country: "Nepal" },
+  { code: "+975", country: "Bhutan" },
+  { code: "+95", country: "Myanmar" },
+  { code: "+65", country: "Singapore" },
+  { code: "+60", country: "Malaysia" },
+  { code: "+66", country: "Thailand" },
+  { code: "+63", country: "Philippines" },
+  { code: "+62", country: "Indonesia" },
+  { code: "+84", country: "Vietnam" },
+  { code: "+86", country: "China" },
+  { code: "+81", country: "Japan" },
+  { code: "+82", country: "South Korea" },
+  { code: "+852", country: "Hong Kong" },
+  { code: "+886", country: "Taiwan" },
+  { code: "+49", country: "Germany" },
+  { code: "+33", country: "France" },
+  { code: "+39", country: "Italy" },
+  { code: "+34", country: "Spain" },
+  { code: "+31", country: "Netherlands" },
+  { code: "+41", country: "Switzerland" },
+  { code: "+46", country: "Sweden" },
+  { code: "+47", country: "Norway" },
+  { code: "+45", country: "Denmark" },
+  { code: "+353", country: "Ireland" },
+  { code: "+351", country: "Portugal" },
+  { code: "+7", country: "Russia" },
+  { code: "+90", country: "Turkey" },
+  { code: "+20", country: "Egypt" },
+  { code: "+27", country: "South Africa" },
+  { code: "+234", country: "Nigeria" },
+  { code: "+254", country: "Kenya" },
+  { code: "+55", country: "Brazil" },
+  { code: "+52", country: "Mexico" },
+  { code: "+54", country: "Argentina" },
+  { code: "+64", country: "New Zealand" },
+];
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -40,6 +94,29 @@ const Signup = () => {
   const [otp, setOtp] = useState("");
   const [otpNotice, setOtpNotice] = useState("");
   const [resending, setResending] = useState(false);
+  const [isClientError, setIsClientError] = useState(false);
+  const errorRef = useRef(null);
+
+  // If the currently-shown error came from our own client-side validation
+  // (not the server), re-check it as the form changes and clear it the
+  // moment it's no longer true — so fixing the phone number (etc.) makes
+  // the message go away immediately instead of sticking around.
+  useEffect(() => {
+    if (error && isClientError && !validate()) {
+      setError("");
+      setIsClientError(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form]);
+
+  // Whenever an error appears (invalid field, already-registered email/phone,
+  // wrong OTP, etc.) bring it into view — the form is tall enough that the
+  // message can end up off-screen, especially on mobile.
+  useEffect(() => {
+    if (error && errorRef.current) {
+      errorRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [error]);
 
   // Arrived here via Login's "Verify your email now" link — the account
   // already exists, so skip straight to the OTP box and send a fresh code.
@@ -72,8 +149,13 @@ const Signup = () => {
     if (!/^\S+@\S+\.\S+$/.test(form.email)) {
       return "Enter a valid email address.";
     }
-    if (!/^[6-9]\d{9}$/.test(form.phone.replace(/\D/g, ""))) {
-      return "Enter a valid 10-digit Indian mobile number.";
+    const digitsOnly = form.phone.replace(/\D/g, "");
+    if (form.countryCode === "+91") {
+      if (!/^[6-9]\d{9}$/.test(digitsOnly)) {
+        return "Enter a valid 10-digit Indian mobile number.";
+      }
+    } else if (digitsOnly.length < 6 || digitsOnly.length > 14) {
+      return "Enter a valid phone number.";
     }
     return "";
   };
@@ -85,19 +167,22 @@ const Signup = () => {
     const validationError = validate();
     if (validationError) {
       setError(validationError);
+      setIsClientError(true);
       return;
     }
 
     setLoading(true);
     setError("");
     try {
-      const data = await signupUser(form);
+      const combinedPhone = `${form.countryCode}${form.phone.replace(/\D/g, "")}`;
+      const data = await signupUser({ ...form, phone: combinedPhone });
       setOtpSent(true);
       setOtpNotice(data.message || "We've emailed you a 6-digit code.");
     } catch (err) {
       const message =
         err.response?.data?.message || "Couldn't create your account. Please try again.";
       setError(message);
+      setIsClientError(false);
     } finally {
       setLoading(false);
     }
@@ -191,7 +276,7 @@ const Signup = () => {
               <Link to="/login" className="auth-link">Log in</Link>
             </p>
 
-            {error && <div className="auth-error" role="alert">{error}</div>}
+            {error && <div className="auth-error" role="alert" ref={errorRef}>{error}</div>}
             {!error && otpSent && otpNotice && (
               <div className="auth-success" role="status">{otpNotice}</div>
             )}
@@ -298,15 +383,30 @@ const Signup = () => {
 
               <label className="auth-field">
                 <span>Phone number</span>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={form.phone}
-                  onChange={handleChange}
-                  placeholder="98765 43210"
-                  autoComplete="tel"
-                  disabled={otpSent}
-                />
+                <div className="auth-phone-wrap">
+                  <select
+                    name="countryCode"
+                    value={form.countryCode}
+                    onChange={handleChange}
+                    className="auth-phone-code"
+                    disabled={otpSent}
+                  >
+                    {COUNTRY_CODES.map((c) => (
+                      <option key={c.code + c.country} value={c.code} title={c.country}>
+                        {c.code}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={form.phone}
+                    onChange={handleChange}
+                    placeholder="98765 43210"
+                    autoComplete="tel"
+                    disabled={otpSent}
+                  />
+                </div>
               </label>
 
               <label className="auth-field">

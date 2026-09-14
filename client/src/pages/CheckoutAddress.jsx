@@ -82,8 +82,13 @@ const CheckoutAddress = () => {
         return;
       }
     }
-    if (!/^\d{10}$/.test(address.phone.replace(/\D/g, ""))) {
-      setError("Enter a valid 10-digit phone number.");
+    // Prefilled from the account, which now stores the phone with its
+    // country code (e.g. "+919876543210") — so this just checks for a
+    // reasonable digit count rather than assuming a bare 10-digit Indian
+    // number, since someone may also type a fresh number with a code here.
+    const phoneDigits = address.phone.replace(/\D/g, "");
+    if (phoneDigits.length < 7 || phoneDigits.length > 15) {
+      setError("Enter a valid phone number.");
       return;
     }
     if (!/^\S+@\S+\.\S+$/.test(address.email)) {

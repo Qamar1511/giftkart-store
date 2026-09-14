@@ -467,6 +467,28 @@
 .auth-inline-verify-wrap { display: flex; gap: 0.5rem; }
 .auth-inline-verify-wrap input { flex: 1; }
 
+.auth-phone-wrap { display: flex; gap: 0.5rem; }
+.auth-phone-wrap input { flex: 1; min-width: 0; }
+.auth-phone-code {
+  flex-shrink: 0;
+  width: 7.5rem;
+  background: var(--a-field);
+  border: 1px solid var(--a-field-border);
+  border-radius: 0.6rem;
+  padding: 0.8rem 0.6rem;
+  color: var(--a-ink);
+  font-size: 0.9rem;
+  font-family: "Inter", sans-serif;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+.auth-phone-code:focus {
+  border-color: var(--a-cyan);
+  box-shadow: 0 0 0 3px rgba(41, 230, 255, 0.18);
+}
+.auth-phone-code:disabled { opacity: 0.55; cursor: not-allowed; }
+
 .auth-inline-verify-btn {
   flex-shrink: 0;
   padding: 0 1rem;

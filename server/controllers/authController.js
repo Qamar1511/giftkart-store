@@ -75,8 +75,18 @@ exports.signup = async (req, res) => {
     if (!/^\S+@\S+\.\S+$/.test(email)) {
       return res.status(400).json({ message: "Enter a valid email address" });
     }
-    if (!/^[6-9]\d{9}$/.test(phone)) {
-      return res.status(400).json({ message: "Enter a valid 10-digit Indian mobile number" });
+    // `phone` arrives with its country code already prepended by the
+    // frontend (e.g. "+919149783414") — validate against that, not the
+    // bare 10-digit format.
+    if (phone.startsWith("+91")) {
+      if (!/^[6-9]\d{9}$/.test(phone.slice(3))) {
+        return res.status(400).json({ message: "Enter a valid 10-digit Indian mobile number" });
+      }
+    } else {
+      const digitsOnly = phone.replace(/\D/g, "");
+      if (digitsOnly.length < 6 || digitsOnly.length > 14) {
+        return res.status(400).json({ message: "Enter a valid phone number" });
+      }
     }
 
     const chosenCurrency = normaliseCurrency(currency);

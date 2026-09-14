@@ -21,7 +21,20 @@ const userSchema = new mongoose.Schema(
       required: [true, "Phone number is required"],
       unique: true,
       trim: true,
-      match: [/^[6-9]\d{9}$/, "Enter a valid 10-digit Indian mobile number"],
+      validate: {
+        // Phone is stored with its country code prepended (e.g.
+        // "+919149783414"). Indian numbers still get the strict
+        // 10-digit-starting-6-9 check; other countries just need a
+        // sane digit count.
+        validator: function (value) {
+          if (value.startsWith("+91")) {
+            return /^[6-9]\d{9}$/.test(value.slice(3));
+          }
+          const digitsOnly = value.replace(/\D/g, "");
+          return digitsOnly.length >= 6 && digitsOnly.length <= 14;
+        },
+        message: "Enter a valid phone number",
+      },
     },
     password: {
       type: String,
