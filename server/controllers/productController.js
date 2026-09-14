@@ -1,5 +1,6 @@
 const { CATEGORIES, BRANDS, getBrand, pricesFor, CURRENCIES, CURRENCY_CODES, DEFAULT_CURRENCY, getRates } = require("../config/catalog");
 const { getAvailableCounts } = require("../utils/stockReservation");
+const { notifyAdminStockRequest } = require("../utils/notifyAdmin");
 const User = require("../models/User");
 const StockNotification = require("../models/StockNotification");
 
@@ -112,6 +113,12 @@ exports.requestStockNotification = async (req, res) => {
       { email: user.email, notified: false },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
+
+    notifyAdminStockRequest({
+      brandName: brand.name,
+      denomination: denomNum,
+      customerEmail: user.email,
+    }).catch((err) => console.error("Notify-me admin email failed:", err));
 
     res.status(200).json({
       message: `We'll email you the moment ${brand.name} ₹${denomNum} is back in stock.`,

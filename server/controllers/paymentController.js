@@ -3,6 +3,7 @@ const axios = require("axios");
 const Razorpay = require("razorpay");
 const Order = require("../models/Order");
 const deliverGiftCard = require("../utils/deliverGiftCard");
+const { notifyAdminNewOrder } = require("../utils/notifyAdmin");
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -76,7 +77,27 @@ exports.verifyRazorpayPayment = async (req, res) => {
     order.providerPaymentId = razorpay_payment_id;
     order.providerSignature = razorpay_signature;
     order.verificationStatus = "submitted";
+
+    // Pull the UTR/bank reference number so it shows up in the admin
+    // dashboard next to the order (same column as manual UPI/USDT), instead
+    // of just Razorpay's own internal payment ID. Only UPI payments carry
+    // this — card/netbanking payments won't have an rrn, which is fine,
+    // that column just stays blank for those.
+    try {
+      const paymentDetails = await razorpay.payments.fetch(razorpay_payment_id);
+      const utr =
+        paymentDetails.acquirer_data?.rrn ||
+        paymentDetails.acquirer_data?.upi_transaction_id ||
+        paymentDetails.acquirer_data?.bank_transaction_id ||
+        null;
+      if (utr) order.utrNumber = utr;
+    } catch (fetchErr) {
+      console.error("Couldn't fetch Razorpay payment details for UTR:", fetchErr.message);
+    }
+
     await order.save();
+    await order.populate("user", "fullName email");
+    notifyAdminNewOrder(order).catch((err) => console.error("New order email failed:", err));
 
     res.status(200).json({
       message: "Payment received — we'll verify it and deliver your code shortly.",

@@ -2,6 +2,7 @@ const Order = require("../models/Order");
 const User = require("../models/User");
 const generateInvoiceNumber = require("../utils/generateInvoiceNumber");
 const streamInvoicePDF = require("../utils/pdfInvoice");
+const { notifyAdminNewOrder } = require("../utils/notifyAdmin");
 const {
   getBrand,
   priceFor,
@@ -304,6 +305,8 @@ exports.submitUtr = async (req, res) => {
     order.utrNumber = trimmedUtr;
     order.verificationStatus = "submitted";
     await order.save();
+    await order.populate("user", "fullName email");
+    notifyAdminNewOrder(order).catch((err) => console.error("New order email failed:", err));
 
     res.status(200).json({ message: "UTR submitted — we'll verify and deliver shortly", order });
   } catch (error) {
@@ -335,6 +338,8 @@ exports.submitUsdtTx = async (req, res) => {
     order.usdtTxId = trimmedTxId;
     order.verificationStatus = "submitted";
     await order.save();
+    await order.populate("user", "fullName email");
+    notifyAdminNewOrder(order).catch((err) => console.error("New order email failed:", err));
 
     res.status(200).json({ message: "Transaction ID submitted — we'll verify and deliver shortly", order });
   } catch (error) {
