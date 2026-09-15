@@ -2071,7 +2071,7 @@
 }
 
 .blog-post-content a {
-  color: var(--accent-blue);
+  /* color: var(--accent-blue); */
 }
 
 .blog-post-content img {
