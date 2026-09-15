@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { getBlogPostBySlug, getCachedBlogPost, resolveImageUrl } from "../services/blogService";
 import Seo, { SITE_URL } from "../components/Seo";
@@ -24,6 +24,7 @@ const PostSkeleton = () => (
 
 const BlogPost = () => {
   const { slug } = useParams();
+  const contentRef = useRef(null);
   // If this post was opened before (or its slug is already cached from a
   // previous view), render it immediately instead of flashing a loader.
   const [post, setPost] = useState(() => getCachedBlogPost(slug));
@@ -40,6 +41,38 @@ const BlogPost = () => {
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
   }, [slug]);
+
+  // Reveal each .reveal-on-scroll section (added around H2 blocks in the
+  // post's HTML) as it scrolls into view. Runs after the raw content is
+  // injected via dangerouslySetInnerHTML, so it queries the DOM directly
+  // rather than tracking React state for content it doesn't own.
+  useEffect(() => {
+    if (!post || !contentRef.current) return;
+
+    const sections = contentRef.current.querySelectorAll(".reveal-on-scroll");
+    if (sections.length === 0) return;
+
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReducedMotion) {
+      sections.forEach((el) => el.classList.add("is-visible"));
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: "0px 0px -40px 0px" }
+    );
+
+    sections.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [post]);
 
   if (loading) {
     return <PostSkeleton />;
@@ -87,7 +120,7 @@ const BlogPost = () => {
       <p className="shop-status">
         {post.author || "GIFTKART Team"} · {formatDate(post.publishedAt || post.createdAt)}
       </p>
-      <div className="blog-post-content" dangerouslySetInnerHTML={{ __html: post.content }} />
+      <div className="blog-post-content" ref={contentRef} dangerouslySetInnerHTML={{ __html: post.content }} />
     </div>
   );
 };
