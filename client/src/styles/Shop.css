@@ -2174,7 +2174,6 @@
   gap: 0.45rem;
   flex-shrink: 0;
   background: linear-gradient(120deg, var(--accent-blue), var(--accent-violet));
-  color: #fff;
   font-family: "Rajdhani", sans-serif;
   font-weight: 700;
   font-size: 0.95rem;
@@ -2182,6 +2181,16 @@
   padding: 0.75rem 1.3rem;
   border-radius: 0.6rem;
   transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+/* Higher specificity than the general ".blog-post-content a" link-color
+   rule above, which would otherwise win and render this text in
+   --accent-blue — nearly invisible against the button's own blue→violet
+   background. */
+.blog-post-content .blog-cta-button,
+.blog-post-content .blog-cta-button:hover,
+.blog-post-content .blog-cta-button:visited {
+  color: #fff;
 }
 
 .blog-cta-button:hover {
