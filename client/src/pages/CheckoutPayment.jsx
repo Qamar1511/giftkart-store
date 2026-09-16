@@ -40,7 +40,13 @@ const PAYMENT_METHODS = [
   {
     id: "upi_manual",
     label: "UPI (Scan QR)",
-    hint: "Pay via any UPI app",
+    // Paused: still shown so shoppers know it exists, but greyed out and
+    // unclickable — see the `disabled` checks in methodsForCurrency,
+    // defaultMethodFor and the tile's onClick/disabled props below. Razorpay
+    // already covers UPI automatically, so this only pauses the manual
+    // scan-and-pay-a-UTR flow, nothing else.
+    disabled: true,
+    hint: "Temporarily unavailable",
     iconBg: "#fff5e6",
     icon: (
       <svg viewBox="0 0 32 20" width="26" height="16" fill="none">
@@ -120,9 +126,13 @@ const methodsForCurrency = (currency) => {
 };
 
 // The method to pre-select (INR → Razorpay, USDT → USDT). Razorpay leads the
-// INR list because it settles automatically — manual UPI still works, but it
-// needs a UTR to be checked by hand before delivery.
-const defaultMethodFor = (currency) => methodsForCurrency(currency)[0]?.id || "upi_manual";
+// INR list because it settles automatically — manual UPI still works when
+// it isn't paused, but it needs a UTR to be checked by hand before delivery.
+// Falls back past any paused/disabled method so one is never pre-selected.
+const defaultMethodFor = (currency) => {
+  const methods = methodsForCurrency(currency);
+  return (methods.find((m) => !m.disabled) || methods[0])?.id || "upi_manual";
+};
 
 const CheckoutPayment = () => {
   const navigate = useNavigate();
@@ -153,12 +163,13 @@ const CheckoutPayment = () => {
   }, []);
 
   // If the shopper switches buying currency (e.g. via the navbar) while on this
-  // page, the previously-selected tile may no longer be valid for that currency.
-  // Snap the selection back to that currency's default method (INR → Razorpay,
-  // USDT → USDT) so it always matches what the server will accept.
+  // page, the previously-selected tile may no longer be valid for that currency
+  // — or may have since been paused. Snap the selection back to that currency's
+  // default method (INR → Razorpay, USDT → USDT) so it always matches what the
+  // server will accept.
   useEffect(() => {
-    const allowed = CURRENCY_PAYMENT_METHODS[currency] || [];
-    if (!allowed.includes(paymentMethod)) {
+    const current = methodsForCurrency(currency).find((m) => m.id === paymentMethod);
+    if (!current || current.disabled) {
       setPaymentMethod(defaultMethodFor(currency));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -421,8 +432,12 @@ const CheckoutPayment = () => {
             <button
               type="button"
               key={method.id}
-              className={`payment-method-tile ${paymentMethod === method.id ? "is-selected" : ""}`}
-              onClick={() => setPaymentMethod(method.id)}
+              className={`payment-method-tile ${paymentMethod === method.id ? "is-selected" : ""} ${
+                method.disabled ? "is-disabled" : ""
+              }`}
+              disabled={method.disabled}
+              aria-disabled={method.disabled}
+              onClick={() => !method.disabled && setPaymentMethod(method.id)}
             >
               <span className="payment-method-label">{method.label}</span>
               <span className="payment-method-hint">{method.hint}</span>
