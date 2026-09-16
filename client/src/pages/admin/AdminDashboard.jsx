@@ -51,6 +51,7 @@ const AdminDashboard = () => {
   const revenueLabel =
     CURRENCY_CODES.filter((c) => revenueByCurrency[c]).map((c) => formatMoney(revenueByCurrency[c], c)).join(" · ") ||
     formatMoney(0, "INR");
+
   const pendingVerification =
     orders?.filter((o) => o.paymentMethod === "upi_manual" && o.verificationStatus === "submitted")
       .length || 0;
@@ -72,7 +73,7 @@ const AdminDashboard = () => {
       label: "Revenue collected",
       value: revenueLabel,
       icon: "💰",
-      to: "/admin/orders?status=all",
+      to: "/admin/revenue",
     },
     {
       label: "Pending UPI verification",
@@ -91,7 +92,7 @@ const AdminDashboard = () => {
       label: "Low stock items",
       value: lowStockItems.length,
       icon: "⚠️",
-      to: "/admin/stock",
+      to: "/admin/low-stock",
       highlight: lowStockItems.length > 0,
     },
     {
@@ -127,33 +128,6 @@ const AdminDashboard = () => {
               </Link>
             ))}
           </div>
-
-          {lowStockItems.length > 0 && (
-            <div className="admin-card">
-              <h2 className="admin-card-title">⚠️ Low stock — top up soon</h2>
-              <div className="admin-table-wrap">
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>Brand</th>
-                      <th>Denomination</th>
-                      <th>Codes left</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {lowStockItems.map((item) => (
-                      <tr key={`${item.brand}-${item.denomination}`}>
-                        <td>{item.brandName}</td>
-                        <td>₹{item.denomination}</td>
-                        <td className="admin-table-mono">{item.available}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <Link to="/admin/stock" className="admin-link-btn">Add more stock →</Link>
-            </div>
-          )}
         </>
       )}
     </div>

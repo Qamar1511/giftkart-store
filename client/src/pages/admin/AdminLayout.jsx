@@ -7,6 +7,7 @@ import Seo from "../../components/Seo";
 const NAV_ITEMS = [
   { to: "/admin", label: "Dashboard", icon: "📊", end: true },
   { to: "/admin/orders", label: "Orders", icon: "📦" },
+  { to: "/admin/revenue", label: "Revenue", icon: "💰" },
   { to: "/admin/stock", label: "Gift Card Stock", icon: "🎟️" },
   { to: "/admin/pricing", label: "Pricing", icon: "💰" },
   { to: "/admin/reviews", label: "Reviews", icon: "⭐" },

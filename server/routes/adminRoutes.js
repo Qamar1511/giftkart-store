@@ -2,6 +2,8 @@ const express = require("express");
 const multer = require("multer");
 const {
   getAllOrders,
+  getMonthlyRevenue,
+  exportDeliveredOrders,
   verifyUpiPayment,
   rejectUpiPayment,
   getStockSummary,
@@ -34,6 +36,8 @@ const uploadImage = multer({
 });
 
 router.get("/orders", getAllOrders);
+router.get("/orders/revenue-by-month", getMonthlyRevenue);
+router.get("/orders/export", exportDeliveredOrders);
 router.post("/orders/:id/verify-upi", verifyUpiPayment);
 router.post("/orders/:id/reject-upi", rejectUpiPayment);
 

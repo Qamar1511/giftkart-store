@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { getAdminOrders, verifyUpiOrder, rejectUpiOrder } from "../../services/adminService";
+import {
+  getAdminOrders,
+  verifyUpiOrder,
+  rejectUpiOrder,
+  exportDeliveredOrders,
+} from "../../services/adminService";
 import { getDisplayStatus } from "../../utils/orderStatus";
 import { formatMoney } from "../../data/catalog";
 
@@ -11,6 +16,13 @@ const FILTERS = [
   { key: "cancelled", label: "Cancelled" },
 ];
 const VALID_FILTER_KEYS = FILTERS.map((f) => f.key);
+
+const EXPORT_RANGES = [
+  { key: "month", label: "This month" },
+  { key: "6months", label: "Last 6 months" },
+  { key: "year", label: "This year" },
+  { key: "custom", label: "Custom dates" },
+];
 
 const AdminOrders = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -35,6 +47,13 @@ const AdminOrders = () => {
   const [error, setError] = useState("");
   const [actioningId, setActioningId] = useState(null);
   const [notice, setNotice] = useState("");
+
+  // ---- Delivered-orders export (Excel/PDF) ----
+  const [exportRange, setExportRange] = useState("month");
+  const [exportFrom, setExportFrom] = useState("");
+  const [exportTo, setExportTo] = useState("");
+  const [exporting, setExporting] = useState(""); // "csv" | "pdf" | ""
+  const [exportError, setExportError] = useState("");
 
   // Keep the URL in sync so the tab you land on is also the tab in the
   // address bar (bookmarkable, and matches whatever the dashboard linked to).
@@ -94,6 +113,22 @@ const AdminOrders = () => {
     }
   };
 
+  const handleExport = async (format) => {
+    setExportError("");
+    if (exportRange === "custom" && (!exportFrom || !exportTo)) {
+      setExportError("Pick both a from and to date for a custom range.");
+      return;
+    }
+    setExporting(format);
+    try {
+      await exportDeliveredOrders(format, exportRange, { from: exportFrom, to: exportTo });
+    } catch (err) {
+      setExportError("Couldn't generate that export. Please try again.");
+    } finally {
+      setExporting("");
+    }
+  };
+
   return (
     <div>
       <h1 className="admin-page-title">Orders</h1>
@@ -102,6 +137,56 @@ const AdminOrders = () => {
         For UPI/USDT, check the UTR / transaction ID shown below against your bank/UPI app or
         block explorer. For Razorpay, check the payment in your Razorpay dashboard.
       </p>
+
+      <div className="admin-card">
+        <h2 className="admin-card-title">Export delivered orders</h2>
+        <div className="admin-filter-tabs">
+          {EXPORT_RANGES.map((r) => (
+            <button
+              key={r.key}
+              type="button"
+              className={`admin-filter-tab ${exportRange === r.key ? "is-active" : ""}`}
+              onClick={() => setExportRange(r.key)}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
+
+        {exportRange === "custom" && (
+          <div className="admin-form-grid" style={{ marginBottom: "1rem", maxWidth: "28rem" }}>
+            <label className="admin-field">
+              <span>From</span>
+              <input type="date" value={exportFrom} onChange={(e) => setExportFrom(e.target.value)} />
+            </label>
+            <label className="admin-field">
+              <span>To</span>
+              <input type="date" value={exportTo} onChange={(e) => setExportTo(e.target.value)} />
+            </label>
+          </div>
+        )}
+
+        {exportError && <div className="admin-error">{exportError}</div>}
+
+        <div className="admin-table-actions" style={{ flexDirection: "row" }}>
+          <button
+            type="button"
+            className="admin-btn admin-btn-approve"
+            disabled={exporting !== ""}
+            onClick={() => handleExport("csv")}
+          >
+            {exporting === "csv" ? "Preparing…" : "⬇ Download Excel (CSV)"}
+          </button>
+          <button
+            type="button"
+            className="admin-btn"
+            disabled={exporting !== ""}
+            onClick={() => handleExport("pdf")}
+          >
+            {exporting === "pdf" ? "Preparing…" : "⬇ Download PDF"}
+          </button>
+        </div>
+      </div>
 
       <div className="admin-filter-tabs">
         {FILTERS.map((f) => (

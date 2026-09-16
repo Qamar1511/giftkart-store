@@ -3,6 +3,7 @@ const GiftCardStock = require("../models/GiftCardStock");
 const StockNotification = require("../models/StockNotification");
 const deliverGiftCard = require("../utils/deliverGiftCard");
 const { sendEmail } = require("../utils/sendEmail");
+const { streamOrdersCsv, streamOrdersPdf } = require("../utils/exportOrders");
 const { BRANDS, CURRENCIES, CURRENCY_CODES, ALL_DENOMINATIONS, getRates, priceFor } = require("../config/catalog");
 const { savePricing, readPricingDoc, DEFAULT_RATES } = require("../utils/pricing");
 
@@ -77,8 +78,59 @@ exports.getAllOrders = async (req, res) => {
   }
 };
 
-// @route  POST /api/admin/orders/:id/verify-upi
+// @route  GET /api/admin/orders/revenue-by-month
 // @access Admin
+// Powers the "Revenue collected — by month" table + chart on the dashboard.
+// Deliberately a separate aggregation query instead of reusing getAllOrders'
+// result: that list is capped at 200 orders for the orders table, which
+// would silently under-count revenue for older months once a store has more
+// than 200 orders. This aggregates every paid order in the database.
+exports.getMonthlyRevenue = async (req, res) => {
+  try {
+    const rows = await Order.aggregate([
+      { $match: { paymentStatus: "paid" } },
+      {
+        $group: {
+          _id: {
+            year: { $year: "$createdAt" },
+            month: { $month: "$createdAt" },
+            currency: { $ifNull: ["$currency", "INR"] },
+          },
+          total: { $sum: "$totalAmount" },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { "_id.year": -1, "_id.month": -1 } },
+    ]);
+
+    // Reshape into one row per month with all currencies side by side, e.g.
+    // { monthKey: "2026-09", year: 2026, month: 9, totals: { INR: 12100, USDT: 55 }, orderCount: 48 }
+    // orderCount is the number of completed (paid) orders that month, summed
+    // across currencies — each order belongs to exactly one currency bucket,
+    // so this total is exact, not an approximation.
+    const byMonth = new Map();
+    for (const row of rows) {
+      const { year, month, currency } = row._id;
+      const monthKey = `${year}-${String(month).padStart(2, "0")}`;
+      if (!byMonth.has(monthKey)) {
+        byMonth.set(monthKey, { monthKey, year, month, totals: {}, orderCount: 0 });
+      }
+      const entry = byMonth.get(monthKey);
+      entry.totals[currency] = row.total;
+      entry.orderCount += row.count;
+    }
+
+    const months = Array.from(byMonth.values()).sort((a, b) => b.monthKey.localeCompare(a.monthKey));
+
+    res.status(200).json({ months });
+  } catch (error) {
+    console.error("Admin monthly revenue error:", error);
+    res.status(500).json({ message: "Couldn't load monthly revenue right now." });
+  }
+
+};
+
+
 // Same effect as scripts/verifyManualPayment.js — check the UTR (for UPI),
 // the transaction hash on a block explorer (for USDT), or the payment in
 // your Razorpay dashboard, against the real payment yourself first, then
@@ -423,5 +475,72 @@ exports.updatePricing = async (req, res) => {
   } catch (error) {
     console.error("Update pricing error:", error);
     res.status(500).json({ message: "Couldn't save pricing settings." });
+  }
+};
+
+// @route  GET /api/admin/orders/export
+// @access Admin
+// Downloads delivered orders as CSV (opens in Excel/Sheets) or PDF, filtered
+// by a quick preset range (this month / last 6 months / this year) or a
+// custom from/to date pair.
+//   ?format=csv|pdf
+//   ?range=month|6months|year|custom
+//   ?from=YYYY-MM-DD&to=YYYY-MM-DD   (required when range=custom)
+exports.exportDeliveredOrders = async (req, res) => {
+  try {
+    const { format = "csv", range = "month" } = req.query;
+    if (!["csv", "pdf"].includes(format)) {
+      return res.status(400).json({ message: "format must be csv or pdf." });
+    }
+
+    const now = new Date();
+    let from;
+    let to = now;
+
+    if (range === "custom") {
+      const fromRaw = req.query.from;
+      const toRaw = req.query.to;
+      if (!fromRaw || !toRaw) {
+        return res.status(400).json({ message: "Custom range needs both from and to dates." });
+      }
+      from = new Date(fromRaw);
+      to = new Date(toRaw);
+      if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
+        return res.status(400).json({ message: "Invalid from/to date." });
+      }
+      // Include the whole "to" day, not just midnight of it.
+      to.setHours(23, 59, 59, 999);
+    } else if (range === "6months") {
+      from = new Date(now);
+      from.setMonth(from.getMonth() - 6);
+    } else if (range === "year") {
+      from = new Date(now.getFullYear(), 0, 1);
+    } else {
+      // "month" (default) — the current calendar month so far.
+      from = new Date(now.getFullYear(), now.getMonth(), 1);
+    }
+
+    if (from > to) {
+      return res.status(400).json({ message: "The 'from' date must be before the 'to' date." });
+    }
+
+    const orders = await Order.find({
+      orderStatus: "delivered",
+      deliveredAt: { $gte: from, $lte: to },
+    })
+      .populate("user", "fullName email phone")
+      .sort({ deliveredAt: 1 });
+
+    const rangeLabel = range === "custom"
+      ? `${from.toISOString().slice(0, 10)}_to_${to.toISOString().slice(0, 10)}`
+      : `${range}-${now.toISOString().slice(0, 10)}`;
+
+    if (format === "csv") {
+      return streamOrdersCsv(orders, res, rangeLabel);
+    }
+    return streamOrdersPdf(orders, res, rangeLabel, { from, to });
+  } catch (error) {
+    console.error("Export delivered orders error:", error);
+    res.status(500).json({ message: "Couldn't generate that export." });
   }
 };

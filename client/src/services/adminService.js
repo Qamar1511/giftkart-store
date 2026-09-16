@@ -5,6 +5,13 @@ export const getAdminOrders = async (status) => {
   return data.orders;
 };
 
+// Aggregated server-side across ALL paid orders (not capped like getAdminOrders),
+// so month totals stay accurate even once a store has more than 200 orders.
+export const getMonthlyRevenue = async () => {
+  const { data } = await apiClient.get("/admin/orders/revenue-by-month");
+  return data.months;
+};
+
 export const verifyUpiOrder = async (orderId) => {
   const { data } = await apiClient.post(`/admin/orders/${orderId}/verify-upi`);
   return data;
@@ -13,6 +20,35 @@ export const verifyUpiOrder = async (orderId) => {
 export const rejectUpiOrder = async (orderId, reason) => {
   const { data } = await apiClient.post(`/admin/orders/${orderId}/reject-upi`, { reason });
   return data;
+};
+
+// range: "month" | "6months" | "year" | "custom"
+// For "custom", also pass { from: "YYYY-MM-DD", to: "YYYY-MM-DD" }.
+export const exportDeliveredOrders = async (format, range, { from, to } = {}) => {
+  const params = { format, range };
+  if (range === "custom") {
+    params.from = from;
+    params.to = to;
+  }
+  const response = await apiClient.get("/admin/orders/export", {
+    params,
+    responseType: "blob",
+  });
+
+  // Filename comes from the server's Content-Disposition header — fall back
+  // to a generic name if that's ever missing for some reason.
+  const disposition = response.headers["content-disposition"] || "";
+  const match = disposition.match(/filename="([^"]+)"/);
+  const filename = match ? match[1] : `delivered-orders.${format}`;
+
+  const url = window.URL.createObjectURL(new Blob([response.data]));
+  const link = document.createElement("a");
+  link.href = url;
+  link.setAttribute("download", filename);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
 };
 
 export const getStockSummary = async () => {

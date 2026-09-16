@@ -82,9 +82,6 @@ const Cart = () => {
                 <p className="cart-row-title">{brand.name} — ₹{item.denomination.toLocaleString("en-IN")}</p>
                 <p className="order-row-meta">
                   {formatPrice(item.denomination)} each
-                  {available != null && available < 5 && (
-                    <span className="cart-row-stock-warning"> · Only {available} left</span>
-                  )}
                 </p>
               </div>
               <div className="qty-stepper">

@@ -128,10 +128,6 @@ const GiftCardCard = ({ product, color }) => {
         {notifyState === "error" && <p className="giftcard-card-notify-error">{notifyError}</p>}
 
         {limitHint && <p className="giftcard-card-limit-hint">{limitHint}</p>}
-
-        {product.inStock && product.availableStock < 5 && (
-          <p className="giftcard-card-stock-hint">Only {product.availableStock} left</p>
-        )}
       </div>
     </div>
   );
