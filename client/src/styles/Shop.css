@@ -2074,6 +2074,44 @@
   /* color: var(--accent-blue); */
 }
 
+.blog-post-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.25rem 0;
+  font-size: 0.92rem;
+  border-radius: 0.6rem;
+  overflow: hidden;
+  border: 1px solid var(--card-border);
+}
+
+.blog-post-content th,
+.blog-post-content td {
+  text-align: left;
+  padding: 0.65rem 0.9rem;
+  border-bottom: 1px solid var(--card-border);
+}
+
+.blog-post-content th {
+  background: var(--overlay-hover);
+  font-family: "Rajdhani", sans-serif;
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.blog-post-content tr:last-child td {
+  border-bottom: none;
+}
+
+@media (max-width: 560px) {
+  .blog-post-content table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}
+
 .blog-post-content img {
   max-width: 100%;
   /* Post images carry width/height attributes to reserve space (avoids layout
