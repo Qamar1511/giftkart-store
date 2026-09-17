@@ -169,7 +169,20 @@ exports.verifyOtp = async (req, res) => {
       return res.status(400).json({ message: "This code has expired. Please request a new one." });
     }
 
+    // Lock the code after 5 wrong guesses rather than letting it be retried
+    // indefinitely — a 6-digit code is only 1,000,000 possibilities, so an
+    // unlimited number of tries within the 10-minute expiry window would let
+    // it be brute-forced. The pending signup itself isn't deleted, so the
+    // person can still request a fresh code with "Resend OTP".
+    if (pending.otpAttempts >= 5) {
+      return res.status(429).json({
+        message: "Too many incorrect attempts. Please request a new code.",
+      });
+    }
+
     if (hashOtp(otp) !== pending.otpHash) {
+      pending.otpAttempts += 1;
+      await pending.save();
       return res.status(400).json({ message: "Incorrect code. Please try again." });
     }
 
@@ -231,6 +244,7 @@ exports.resendOtp = async (req, res) => {
     const otp = generateOtp();
     pending.otpHash = hashOtp(otp);
     pending.otpExpires = Date.now() + 10 * 60 * 1000;
+    pending.otpAttempts = 0;
     await pending.save();
 
     await sendOtpEmail(pending.fullName, normalisedEmail, otp);

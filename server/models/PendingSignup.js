@@ -19,6 +19,10 @@ const pendingSignupSchema = new mongoose.Schema({
   // Hashed (sha256) 6-digit code emailed to the user — never store it raw.
   otpHash: { type: String, required: true },
   otpExpires: { type: Date, required: true },
+  // Wrong guesses against this OTP — see verifyOtp in authController.js.
+  // Locked out after 5 so the 1-in-a-million code can't just be brute-forced
+  // within its 10-minute expiry window.
+  otpAttempts: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now, expires: 900 }, // 15 min TTL
 });
 
