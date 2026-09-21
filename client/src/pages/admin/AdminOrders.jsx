@@ -263,7 +263,15 @@ const AdminOrders = () => {
                         {isUpiPending ? "Verification pending" : status.label}
                       </span>
                     </td>
-                    <td className="admin-table-mono">{order.utrNumber || order.usdtTxId || "—"}</td>
+                    <td className="admin-table-mono">
+                      {order.utrNumber || order.usdtTxId || "—"}
+                      {order.paymentMethod === "usdt" && order.usdtNetwork && (
+                        <>
+                          <br />
+                          <span className="admin-table-muted">{order.usdtNetwork}</span>
+                        </>
+                      )}
+                    </td>
                     <td>
                       {isUpiPending && (
                         <div className="admin-table-actions">

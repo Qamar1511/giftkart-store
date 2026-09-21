@@ -115,8 +115,15 @@ export const capturePaypalOrder = async (orderId) => {
 
 /* ------------------------------- Manual USDT -------------------------------- */
 
-export const getUsdtWalletDetails = async (orderId) => {
-  const { data } = await apiClient.get(`/payments/usdt/wallet/${orderId}`);
+// Only the networks the server actually has a wallet address configured
+// for — see getUsdtNetworks in paymentController.js.
+export const getUsdtNetworks = async () => {
+  const { data } = await apiClient.get("/payments/usdt/networks");
+  return data.networks;
+};
+
+export const getUsdtWalletDetails = async (orderId, network) => {
+  const { data } = await apiClient.get(`/payments/usdt/wallet/${orderId}`, { params: { network } });
   return data;
 };
 

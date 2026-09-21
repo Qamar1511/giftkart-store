@@ -9,6 +9,7 @@ import {
   loadRazorpayCheckout,
   verifyRazorpayPayment,
   createPaypalOrder,
+  getUsdtNetworks,
   getUsdtWalletDetails,
   getUpiQrDetails,
   mockConfirmPayment, // eslint-disable-line no-unused-vars -- kept for potential future dev/testing use
@@ -24,6 +25,17 @@ import "../styles/Shop.css";
 // store, and it advertised an unfinished site for no gain. Nothing is lost by
 // hiding them: the Razorpay tile already takes cards, netbanking and wallets.
 const ENABLED_METHODS = ["upi_manual", "usdt", "razorpay"];
+
+// Full names shown next to the network code in the dropdown — helps avoid
+// someone picking the wrong chain, which is an unrecoverable mistake once
+// USDT has actually been sent.
+const USDT_NETWORK_LABELS = {
+  TRC20: "TRC20 (Tron)",
+  BEP20: "BEP20 (BNB Smart Chain)",
+  ERC20: "ERC20 (Ethereum)",
+  TON: "TON (The Open Network)",
+  SOL: "SOL (Solana)",
+};
 
 const PAYMENT_METHODS = [
   {
@@ -59,7 +71,7 @@ const PAYMENT_METHODS = [
   {
     id: "usdt",
     label: "USDT",
-    hint: "Crypto (TRC20)",
+    hint: "Crypto — choose network",
     iconBg: "#e7f9f1",
     icon: (
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
@@ -147,6 +159,8 @@ const CheckoutPayment = () => {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [usdtInvoice, setUsdtInvoice] = useState(null);
+  const [usdtNetworks, setUsdtNetworks] = useState([]);
+  const [usdtNetwork, setUsdtNetwork] = useState("");
   const [txIdValue, setTxIdValue] = useState("");
   const [txIdSubmitting, setTxIdSubmitting] = useState(false);
   const [txIdSubmitted, setTxIdSubmitted] = useState(false);
@@ -174,6 +188,18 @@ const CheckoutPayment = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currency]);
+
+  // Fetch which USDT networks are actually configured server-side, once —
+  // the dropdown only ever offers these, never a hardcoded list, so it can't
+  // show a network with no wallet address behind it.
+  useEffect(() => {
+    getUsdtNetworks()
+      .then((networks) => {
+        setUsdtNetworks(networks);
+        setUsdtNetwork((current) => current || networks[0] || "");
+      })
+      .catch(() => {}); // USDT tile just won't be usable if this fails; no need to surface an error yet
+  }, []);
 
   // Razorpay's checkout.js is no longer in index.html (it cost every visitor a
   // few hundred KB of third-party JS, which hurt mobile most). Fetch it as soon
@@ -231,6 +257,10 @@ const CheckoutPayment = () => {
 
   const handlePayment = async (e) => {
     e.preventDefault();
+    if (paymentMethod === "usdt" && !usdtNetwork) {
+      setError("No USDT network is available right now. Please choose a different payment method.");
+      return;
+    }
     setSubmitting(true);
     setError("");
 
@@ -245,7 +275,7 @@ const CheckoutPayment = () => {
       }
 
       if (paymentMethod === "usdt") {
-        const wallet = await getUsdtWalletDetails(order._id);
+        const wallet = await getUsdtWalletDetails(order._id, usdtNetwork);
         setUsdtInvoice({ ...wallet, dbOrderId: order._id });
         setSubmitting(false);
         return;
@@ -444,6 +474,29 @@ const CheckoutPayment = () => {
             </button>
           ))}
         </div>
+
+        {paymentMethod === "usdt" && (
+          <label className="auth-field" style={{ textAlign: "left", marginTop: "1rem" }}>
+            <span>USDT network</span>
+            {usdtNetworks.length > 0 ? (
+              <select value={usdtNetwork} onChange={(e) => setUsdtNetwork(e.target.value)}>
+                {usdtNetworks.map((network) => (
+                  <option key={network} value={network}>
+                    {USDT_NETWORK_LABELS[network] || network}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <span className="shop-status" style={{ fontSize: "0.85rem" }}>
+                No USDT network is available right now.
+              </span>
+            )}
+            <span className="shop-status" style={{ fontSize: "0.78rem", marginTop: "0.25rem" }}>
+              Double-check this matches the network your wallet will send from — sending on the wrong
+              network can't be reversed.
+            </span>
+          </label>
+        )}
 
         <button type="submit" className="auth-submit" disabled={submitting} style={{ marginTop: "1.5rem" }}>
           {submitting ? "Processing…" : "Pay & get my gift cards"}

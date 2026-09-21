@@ -68,6 +68,12 @@ const orderSchema = new mongoose.Schema(
     // the transaction hash/ID here. Someone has to check it on a block
     // explorer and mark it verified before the gift card is delivered.
     usdtTxId: String,
+    // Which chain the wallet address shown to the customer was on (TRC20,
+    // BEP20, ERC20, TON, SOL — see getUsdtWalletDetails in
+    // paymentController.js). Needed at verification time: the same tx hash
+    // format can exist on more than one chain, so admin needs to know which
+    // block explorer to check it on.
+    usdtNetwork: String,
 
     verificationStatus: {
       type: String,

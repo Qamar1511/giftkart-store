@@ -228,25 +228,71 @@ exports.refundPaypalCapture = async (order) => {
 
 /* --------------------------- MANUAL USDT -------------------------------
    No payment gateway involved — same idea as manual UPI below, but for
-   crypto. We show your own wallet address (copy it from Binance, Bybit, or
-   any exchange/wallet that supports the network you set) as a QR code, and
-   let the customer paste in the transaction hash after sending USDT.
-   Set USDT_WALLET_ADDRESS and USDT_NETWORK in .env. Verification is
-   manual — see scripts/verifyManualPayment.js.
+   crypto. We show one of YOUR OWN wallet addresses (copy it from Binance,
+   Bybit, or any exchange/wallet that supports the chosen network) as a QR
+   code, and let the customer paste in the transaction hash after sending
+   USDT. Verification is manual — see scripts/verifyManualPayment.js.
+
+   Set whichever of these you actually support in .env — a network is only
+   offered at checkout if its address is configured:
+     USDT_WALLET_TRC20, USDT_WALLET_BEP20, USDT_WALLET_ERC20,
+     USDT_WALLET_TON, USDT_WALLET_SOL
+   USDT_WALLET_ADDRESS / USDT_NETWORK (the old single-network variables) are
+   still read as a fallback for whichever network they named, so existing
+   deployments don't lose their configured address on upgrade.
 ------------------------------------------------------------------------ */
 
-// @route  GET /api/payments/usdt/wallet/:orderId
+const USDT_NETWORKS = ["TRC20", "BEP20", "ERC20", "TON", "SOL"];
+
+// Every configured network → its wallet address, honoring the legacy single
+// USDT_WALLET_ADDRESS/USDT_NETWORK pair as a fallback for whichever one
+// network it named.
+const usdtWalletAddresses = () => {
+  const addresses = {
+    TRC20: process.env.USDT_WALLET_TRC20,
+    BEP20: process.env.USDT_WALLET_BEP20,
+    ERC20: process.env.USDT_WALLET_ERC20,
+    TON: process.env.USDT_WALLET_TON,
+    SOL: process.env.USDT_WALLET_SOL,
+  };
+  const legacyNetwork = (process.env.USDT_NETWORK || "").toUpperCase();
+  if (process.env.USDT_WALLET_ADDRESS && USDT_NETWORKS.includes(legacyNetwork) && !addresses[legacyNetwork]) {
+    addresses[legacyNetwork] = process.env.USDT_WALLET_ADDRESS;
+  }
+  return addresses;
+};
+
+// @route  GET /api/payments/usdt/networks
+// @access Private
+// Lists only the networks that actually have a wallet address configured,
+// so the checkout dropdown never offers one that would just 500 if picked.
+exports.getUsdtNetworks = async (req, res) => {
+  const addresses = usdtWalletAddresses();
+  const networks = USDT_NETWORKS.filter((network) => addresses[network]);
+  res.status(200).json({ networks });
+};
+
+// @route  GET /api/payments/usdt/wallet/:orderId?network=TRC20
 // @access Private
 exports.getUsdtWalletDetails = async (req, res) => {
   try {
     const order = await Order.findOne({ _id: req.params.orderId, user: req.user.id });
     if (!order) return res.status(404).json({ message: "Order not found" });
 
-    const walletAddress = process.env.USDT_WALLET_ADDRESS;
-    const network = process.env.USDT_NETWORK || "TRC20";
-    if (!walletAddress) {
-      return res.status(500).json({ message: "USDT wallet address isn't configured on the server yet." });
+    const requestedNetwork = (req.query.network || "TRC20").toUpperCase();
+    if (!USDT_NETWORKS.includes(requestedNetwork)) {
+      return res.status(400).json({ message: "Unsupported USDT network." });
     }
+
+    const walletAddress = usdtWalletAddresses()[requestedNetwork];
+    if (!walletAddress) {
+      return res.status(500).json({ message: `USDT (${requestedNetwork}) isn't configured on the server yet.` });
+    }
+
+    // Recorded now (not just at tx-hash submission) so it's on the order even
+    // if the customer never comes back to paste the transaction hash.
+    order.usdtNetwork = requestedNetwork;
+    await order.save();
 
     const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(
       walletAddress
@@ -254,7 +300,7 @@ exports.getUsdtWalletDetails = async (req, res) => {
 
     res.status(200).json({
       walletAddress,
-      network,
+      network: requestedNetwork,
       amount: order.totalAmount,
       qrImageUrl,
     });

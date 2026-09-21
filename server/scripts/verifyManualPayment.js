@@ -37,6 +37,7 @@ async function verify() {
   if (order.paymentMethod === "upi_manual") {
     console.log(`  UTR submitted by customer: ${order.utrNumber || "(none yet)"}`);
   } else {
+    console.log(`  USDT network: ${order.usdtNetwork || "(not recorded — assume TRC20)"}`);
     console.log(`  USDT tx ID submitted by customer: ${order.usdtTxId || "(none yet)"}`);
   }
   console.log(`  Current verification status: ${order.verificationStatus}`);

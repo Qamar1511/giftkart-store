@@ -4,6 +4,7 @@ const {
   verifyRazorpayPayment,
   createPaypalOrder,
   capturePaypalOrder,
+  getUsdtNetworks,
   getUsdtWalletDetails,
   getUpiQrDetails,
   mockConfirmPayment,
@@ -20,6 +21,7 @@ router.post("/razorpay/verify", verifyRazorpayPayment);
 router.post("/paypal/create", createPaypalOrder);
 router.post("/paypal/capture", capturePaypalOrder);
 
+router.get("/usdt/networks", getUsdtNetworks);
 router.get("/usdt/wallet/:orderId", getUsdtWalletDetails);
 
 router.get("/upi/qr/:orderId", getUpiQrDetails);
