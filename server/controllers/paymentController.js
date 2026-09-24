@@ -226,6 +226,51 @@ exports.refundPaypalCapture = async (order) => {
   );
 };
 
+/* --------------------- INTERNAL EXCHANGE TRANSFER -----------------------
+   Binance/Bybit "internal transfer" — sending USDT to another UID on the
+   SAME exchange, off-chain, so it's free and instant for the customer.
+   Requires the customer to also have an account on that exchange. Set
+   BINANCE_UID / BYBIT_UID in .env (whichever you support — each is only
+   offered at checkout if its UID is set).
+
+   There's no blockchain transaction here, so there's no tx hash to check —
+   instead the customer submits THEIR OWN UID (the account they sent from)
+   as proof. Admin matches that against the exchange's internal-transfer
+   history (sender UID + amount + time) to verify — see submitInternalTransferUid
+   in orderController.js and scripts/verifyManualPayment.js.
+------------------------------------------------------------------------ */
+
+const INTERNAL_TRANSFER_PLATFORMS = {
+  binance_uid: { label: "Binance", envVar: "BINANCE_UID" },
+  bybit_uid: { label: "Bybit", envVar: "BYBIT_UID" },
+};
+
+// @route  GET /api/payments/internal-transfer/:platform/:orderId
+// @access Private
+exports.getInternalTransferDetails = async (req, res) => {
+  try {
+    const platform = INTERNAL_TRANSFER_PLATFORMS[req.params.platform];
+    if (!platform) {
+      return res.status(400).json({ message: "Unsupported transfer platform." });
+    }
+
+    const order = await Order.findOne({ _id: req.params.orderId, user: req.user.id });
+    if (!order) return res.status(404).json({ message: "Order not found" });
+
+    const uid = process.env[platform.envVar];
+    if (!uid) {
+      return res
+        .status(500)
+        .json({ message: `${platform.label} internal transfer isn't configured on the server yet.` });
+    }
+
+    res.status(200).json({ platform: platform.label, uid, amount: order.totalAmount });
+  } catch (error) {
+    console.error("Internal transfer details error:", error);
+    res.status(500).json({ message: "Couldn't load transfer details." });
+  }
+};
+
 /* --------------------------- MANUAL USDT -------------------------------
    No payment gateway involved — same idea as manual UPI below, but for
    crypto. We show one of YOUR OWN wallet addresses (copy it from Binance,

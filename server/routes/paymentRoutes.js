@@ -6,6 +6,7 @@ const {
   capturePaypalOrder,
   getUsdtNetworks,
   getUsdtWalletDetails,
+  getInternalTransferDetails,
   getUpiQrDetails,
   mockConfirmPayment,
 } = require("../controllers/paymentController");
@@ -23,6 +24,8 @@ router.post("/paypal/capture", capturePaypalOrder);
 
 router.get("/usdt/networks", getUsdtNetworks);
 router.get("/usdt/wallet/:orderId", getUsdtWalletDetails);
+
+router.get("/internal-transfer/:platform/:orderId", getInternalTransferDetails);
 
 router.get("/upi/qr/:orderId", getUpiQrDetails);
 

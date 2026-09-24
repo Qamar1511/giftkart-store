@@ -7,6 +7,7 @@ const {
   downloadInvoice,
   submitUtr,
   submitUsdtTx,
+  submitInternalTransferUid,
 } = require("../controllers/orderController");
 const { protect } = require("../middleware/authMiddleware");
 
@@ -21,5 +22,6 @@ router.post("/:id/cancel", cancelOrder);
 router.get("/:id/invoice", downloadInvoice);
 router.post("/:id/submit-utr", submitUtr);
 router.post("/:id/submit-usdt-tx", submitUsdtTx);
+router.post("/:id/submit-internal-transfer-uid", submitInternalTransferUid);
 
 module.exports = router;

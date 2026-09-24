@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useCurrency } from "../context/CurrencyContext";
-import { createOrder, submitUtr, submitUsdtTx } from "../services/orderService";
+import { createOrder, submitUtr, submitUsdtTx, submitInternalTransferUid } from "../services/orderService";
 import {
   createRazorpayOrder,
   openRazorpayCheckout,
@@ -11,6 +11,7 @@ import {
   createPaypalOrder,
   getUsdtNetworks,
   getUsdtWalletDetails,
+  getInternalTransferDetails,
   getUpiQrDetails,
   mockConfirmPayment, // eslint-disable-line no-unused-vars -- kept for potential future dev/testing use
 } from "../services/paymentService";
@@ -24,7 +25,7 @@ import "../styles/Shop.css";
 // the payment page at the exact moment a shopper decides whether to trust the
 // store, and it advertised an unfinished site for no gain. Nothing is lost by
 // hiding them: the Razorpay tile already takes cards, netbanking and wallets.
-const ENABLED_METHODS = ["upi_manual", "usdt", "razorpay"];
+const ENABLED_METHODS = ["upi_manual", "usdt", "binance_uid", "bybit_uid", "razorpay"];
 
 // Full names shown next to the network code in the dropdown — helps avoid
 // someone picking the wrong chain, which is an unrecoverable mistake once
@@ -80,6 +81,30 @@ const PAYMENT_METHODS = [
           d="M13 9.6v-2h4V6H7v1.6h4v2c-3.2.15-5.6.8-5.6 1.55S7.8 12.5 11 12.65v4.35h2v-4.35c3.2-.15 5.6-.8 5.6-1.55S16.2 9.75 13 9.6Zm-1 2.65c-2.9 0-5.25-.5-5.25-1.1s2.35-1.1 5.25-1.1 5.25.5 5.25 1.1-2.35 1.1-5.25 1.1Z"
           fill="#fff"
         />
+      </svg>
+    ),
+  },
+  {
+    id: "binance_uid",
+    label: "Binance Internal Transfer",
+    hint: "Instant, free — same exchange only",
+    iconBg: "#fff8e1",
+    icon: (
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
+        <path d="M12 2 2 12l10 10 10-10L12 2Z" fill="#f0b90b" />
+        <path d="M12 8.5 8.5 12 12 15.5 15.5 12 12 8.5Z" fill="#fff" />
+      </svg>
+    ),
+  },
+  {
+    id: "bybit_uid",
+    label: "Bybit Internal Transfer",
+    hint: "Instant, free — same exchange only",
+    iconBg: "#fff0f0",
+    icon: (
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
+        <rect x="2" y="2" width="20" height="20" rx="4" fill="#f7a600" />
+        <path d="M7 8h4.5c1.9 0 3 .9 3 2.4 0 1-.5 1.7-1.3 2 1 .3 1.6 1.1 1.6 2.2 0 1.6-1.2 2.6-3.1 2.6H7V8Zm2 3.6h2.2c.8 0 1.2-.4 1.2-1s-.4-1-1.2-1H9v2Zm0 3.9h2.4c.9 0 1.4-.4 1.4-1.1s-.5-1.1-1.4-1.1H9v2.2Z" fill="#fff" />
       </svg>
     ),
   },
@@ -168,6 +193,10 @@ const CheckoutPayment = () => {
   const [utrValue, setUtrValue] = useState("");
   const [utrSubmitting, setUtrSubmitting] = useState(false);
   const [utrSubmitted, setUtrSubmitted] = useState(false);
+  const [internalTransferInvoice, setInternalTransferInvoice] = useState(null);
+  const [uidValue, setUidValue] = useState("");
+  const [uidSubmitting, setUidSubmitting] = useState(false);
+  const [uidSubmitted, setUidSubmitted] = useState(false);
 
   useEffect(() => {
     if (!address || items.length === 0) {
@@ -255,6 +284,25 @@ const CheckoutPayment = () => {
     }
   };
 
+  const handleUidSubmit = async (e) => {
+    e.preventDefault();
+    if (uidValue.trim().length < 3) {
+      setError("Enter the UID of the account you sent from.");
+      return;
+    }
+    setUidSubmitting(true);
+    setError("");
+    try {
+      await submitInternalTransferUid(internalTransferInvoice.dbOrderId, uidValue.trim());
+      clearCart();
+      setUidSubmitted(true);
+      setTimeout(() => navigate(`/order-confirmation/${internalTransferInvoice.dbOrderId}`), 1200);
+    } catch (err) {
+      setError(err.response?.data?.message || "Couldn't submit your UID. Please try again.");
+      setUidSubmitting(false);
+    }
+  };
+
   const handlePayment = async (e) => {
     e.preventDefault();
     if (paymentMethod === "usdt" && !usdtNetwork) {
@@ -277,6 +325,13 @@ const CheckoutPayment = () => {
       if (paymentMethod === "usdt") {
         const wallet = await getUsdtWalletDetails(order._id, usdtNetwork);
         setUsdtInvoice({ ...wallet, dbOrderId: order._id });
+        setSubmitting(false);
+        return;
+      }
+
+      if (paymentMethod === "binance_uid" || paymentMethod === "bybit_uid") {
+        const details = await getInternalTransferDetails(paymentMethod, order._id);
+        setInternalTransferInvoice({ ...details, dbOrderId: order._id });
         setSubmitting(false);
         return;
       }
@@ -417,6 +472,61 @@ const CheckoutPayment = () => {
           )}
           <p className="shop-status" style={{ marginTop: "1rem" }}>
             Double-check the network before sending — sending on the wrong network can lose your funds. We'll verify your transaction and deliver your code shortly after.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ---- Binance/Bybit internal transfer: UID + amount, then sender UID entry ----
+  if (internalTransferInvoice) {
+    return (
+      <div className="buy-page">
+        <div className="usdt-invoice-card">
+          <h2>Send USDT via {internalTransferInvoice.platform} internal transfer</h2>
+          <p className="shop-status">
+            Only works if you also have a {internalTransferInvoice.platform} account — this is an
+            internal, off-chain transfer between UIDs on the same exchange, so it's free and instant.
+          </p>
+          <div className="usdt-field usdt-field-highlight">
+            <span>Send to this {internalTransferInvoice.platform} UID</span>
+            <div className="usdt-field-highlight-row">
+              <code>{internalTransferInvoice.uid}</code>
+              <button
+                type="button"
+                className="usdt-copy-btn"
+                onClick={() => navigator.clipboard?.writeText(internalTransferInvoice.uid)}
+              >
+                Copy
+              </button>
+            </div>
+          </div>
+          <div className="usdt-field">
+            <span>Amount</span>
+            <strong>{internalTransferInvoice.amount} USDT</strong>
+          </div>
+
+          {uidSubmitted ? (
+            <p className="shop-status">✅ UID submitted — redirecting…</p>
+          ) : (
+            <form onSubmit={handleUidSubmit}>
+              {error && <div className="auth-error" role="alert">{error}</div>}
+              <label className="auth-field" style={{ textAlign: "left" }}>
+                <span>Your {internalTransferInvoice.platform} UID (the account you sent from)</span>
+                <input
+                  value={uidValue}
+                  onChange={(e) => setUidValue(e.target.value)}
+                  placeholder="e.g. 123456789"
+                />
+              </label>
+              <button type="submit" className="auth-submit" disabled={uidSubmitting} style={{ marginTop: "0.5rem" }}>
+                {uidSubmitting ? "Submitting…" : "Submit UID"}
+              </button>
+            </form>
+          )}
+          <p className="shop-status" style={{ marginTop: "1rem" }}>
+            We'll match your UID against the transfer in our {internalTransferInvoice.platform} account and
+            deliver your code shortly after.
           </p>
         </div>
       </div>

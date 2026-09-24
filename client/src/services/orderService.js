@@ -30,6 +30,11 @@ export const submitUsdtTx = async (orderId, txId) => {
   return data.order;
 };
 
+export const submitInternalTransferUid = async (orderId, uid) => {
+  const { data } = await apiClient.post(`/orders/${orderId}/submit-internal-transfer-uid`, { uid });
+  return data.order;
+};
+
 export const getInvoiceDownloadUrl = (orderId) => {
   // Invoice route streams a PDF; the browser needs the token, so we open
   // it via a signed fetch + blob instead of a plain <a href>.

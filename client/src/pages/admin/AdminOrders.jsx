@@ -227,7 +227,7 @@ const AdminOrders = () => {
               {orders.map((order) => {
                 const status = getDisplayStatus(order);
                 const isUpiPending =
-                  ["upi_manual", "usdt", "razorpay"].includes(order.paymentMethod) &&
+                  ["upi_manual", "usdt", "binance_uid", "bybit_uid", "razorpay"].includes(order.paymentMethod) &&
                   order.verificationStatus === "submitted";
                 const items = Array.isArray(order.items) ? order.items : [];
                 return (
@@ -264,11 +264,19 @@ const AdminOrders = () => {
                       </span>
                     </td>
                     <td className="admin-table-mono">
-                      {order.utrNumber || order.usdtTxId || "—"}
+                      {order.utrNumber || order.usdtTxId || order.internalTransferUid || "—"}
                       {order.paymentMethod === "usdt" && order.usdtNetwork && (
                         <>
                           <br />
                           <span className="admin-table-muted">{order.usdtNetwork}</span>
+                        </>
+                      )}
+                      {(order.paymentMethod === "binance_uid" || order.paymentMethod === "bybit_uid") && (
+                        <>
+                          <br />
+                          <span className="admin-table-muted">
+                            Sender's {order.paymentMethod === "binance_uid" ? "Binance" : "Bybit"} UID
+                          </span>
                         </>
                       )}
                     </td>

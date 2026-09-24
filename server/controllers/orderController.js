@@ -267,7 +267,8 @@ exports.cancelOrder = async (req, res) => {
         order.refundStatus = "processed";
         order.paymentStatus = "refunded";
       } else {
-        // usdt (can't auto-reverse crypto) and upi_manual (no gateway at all)
+        // usdt, binance_uid, bybit_uid (can't auto-reverse crypto/internal
+        // transfers) and upi_manual (no gateway at all)
         order.refundStatus = "manual_review";
       }
     }
@@ -345,6 +346,40 @@ exports.submitUsdtTx = async (req, res) => {
   } catch (error) {
     console.error("Submit USDT tx error:", error);
     res.status(500).json({ message: "Couldn't submit the transaction ID. Please try again." });
+  }
+};
+
+// @route  POST /api/orders/:id/submit-internal-transfer-uid
+// @access Private
+// Used by the Binance/Bybit internal-transfer flow: customer sends USDT
+// from their own account (on the same exchange) to the UID we show them,
+// then submits THEIR OWN UID here as proof — there's no tx hash for an
+// internal transfer. Admin matches this against the exchange's
+// internal-transfer history to verify, same manual step as UPI/USDT.
+exports.submitInternalTransferUid = async (req, res) => {
+  try {
+    const { uid } = req.body;
+    const trimmedUid = (uid || "").trim();
+    if (trimmedUid.length < 3) {
+      return res.status(400).json({ message: "Enter the UID you sent from." });
+    }
+
+    const order = await Order.findOne({ _id: req.params.id, user: req.user.id });
+    if (!order) return res.status(404).json({ message: "Order not found" });
+    if (!["binance_uid", "bybit_uid"].includes(order.paymentMethod)) {
+      return res.status(400).json({ message: "This order isn't an internal-transfer order" });
+    }
+
+    order.internalTransferUid = trimmedUid;
+    order.verificationStatus = "submitted";
+    await order.save();
+    await order.populate("user", "fullName email");
+    notifyAdminNewOrder(order).catch((err) => console.error("New order email failed:", err));
+
+    res.status(200).json({ message: "UID submitted — we'll verify and deliver shortly", order });
+  } catch (error) {
+    console.error("Submit internal transfer UID error:", error);
+    res.status(500).json({ message: "Couldn't submit your UID. Please try again." });
   }
 };
 

@@ -47,7 +47,7 @@ const orderSchema = new mongoose.Schema(
 
     paymentMethod: {
       type: String,
-      enum: ["razorpay", "card", "debit_card", "upi_manual", "usdt", "paypal"],
+      enum: ["razorpay", "card", "debit_card", "upi_manual", "usdt", "binance_uid", "bybit_uid", "paypal"],
       required: true,
     },
 
@@ -74,6 +74,13 @@ const orderSchema = new mongoose.Schema(
     // format can exist on more than one chain, so admin needs to know which
     // block explorer to check it on.
     usdtNetwork: String,
+
+    // Internal exchange transfer (Binance/Bybit): no blockchain involved, so
+    // there's no tx hash to check — instead the customer sends from their
+    // own account to ours (see BINANCE_UID/BYBIT_UID in .env) and submits
+    // THEIR OWN UID here. Admin looks up the exchange's internal-transfer
+    // history and matches it by sender UID + amount + time.
+    internalTransferUid: String,
 
     verificationStatus: {
       type: String,

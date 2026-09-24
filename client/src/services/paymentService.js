@@ -127,6 +127,14 @@ export const getUsdtWalletDetails = async (orderId, network) => {
   return data;
 };
 
+/* ------------------------ Internal exchange transfer ------------------------ */
+// platform is "binance_uid" or "bybit_uid" — same ids used as paymentMethod,
+// and exactly what the backend's INTERNAL_TRANSFER_PLATFORMS map expects.
+export const getInternalTransferDetails = async (platform, orderId) => {
+  const { data } = await apiClient.get(`/payments/internal-transfer/${platform}/${orderId}`);
+  return data;
+};
+
 /* ------------------------------ Manual UPI --------------------------------- */
 
 export const getUpiQrDetails = async (orderId) => {

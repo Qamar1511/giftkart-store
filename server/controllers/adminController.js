@@ -60,7 +60,7 @@ exports.getAllOrders = async (req, res) => {
     const filter = {};
 
     if (status === "upi_pending") {
-      filter.paymentMethod = { $in: ["upi_manual", "usdt", "razorpay"] };
+      filter.paymentMethod = { $in: ["upi_manual", "usdt", "binance_uid", "bybit_uid", "razorpay"] };
       filter.verificationStatus = "submitted";
     } else if (status) {
       filter.orderStatus = status;
@@ -141,7 +141,7 @@ exports.verifyUpiPayment = async (req, res) => {
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
     }
-    if (!["upi_manual", "usdt", "razorpay"].includes(order.paymentMethod)) {
+    if (!["upi_manual", "usdt", "binance_uid", "bybit_uid", "razorpay"].includes(order.paymentMethod)) {
       return res.status(400).json({ message: "This order isn't a manual-review order." });
     }
     if (order.paymentStatus === "paid") {
@@ -182,7 +182,7 @@ exports.rejectUpiPayment = async (req, res) => {
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
     }
-    if (!["upi_manual", "usdt", "razorpay"].includes(order.paymentMethod)) {
+    if (!["upi_manual", "usdt", "binance_uid", "bybit_uid", "razorpay"].includes(order.paymentMethod)) {
       return res.status(400).json({ message: "This order isn't a manual-review order." });
     }
 

@@ -1118,6 +1118,57 @@
   font-size: 0.85rem;
 }
 
+/* The one number that actually matters — where the customer sends money to
+   (a UID or wallet address). Made deliberately loud so it can't be missed or
+   confused with anything else on the screen, since sending to the wrong one
+   can't be undone. */
+.usdt-field-highlight {
+  background: rgba(47, 111, 237, 0.08);
+  border: 1.5px dashed var(--accent-blue, #2f6fed);
+  border-radius: 0.6rem;
+  padding: 0.85rem 1rem;
+}
+
+.usdt-field-highlight span {
+  font-weight: 700;
+  color: var(--text-primary, inherit);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: 0.75rem;
+}
+
+.usdt-field-highlight-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.3rem;
+}
+
+.usdt-field-highlight-row code {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--accent-blue, #2f6fed);
+  flex: 1;
+}
+
+.usdt-copy-btn {
+  flex-shrink: 0;
+  border: 1px solid var(--accent-blue, #2f6fed);
+  background: #fff;
+  color: var(--accent-blue, #2f6fed);
+  border-radius: 0.4rem;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.usdt-copy-btn:hover {
+  background: var(--accent-blue, #2f6fed);
+  color: #fff;
+}
+
 /* ---------- Order confirmation ---------- */
 .confirmation-card {
   grid-column: 1 / -1;
