@@ -6,6 +6,9 @@ export function getDisplayStatus(order) {
   if (order.orderStatus === "cancelled") {
     return { key: "cancelled", label: "Cancelled" };
   }
+  if (order.cancelRequested) {
+    return { key: "refund_pending", label: "Cancellation requested" };
+  }
   if (order.refundStatus === "processed") {
     return { key: "refunded", label: "Refunded" };
   }

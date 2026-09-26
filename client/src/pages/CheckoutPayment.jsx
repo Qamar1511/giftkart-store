@@ -42,7 +42,13 @@ const PAYMENT_METHODS = [
   {
     id: "razorpay",
     label: "Razorpay",
-    hint: "Cards, UPI, Netbanking, Wallets",
+    // Paused: Razorpay flagged/disabled our account for suspicious activity
+    // review, so this is temporarily unusable — still shown so shoppers know
+    // it exists, but greyed out and unclickable (see the `disabled` checks in
+    // methodsForCurrency, defaultMethodFor and the tile's onClick/disabled
+    // props below). Manual UPI is enabled below to cover UPI in the meantime.
+    disabled: true,
+    hint: "Temporarily unavailable",
     iconBg: "#eef2ff",
     icon: (
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
@@ -53,13 +59,7 @@ const PAYMENT_METHODS = [
   {
     id: "upi_manual",
     label: "UPI (Scan QR)",
-    // Paused: still shown so shoppers know it exists, but greyed out and
-    // unclickable — see the `disabled` checks in methodsForCurrency,
-    // defaultMethodFor and the tile's onClick/disabled props below. Razorpay
-    // already covers UPI automatically, so this only pauses the manual
-    // scan-and-pay-a-UTR flow, nothing else.
-    disabled: true,
-    hint: "Temporarily unavailable",
+    hint: "Pay via any UPI app",
     iconBg: "#fff5e6",
     icon: (
       <svg viewBox="0 0 32 20" width="26" height="16" fill="none">

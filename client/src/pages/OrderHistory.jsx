@@ -18,6 +18,7 @@ const OrderHistory = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [actioningId, setActioningId] = useState(null);
+  const [notice, setNotice] = useState("");
   const [reorderNotice, setReorderNotice] = useState("");
 
   // Every review this user has ever left, any status — keyed "orderId:brand"
@@ -62,8 +63,11 @@ const OrderHistory = () => {
       return;
     }
     setActioningId(orderId);
+    setNotice("");
+    setError("");
     try {
-      await cancelOrder(orderId, "Cancelled by customer from order history");
+      const data = await cancelOrder(orderId, "Cancelled by customer from order history");
+      setNotice(data.message || "Cancellation requested — we'll review it and get back to you shortly.");
       await loadOrders();
     } catch (err) {
       setError(err.response?.data?.message || "Couldn't cancel this order.");
@@ -159,6 +163,7 @@ const OrderHistory = () => {
       <Seo title="Order History — GIFTKART" path="/orders" noindex />
       <h1 className="section-heading">Order history</h1>
 
+      {notice && <p className="shop-status">{notice}</p>}
       {error && <p className="shop-status shop-status-error">{error}</p>}
       {reorderNotice && (
         <p className="shop-status shop-status-error">
@@ -176,7 +181,18 @@ const OrderHistory = () => {
       ) : (
         <div className="orders-list">
           {orders.map((order) => {
-            const canCancel = order.orderStatus !== "cancelled" && order.orderStatus !== "delivered";
+            // Cancellation only makes sense before the order is "processed" —
+            // here that means before any gift card code has actually been
+            // handed over (checked server-side in cancelOrder too, so this is
+            // belt-and-suspenders, not the only guard) — and only once, so a
+            // second click while the first request is still pending review
+            // isn't possible from the UI.
+            const anyCodeDelivered = (order.items || []).some((item) => (item.giftCardCodes || []).length > 0);
+            const canCancel =
+              order.orderStatus !== "cancelled" &&
+              order.orderStatus !== "delivered" &&
+              !order.cancelRequested &&
+              !anyCodeDelivered;
             const canDownloadInvoice = order.paymentStatus === "paid";
             const status = getDisplayStatus(order);
             const items = Array.isArray(order.items) ? order.items : [];
@@ -234,12 +250,24 @@ const OrderHistory = () => {
                     <button
                       className="navbar-btn navbar-btn-ghost order-cancel-btn"
                       disabled={actioningId === order._id}
+                      title="You can cancel an order any time before it's delivered."
                       onClick={() => handleCancel(order._id)}
                     >
                       Cancel & refund
                     </button>
                   )}
+                  {order.cancelRequested && (
+                    <span className="shop-status" style={{ margin: 0 }}>
+                      ⏳ Cancellation requested — we're reviewing it
+                    </span>
+                  )}
                 </div>
+
+                {canCancel && (
+                  <p className="order-row-meta">
+                    You can cancel until your order is delivered — once it's delivered, this isn't available.
+                  </p>
+                )}
 
                 {order.orderStatus === "delivered" && (
                   <div className="order-review-block">

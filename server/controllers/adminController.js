@@ -6,6 +6,8 @@ const { sendEmail } = require("../utils/sendEmail");
 const { streamOrdersCsv, streamOrdersPdf } = require("../utils/exportOrders");
 const { BRANDS, CURRENCIES, CURRENCY_CODES, ALL_DENOMINATIONS, getRates, priceFor } = require("../config/catalog");
 const { savePricing, readPricingDoc, DEFAULT_RATES } = require("../utils/pricing");
+const { refundRazorpayPayment, refundPaypalCapture } = require("./paymentController");
+const { releaseStockForOrder } = require("../utils/stockReservation");
 
 // Emails everyone who clicked "Notify me" for this brand+denomination, then
 // marks them notified so we never email the same person twice for the same
@@ -62,6 +64,8 @@ exports.getAllOrders = async (req, res) => {
     if (status === "upi_pending") {
       filter.paymentMethod = { $in: ["upi_manual", "usdt", "binance_uid", "bybit_uid", "razorpay"] };
       filter.verificationStatus = "submitted";
+    } else if (status === "cancel_pending") {
+      filter.cancelRequested = true;
     } else if (status) {
       filter.orderStatus = status;
     }
@@ -198,8 +202,93 @@ exports.rejectUpiPayment = async (req, res) => {
   }
 };
 
-// @route  GET /api/admin/stock
+// @route  POST /api/admin/orders/:id/approve-cancel
 // @access Admin
+// Approves a customer's cancellation request: cancels the order and
+// refunds it exactly the way the old self-service cancelOrder used to —
+// automatically for Razorpay/PayPal, flagged for manual review for
+// USDT/internal-transfer/manual-UPI orders where there's no gateway to
+// call. Releases any reserved stock either way.
+exports.approveCancelRequest = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: "Order not found" });
+    if (!order.cancelRequested) {
+      return res.status(400).json({ message: "This order has no pending cancellation request." });
+    }
+
+    order.cancelRequested = false;
+    order.orderStatus = "cancelled";
+
+    if (order.paymentStatus === "paid") {
+      if (["razorpay", "card", "debit_card"].includes(order.paymentMethod)) {
+        await refundRazorpayPayment(order);
+        order.refundStatus = "processed";
+        order.paymentStatus = "refunded";
+      } else if (order.paymentMethod === "paypal") {
+        await refundPaypalCapture(order);
+        order.refundStatus = "processed";
+        order.paymentStatus = "refunded";
+      } else {
+        // usdt, binance_uid, bybit_uid (can't auto-reverse crypto/internal
+        // transfers) and upi_manual (no gateway at all)
+        order.refundStatus = "manual_review";
+      }
+    }
+
+    await order.save();
+    await releaseStockForOrder(order._id);
+
+    res.status(200).json({ message: "Cancellation approved and order refunded.", order });
+  } catch (error) {
+    console.error("Approve cancel request error:", error);
+    res.status(500).json({ message: "Couldn't approve this cancellation. Please try again." });
+  }
+};
+
+// @route  POST /api/admin/orders/:id/reject-cancel
+// @access Admin
+// Rejects a customer's cancellation request — the order proceeds as normal.
+// If payment is already verified, delivers it immediately in the same
+// action (that's the common case: customers mostly request cancellation
+// after paying). If payment isn't verified yet, just clears the request so
+// admin can verify it normally afterward — it would be wrong to force a
+// delivery before payment is actually confirmed.
+exports.rejectCancelRequest = async (req, res) => {
+  try {
+    const { reason } = req.body;
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: "Order not found" });
+    if (!order.cancelRequested) {
+      return res.status(400).json({ message: "This order has no pending cancellation request." });
+    }
+
+    order.cancelRequested = false;
+    order.cancelReason = reason || undefined;
+    await order.save({ validateModifiedOnly: true });
+
+    if (order.paymentStatus === "paid" && order.orderStatus !== "delivered") {
+      const delivered = await deliverGiftCard(order);
+      return res.status(200).json({
+        message:
+          delivered.orderStatus === "delivered"
+            ? "Cancellation rejected and gift card delivered."
+            : "Cancellation rejected, but stock ran out for one of the items — top up GiftCardStock and try delivering again.",
+        order: delivered,
+      });
+    }
+
+    res.status(200).json({
+      message: "Cancellation rejected. Payment isn't verified yet — verify it normally to deliver.",
+      order,
+    });
+  } catch (error) {
+    console.error("Reject cancel request error:", error);
+    res.status(500).json({ message: "Couldn't reject this cancellation. Please try again." });
+  }
+};
+
+
 // Returns every brand+denomination combo from the catalog with its current
 // available (unused) code count — so combos with zero stock still show up
 // as a visible "0", not just missing rows.

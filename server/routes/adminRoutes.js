@@ -6,6 +6,8 @@ const {
   exportDeliveredOrders,
   verifyUpiPayment,
   rejectUpiPayment,
+  approveCancelRequest,
+  rejectCancelRequest,
   getStockSummary,
   getStockCodes,
   addStockCodes,
@@ -40,6 +42,8 @@ router.get("/orders/revenue-by-month", getMonthlyRevenue);
 router.get("/orders/export", exportDeliveredOrders);
 router.post("/orders/:id/verify-upi", verifyUpiPayment);
 router.post("/orders/:id/reject-upi", rejectUpiPayment);
+router.post("/orders/:id/approve-cancel", approveCancelRequest);
+router.post("/orders/:id/reject-cancel", rejectCancelRequest);
 
 router.get("/stock", getStockSummary);
 router.get("/stock/:brand/:denomination", getStockCodes);

@@ -14,8 +14,7 @@ const {
   MONTHLY_WINDOW_DAYS,
   orderInrValue,
 } = require("../config/catalog");
-const { refundRazorpayPayment, refundPaypalCapture } = require("./paymentController");
-const { getAvailableCount, reserveStockForOrder, releaseStockForOrder } = require("../utils/stockReservation");
+const { getAvailableCount, reserveStockForOrder } = require("../utils/stockReservation");
 
 const MAX_QUANTITY_PER_ITEM = 10;
 
@@ -234,10 +233,10 @@ exports.getOrderById = async (req, res) => {
 
 // @route  POST /api/orders/:id/cancel
 // @access Private
-// Cancels the order and attempts an automatic refund where the provider
-// supports it. USDT/crypto payments can't be auto-reversed, so those are
-// flagged for manual review instead. Manual UPI orders that were already
-// verified are also flagged for manual review (no gateway to call).
+// Doesn't cancel immediately — raises a cancellation REQUEST for an admin to
+// approve (cancel + refund) or reject (order proceeds to delivery). This
+// stops a customer from cancelling out from under an order that's already
+// being fulfilled, and gives admin a chance to catch mistaken cancellations.
 exports.cancelOrder = async (req, res) => {
   try {
     const order = await Order.findOne({ _id: req.params.id, user: req.user.id });
@@ -245,6 +244,9 @@ exports.cancelOrder = async (req, res) => {
 
     if (order.orderStatus === "cancelled") {
       return res.status(400).json({ message: "This order is already cancelled" });
+    }
+    if (order.cancelRequested) {
+      return res.status(400).json({ message: "A cancellation request is already pending review." });
     }
     const anyCodesDelivered = order.items.some((item) => item.giftCardCodes.length > 0);
     if (anyCodesDelivered) {
@@ -254,31 +256,16 @@ exports.cancelOrder = async (req, res) => {
       });
     }
 
-    order.orderStatus = "cancelled";
+    order.cancelRequested = true;
     order.cancelReason = req.body.reason || "Cancelled by customer";
+    await order.save({ validateModifiedOnly: true });
 
-    if (order.paymentStatus === "paid") {
-      if (["razorpay", "card", "debit_card"].includes(order.paymentMethod)) {
-        await refundRazorpayPayment(order);
-        order.refundStatus = "processed";
-        order.paymentStatus = "refunded";
-      } else if (order.paymentMethod === "paypal") {
-        await refundPaypalCapture(order);
-        order.refundStatus = "processed";
-        order.paymentStatus = "refunded";
-      } else {
-        // usdt, binance_uid, bybit_uid (can't auto-reverse crypto/internal
-        // transfers) and upi_manual (no gateway at all)
-        order.refundStatus = "manual_review";
-      }
-    }
-
-    await order.save();
-    await releaseStockForOrder(order._id);
-    res.status(200).json({ message: "Order cancelled", order });
+    res
+      .status(200)
+      .json({ message: "Cancellation requested — we'll review it and get back to you shortly.", order });
   } catch (error) {
     console.error("Cancel order error:", error);
-    res.status(500).json({ message: "Couldn't cancel this order. Please try again." });
+    res.status(500).json({ message: "Couldn't request cancellation. Please try again." });
   }
 };
 

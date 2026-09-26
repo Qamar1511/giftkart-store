@@ -4,6 +4,8 @@ import {
   getAdminOrders,
   verifyUpiOrder,
   rejectUpiOrder,
+  approveCancelRequest,
+  rejectCancelRequest,
   exportDeliveredOrders,
 } from "../../services/adminService";
 import { getDisplayStatus } from "../../utils/orderStatus";
@@ -12,6 +14,7 @@ import { formatMoney } from "../../data/catalog";
 const FILTERS = [
   { key: "", label: "All orders" },
   { key: "upi_pending", label: "Manual — needs verification" },
+  { key: "cancel_pending", label: "Cancellation requested" },
   { key: "delivered", label: "Delivered" },
   { key: "cancelled", label: "Cancelled" },
 ];
@@ -108,6 +111,46 @@ const AdminOrders = () => {
       load(filter);
     } catch (err) {
       setError(err.response?.data?.message || "Couldn't reject this payment.");
+    } finally {
+      setActioningId(null);
+    }
+  };
+
+  // Approve: cancels the order and refunds it — see approveCancelRequest in
+  // adminController.js for exactly how the refund is issued per payment method.
+  const handleApproveCancel = async (orderId) => {
+    if (!window.confirm("Approve this cancellation? The order will be cancelled and refunded.")) {
+      return;
+    }
+    setActioningId(orderId);
+    setNotice("");
+    setError("");
+    try {
+      const data = await approveCancelRequest(orderId);
+      setNotice(data.message);
+      load(filter);
+    } catch (err) {
+      setError(err.response?.data?.message || "Couldn't approve this cancellation.");
+    } finally {
+      setActioningId(null);
+    }
+  };
+
+  // Reject: the cancellation request is dismissed and the order proceeds —
+  // if payment is already verified, this delivers the gift card right away.
+  const handleRejectCancel = async (orderId) => {
+    if (!window.confirm("Reject this cancellation? The order will proceed to delivery as normal.")) {
+      return;
+    }
+    setActioningId(orderId);
+    setNotice("");
+    setError("");
+    try {
+      const data = await rejectCancelRequest(orderId);
+      setNotice(data.message);
+      load(filter);
+    } catch (err) {
+      setError(err.response?.data?.message || "Couldn't reject this cancellation.");
     } finally {
       setActioningId(null);
     }
@@ -229,6 +272,7 @@ const AdminOrders = () => {
                 const isUpiPending =
                   ["upi_manual", "usdt", "binance_uid", "bybit_uid", "razorpay"].includes(order.paymentMethod) &&
                   order.verificationStatus === "submitted";
+                const hasCancelRequest = order.cancelRequested === true;
                 const items = Array.isArray(order.items) ? order.items : [];
                 return (
                   <tr key={order._id}>
@@ -259,9 +303,19 @@ const AdminOrders = () => {
                     </td>
                     <td>{(order.paymentMethod || "—").replace("_", " ").toUpperCase()}</td>
                     <td>
-                      <span className={`admin-status-pill status-${isUpiPending ? "refund_pending" : status.key}`}>
-                        {isUpiPending ? "Verification pending" : status.label}
+                      <span
+                        className={`admin-status-pill status-${
+                          hasCancelRequest ? "refund_pending" : isUpiPending ? "refund_pending" : status.key
+                        }`}
+                      >
+                        {hasCancelRequest ? "Cancellation requested" : isUpiPending ? "Verification pending" : status.label}
                       </span>
+                      {hasCancelRequest && order.cancelReason && (
+                        <>
+                          <br />
+                          <span className="admin-table-muted">"{order.cancelReason}"</span>
+                        </>
+                      )}
                     </td>
                     <td className="admin-table-mono">
                       {order.utrNumber || order.usdtTxId || order.internalTransferUid || "—"}
@@ -281,25 +335,46 @@ const AdminOrders = () => {
                       )}
                     </td>
                     <td>
-                      {isUpiPending && (
+                      {hasCancelRequest ? (
                         <div className="admin-table-actions">
                           <button
                             type="button"
                             className="admin-btn admin-btn-approve"
                             disabled={actioningId === order._id}
-                            onClick={() => handleVerify(order._id)}
+                            onClick={() => handleApproveCancel(order._id)}
                           >
-                            {actioningId === order._id ? "Working…" : "Verify & deliver"}
+                            {actioningId === order._id ? "Working…" : "Approve & refund"}
                           </button>
                           <button
                             type="button"
                             className="admin-btn admin-btn-reject"
                             disabled={actioningId === order._id}
-                            onClick={() => handleReject(order._id)}
+                            onClick={() => handleRejectCancel(order._id)}
                           >
-                            Reject
+                            Reject & deliver
                           </button>
                         </div>
+                      ) : (
+                        isUpiPending && (
+                          <div className="admin-table-actions">
+                            <button
+                              type="button"
+                              className="admin-btn admin-btn-approve"
+                              disabled={actioningId === order._id}
+                              onClick={() => handleVerify(order._id)}
+                            >
+                              {actioningId === order._id ? "Working…" : "Verify & deliver"}
+                            </button>
+                            <button
+                              type="button"
+                              className="admin-btn admin-btn-reject"
+                              disabled={actioningId === order._id}
+                              onClick={() => handleReject(order._id)}
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        )
                       )}
                     </td>
                   </tr>

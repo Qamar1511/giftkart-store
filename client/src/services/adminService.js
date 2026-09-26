@@ -22,6 +22,16 @@ export const rejectUpiOrder = async (orderId, reason) => {
   return data;
 };
 
+export const approveCancelRequest = async (orderId) => {
+  const { data } = await apiClient.post(`/admin/orders/${orderId}/approve-cancel`);
+  return data;
+};
+
+export const rejectCancelRequest = async (orderId, reason) => {
+  const { data } = await apiClient.post(`/admin/orders/${orderId}/reject-cancel`, { reason });
+  return data;
+};
+
 // range: "month" | "6months" | "year" | "custom"
 // For "custom", also pass { from: "YYYY-MM-DD", to: "YYYY-MM-DD" }.
 export const exportDeliveredOrders = async (format, range, { from, to } = {}) => {

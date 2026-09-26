@@ -105,6 +105,12 @@ const orderSchema = new mongoose.Schema(
 
     invoiceNumber: { type: String, unique: true, sparse: true },
 
+    // A customer's "Cancel order" click no longer cancels immediately — it
+    // raises this flag and waits for an admin to approve (cancel + refund)
+    // or reject (order proceeds to delivery as normal) it. See cancelOrder
+    // in orderController.js and approveCancelRequest/rejectCancelRequest in
+    // adminController.js.
+    cancelRequested: { type: Boolean, default: false },
     cancelReason: String,
     refundStatus: {
       type: String,
