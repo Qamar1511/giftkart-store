@@ -10,6 +10,13 @@
 // User.fullName. If more than one account has this exact name — e.g. the
 // same person signed up with a few different emails — it processes ALL of
 // them, listed separately so you can see which email each batch belongs to.
+
+// Some networks/ISPs/routers refuse the DNS SRV lookup that mongodb+srv://
+// connection strings need, which fails as "querySrv ECONNREFUSED". Pointing
+// Node's resolver at public DNS for just this script sidesteps that, without
+// touching the PC's own network settings.
+require("dns").setServers(["8.8.8.8", "1.1.1.1"]);
+
 require("dotenv").config();
 const mongoose = require("mongoose");
 const User = require("../models/User");
