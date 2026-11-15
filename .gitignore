@@ -1,20 +1,26 @@
 # Dependencies
 node_modules/
 
-# Environment variables (contains secrets — never commit this)
+# Environment variables: real secrets, never commit these.
+# (.env.example is only a template of placeholder values, so it IS committed.)
 .env
-.env.local
-.env.example
+.env.*
+!.env.example
 
+# Customer-submitted contact-form attachments (personal data)
+server/uploads/contacts/
 
 # Build output
 client/build/
 
 # Logs
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# OS files
+# OS / editor files
 .DS_Store
 Thumbs.db
+.vscode/
+.idea/

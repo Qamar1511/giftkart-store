@@ -47,6 +47,11 @@ const userSchema = new mongoose.Schema(
       enum: ["customer", "admin"],
       default: "customer",
     },
+    // Set from Admin → Users. A blocked customer can't log in, and any
+    // session they already have stops working on its next request (see
+    // `protect` in middleware/authMiddleware.js).
+    isBlocked: { type: Boolean, default: false },
+    blockedAt: Date,
     // Buying currency the customer chose at signup; switchable later from
     // the navbar. Drives which prices they see and the currency their
     // orders are charged in. INR = pay in rupees (UPI/cards), USDT = crypto.

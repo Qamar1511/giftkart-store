@@ -25,7 +25,13 @@ const Login = () => {
   const redirectTo = location.state?.from?.pathname || "/";
   const [form, setForm] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
+  // ?blocked=1 is set by apiClient when an already-logged-in account gets
+  // blocked by an admin and is signed out.
+  const [error, setError] = useState(
+    new URLSearchParams(location.search).get("blocked")
+      ? "Your account has been blocked. Please contact support."
+      : ""
+  );
   const [loading, setLoading] = useState(false);
   const [unverifiedEmail, setUnverifiedEmail] = useState("");
   const [notRegistered, setNotRegistered] = useState(false);

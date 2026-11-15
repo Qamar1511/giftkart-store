@@ -279,6 +279,15 @@ exports.login = async (req, res) => {
       return res.status(401).json({ message: "Incorrect password. Please try again." });
     }
 
+    // Checked after the password on purpose: that way only someone who
+    // actually knows the password learns the account is blocked.
+    if (user.isBlocked) {
+      return res.status(403).json({
+        message: "Your account has been blocked. Please contact support.",
+        blocked: true,
+      });
+    }
+
     // No unverified User documents can exist anymore — accounts are only
     // ever created post-verification (see verifyOtp above) — so there's
     // nothing further to check here.

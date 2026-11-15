@@ -26,6 +26,7 @@ exports.getAllUsers = async (req, res) => {
       role: u.role,
       currency: u.currency,
       isVerified: u.isVerified,
+      isBlocked: !!u.isBlocked,
       createdAt: u.createdAt,
       totalOrders: countMap.get(String(u._id)) || 0,
     }));
@@ -53,6 +54,48 @@ exports.getUserDetail = async (req, res) => {
   } catch (error) {
     console.error("Admin get user detail error:", error);
     res.status(500).json({ message: "Couldn't load this user" });
+  }
+};
+
+// @route  PATCH /api/admin/users/:id/block
+// @access Admin
+// body: { blocked: true | false }
+// Blocks (or unblocks) a customer. While blocked they can't log in, and any
+// session they already have is rejected on its next request — see `protect`
+// in middleware/authMiddleware.js. Their existing orders are left as they
+// are; handle those from the Orders page as usual.
+exports.setUserBlocked = async (req, res) => {
+  try {
+    const { blocked } = req.body;
+    if (typeof blocked !== "boolean") {
+      return res.status(400).json({ message: "`blocked` must be true or false." });
+    }
+
+    const user = await User.findById(req.params.id).select("role fullName");
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Also covers an admin trying to block themselves — they're an admin
+    // account too — which would lock the only way back into this panel.
+    if (user.role === "admin") {
+      return res.status(400).json({ message: "Admin accounts can't be blocked." });
+    }
+
+    // findByIdAndUpdate rather than user.save(): save() would re-run every
+    // validator on the whole document, and an older account whose phone or
+    // other field predates a validation rule would fail to block for a reason
+    // that has nothing to do with this action.
+    const update = blocked
+      ? { $set: { isBlocked: true, blockedAt: new Date() } }
+      : { $set: { isBlocked: false }, $unset: { blockedAt: "" } };
+    await User.findByIdAndUpdate(user._id, update);
+
+    res.status(200).json({
+      message: blocked ? `${user.fullName} has been blocked.` : `${user.fullName} has been unblocked.`,
+      isBlocked: blocked,
+    });
+  } catch (error) {
+    console.error("Admin block user error:", error);
+    res.status(500).json({ message: "Couldn't update this user." });
   }
 };
 

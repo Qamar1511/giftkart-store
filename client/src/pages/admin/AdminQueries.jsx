@@ -68,7 +68,8 @@ const AdminQueries = () => {
       <h1 className="admin-page-title">Contact queries</h1>
       <p className="admin-page-sub">
         Everything submitted through the Contact Us form — saved here even if email delivery
-        isn't set up.
+        isn't set up. A customer can only have one open query at a time: they can send a new one
+        once you mark their current query as resolved.
       </p>
 
       <div className="admin-filter-tabs">

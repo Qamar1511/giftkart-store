@@ -88,6 +88,13 @@ export const getAdminUserDetail = async (userId) => {
   return data;
 };
 
+// Block or unblock a customer. See setUserBlocked in
+// server/controllers/adminUserController.js.
+export const setUserBlocked = async (userId, blocked) => {
+  const { data } = await apiClient.patch(`/admin/users/${userId}/block`, { blocked });
+  return data;
+};
+
 export const downloadUserInvoice = async (userId, orderId) => {
   const response = await apiClient.get(`/admin/users/${userId}/orders/${orderId}/invoice`, {
     responseType: "blob",

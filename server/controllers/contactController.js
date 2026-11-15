@@ -22,6 +22,25 @@ exports.submitContactForm = async (req, res) => {
       return res.status(400).json({ message: "Name, email and query are required." });
     }
 
+    // One open query per person at a time. This form is public (no login),
+    // so the email is the only identity we have to go on. "Open" means
+    // anything not yet marked resolved — both "new" and "read" count, since
+    // an admin merely opening a query doesn't mean it's been dealt with.
+    // Checked before the attachment is saved or the support inbox is emailed,
+    // so a blocked duplicate leaves no trace at all (no stray file, no email).
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const openQuery = await Contact.findOne({
+      email: normalizedEmail,
+      status: { $ne: "resolved" },
+    });
+    if (openQuery) {
+      return res.status(409).json({
+        message:
+          "You already have a query open with us. We'll get back to you soon — you can send a new one once it's been resolved.",
+        openQueryExists: true,
+      });
+    }
+
     let attachmentName;
     let attachmentUrl;
     const attachments = [];
