@@ -15,8 +15,28 @@ const reviewRoutes = require("./routes/reviewRoutes");
 const { generateSitemap } = require("./utils/generateSitemap");
 const { cancelAbandonedOrders } = require("./utils/stockReservation");
 const { hydratePricing } = require("./utils/pricing");
+const { apiLimiter } = require("./middleware/rateLimiter");
+const { rejectUnsafeInput } = require("./utils/security");
 
 const app = express();
+
+// This server runs behind Render's proxy. Without this, req.ip is the
+// PROXY's address for every visitor, so every rate limiter (login, OTP,
+// contact…) would count the whole internet as one single user — one attacker
+// could lock everyone out, or the limits would be meaningless. With it, req.ip
+// is the real visitor address from X-Forwarded-For. (If a CDN such as
+// Cloudflare is ever put in front of Render as well, this number becomes 2.)
+app.set("trust proxy", 1);
+
+// A leaked or guessable JWT_SECRET lets anyone forge login tokens. Loudly
+// flag a missing/short/placeholder one at startup instead of running silently.
+const jwtSecret = process.env.JWT_SECRET || "";
+if (jwtSecret.length < 32 || /change-me|your[_-]?secret|^secret$|^password$|12345/i.test(jwtSecret)) {
+  console.error(
+    "⚠️  SECURITY WARNING: JWT_SECRET is missing, shorter than 32 characters, or looks like a placeholder. " +
+      "Set a long random value (e.g. `node -e \"console.log(require('crypto').randomBytes(48).toString('hex'))\"`)."
+  );
+}
 
 // Connect to MongoDB
 connectDB();
@@ -60,10 +80,35 @@ app.use(
     },
   })
 );
-app.use(express.json());
+// Safety net over every API call, per visitor IP — before any body parsing, so
+// a flood is turned away as cheaply as possible.
+app.use("/api", apiLimiter);
 
-// Contact form attachments, saved to disk in contactController.js
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use(express.json({ limit: "100kb" }));
+
+// Reject request bodies/queries carrying MongoDB operators ($gt, $ne, …) or
+// prototype-pollution keys — see utils/security.js.
+app.use(rejectUnsafeInput);
+
+// Contact form attachments + blog images, saved to disk by the controllers.
+// dotfiles are refused outright (a stray .env must never be downloadable),
+// directory listings are off, and browsers are told not to guess a file's
+// type. Customer attachments are also forced to DOWNLOAD instead of opening
+// in the browser, so even a hostile file can never run as a page on our own
+// domain.
+app.use(
+  "/uploads",
+  express.static(path.join(__dirname, "uploads"), {
+    dotfiles: "deny",
+    index: false,
+    setHeaders: (res, filePath) => {
+      res.setHeader("X-Content-Type-Options", "nosniff");
+      if (filePath.includes(`${path.sep}contacts${path.sep}`)) {
+        res.setHeader("Content-Disposition", "attachment");
+      }
+    },
+  })
+);
 
 // Routes
 app.use("/api/auth", authRoutes);
@@ -85,6 +130,18 @@ app.get("/api/health", (req, res) => {
 
 // Basic error handler (fallback)
 app.use((err, req, res, next) => {
+  // Junk sent by scanners/attackers (broken JSON, oversized bodies, bad
+  // uploads, foreign origins) is a client error, not a server fault — answer
+  // it as such and don't fill the logs with a stack trace for each one.
+  if (err.type === "entity.parse.failed") return res.status(400).json({ message: "Invalid request." });
+  if (err.type === "entity.too.large") return res.status(413).json({ message: "Request is too large." });
+  if (err.name === "MulterError") {
+    return res.status(400).json({
+      message: err.code === "LIMIT_FILE_SIZE" ? "That file is too large (max 5MB)." : "Invalid upload.",
+    });
+  }
+  if (err.message === "Not allowed by CORS") return res.status(403).json({ message: "Origin not allowed." });
+
   console.error(err.stack);
   res.status(500).json({ message: "Server error" });
 });

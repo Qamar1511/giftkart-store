@@ -4,6 +4,14 @@ const generateInvoiceNumber = require("../utils/generateInvoiceNumber");
 const streamInvoicePDF = require("../utils/pdfInvoice");
 const { notifyAdminNewOrder } = require("../utils/notifyAdmin");
 const {
+  isValidName,
+  isValidEmail,
+  isValidPhone,
+  isValidCountry,
+  isValidTxHash,
+  isValidExchangeUid,
+} = require("../utils/security");
+const {
   getBrand,
   priceFor,
   CURRENCY_CODES,
@@ -37,8 +45,34 @@ exports.createOrder = async (req, res) => {
     if (!Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ message: "Your cart is empty" });
     }
+    // Every line costs a stock lookup below, so an unbounded array is a cheap
+    // way to make the server grind. No real cart comes anywhere near this.
+    if (items.length > 20) {
+      return res.status(400).json({ message: "Too many different items in one order." });
+    }
     if (!address || !address.fullName || !address.phone || !address.email || !address.country) {
       return res.status(400).json({ message: "Name, phone, email and country are required" });
+    }
+
+    // Rebuilt from validated strings rather than saving whatever object the
+    // request carried — free-text fields here are shown to admins and put in
+    // emails, so they must look like a name/phone/email/country, not code.
+    const asText = (v) => (typeof v === "string" ? v.trim() : "");
+    const cleanAddress = {
+      fullName: asText(address.fullName),
+      phone: asText(address.phone),
+      email: asText(address.email).toLowerCase(),
+      country: asText(address.country),
+    };
+    if (
+      !isValidName(cleanAddress.fullName) ||
+      !isValidPhone(cleanAddress.phone) ||
+      !isValidEmail(cleanAddress.email) ||
+      !isValidCountry(cleanAddress.country)
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Please enter a valid name, phone number, email and country." });
     }
 
     // Buying currency is a server-side truth: read it from the user's saved
@@ -174,7 +208,7 @@ exports.createOrder = async (req, res) => {
       totalAmount,
       currency,
       paymentMethod,
-      address,
+      address: cleanAddress,
     });
 
     // Actually claim the stock now — atomically, per unit — so a second
@@ -279,7 +313,7 @@ exports.cancelOrder = async (req, res) => {
 exports.submitUtr = async (req, res) => {
   try {
     const { utrNumber } = req.body;
-    const trimmedUtr = (utrNumber || "").trim();
+    const trimmedUtr = typeof utrNumber === "string" ? utrNumber.trim() : "";
     if (!/^\d{12}$/.test(trimmedUtr)) {
       return res.status(400).json({ message: "Enter a valid 12-digit UTR / reference number" });
     }
@@ -312,8 +346,11 @@ exports.submitUtr = async (req, res) => {
 exports.submitUsdtTx = async (req, res) => {
   try {
     const { txId } = req.body;
-    const trimmedTxId = (txId || "").trim();
-    if (trimmedTxId.length < 10) {
+    const trimmedTxId = typeof txId === "string" ? txId.trim() : "";
+    // A real hash is one unbroken 20–128 character string of letters/digits
+    // (0x… for ERC20/BEP20, 64 hex for TRC20, base58 for SOL, base64 for TON).
+    // Free text here used to be accepted — and then shown to admins.
+    if (!isValidTxHash(trimmedTxId)) {
       return res.status(400).json({ message: "Enter a valid transaction hash / ID" });
     }
 
@@ -346,9 +383,9 @@ exports.submitUsdtTx = async (req, res) => {
 exports.submitInternalTransferUid = async (req, res) => {
   try {
     const { uid } = req.body;
-    const trimmedUid = (uid || "").trim();
-    if (trimmedUid.length < 3) {
-      return res.status(400).json({ message: "Enter the UID you sent from." });
+    const trimmedUid = typeof uid === "string" ? uid.trim() : "";
+    if (!isValidExchangeUid(trimmedUid)) {
+      return res.status(400).json({ message: "Enter the UID you sent from (letters and numbers only)." });
     }
 
     const order = await Order.findOne({ _id: req.params.id, user: req.user.id });

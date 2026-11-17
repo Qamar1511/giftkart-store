@@ -2,6 +2,12 @@ const fs = require("fs");
 const path = require("path");
 const BlogPost = require("../models/BlogPost");
 const { isCloudinaryConfigured, uploadImageBuffer } = require("../utils/cloudinaryUpload");
+const { sanitizeBlogHtml } = require("../utils/sanitizeBlogHtml");
+const { detectUploadType } = require("../utils/security");
+
+// Cover images must be a normal web address or one of our own /uploads paths —
+// never something like javascript: or data:.
+const isSafeImageUrl = (url) => typeof url === "string" && /^(https?:\/\/|\/)/i.test(url.trim());
 
 const UPLOAD_DIR = path.join(__dirname, "..", "uploads", "blog");
 
@@ -49,6 +55,10 @@ exports.createPost = async (req, res) => {
       return res.status(400).json({ message: "Title, excerpt, and content are required" });
     }
 
+    if (coverImage && !isSafeImageUrl(coverImage)) {
+      return res.status(400).json({ message: "Cover image must be a normal web address or an uploaded image." });
+    }
+
     const finalSlug = slugify(slug || title);
     const existing = await BlogPost.findOne({ slug: finalSlug });
     if (existing) {
@@ -59,7 +69,7 @@ exports.createPost = async (req, res) => {
       title,
       slug: finalSlug,
       excerpt,
-      content,
+      content: sanitizeBlogHtml(content),
       coverImage,
       metaTitle,
       metaDescription,
@@ -95,8 +105,13 @@ exports.updatePost = async (req, res) => {
 
     if (title !== undefined) post.title = title;
     if (excerpt !== undefined) post.excerpt = excerpt;
-    if (content !== undefined) post.content = content;
-    if (coverImage !== undefined) post.coverImage = coverImage;
+    if (content !== undefined) post.content = sanitizeBlogHtml(content);
+    if (coverImage !== undefined) {
+      if (coverImage && !isSafeImageUrl(coverImage)) {
+        return res.status(400).json({ message: "Cover image must be a normal web address or an uploaded image." });
+      }
+      post.coverImage = coverImage;
+    }
     if (metaTitle !== undefined) post.metaTitle = metaTitle;
     if (metaDescription !== undefined) post.metaDescription = metaDescription;
     if (author !== undefined) post.author = author;
@@ -149,8 +164,15 @@ exports.uploadCoverImage = async (req, res) => {
       return res.status(400).json({ message: "No image was uploaded." });
     }
 
+    // What the file really is, from its contents — not from the filename or
+    // the Content-Type the sender claimed. Images only (a PDF isn't a cover).
+    const fileType = detectUploadType(req.file.buffer);
+    if (!fileType || fileType.mime === "application/pdf") {
+      return res.status(400).json({ message: "Please upload a PNG, JPG or WebP image." });
+    }
+
     if (isCloudinaryConfigured()) {
-      const url = await uploadImageBuffer(req.file.buffer, req.file.mimetype, "blog");
+      const url = await uploadImageBuffer(req.file.buffer, fileType.mime, "blog");
       return res.status(200).json({ url });
     }
 
@@ -158,8 +180,7 @@ exports.uploadCoverImage = async (req, res) => {
       "[blog upload] CLOUDINARY_* env vars missing — saving to local disk, which is wiped on redeploy."
     );
     fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-    const safeExt = path.extname(req.file.originalname).slice(0, 10) || ".jpg";
-    const storedFilename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${safeExt}`;
+    const storedFilename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${fileType.ext}`;
     fs.writeFileSync(path.join(UPLOAD_DIR, storedFilename), req.file.buffer);
 
     res.status(200).json({ url: `/uploads/blog/${storedFilename}` });

@@ -8,7 +8,6 @@ const {
   getUsdtWalletDetails,
   getInternalTransferDetails,
   getUpiQrDetails,
-  mockConfirmPayment,
 } = require("../controllers/paymentController");
 const { protect } = require("../middleware/authMiddleware");
 
@@ -29,7 +28,5 @@ router.get("/internal-transfer/:platform/:orderId", getInternalTransferDetails);
 
 router.get("/upi/qr/:orderId", getUpiQrDetails);
 
-// Test mode only — see mockConfirmPayment for the production safety check
-router.post("/mock/confirm", mockConfirmPayment);
 
 module.exports = router;

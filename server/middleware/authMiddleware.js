@@ -25,7 +25,7 @@ const protect = async (req, res, next) => {
   // indexed lookup, and it means blocking takes effect immediately rather
   // than whenever the customer's token happens to expire.
   try {
-    const user = await User.findById(decoded.id).select("isBlocked");
+    const user = await User.findById(decoded.id).select("isBlocked role");
     if (!user) {
       return res.status(401).json({ message: "Session expired. Please log in again." });
     }
@@ -35,7 +35,12 @@ const protect = async (req, res, next) => {
         blocked: true,
       });
     }
-    req.user = decoded; // { id, role }
+    // The role comes from the DATABASE, never from the token. If the token's
+    // `role` were trusted, anyone who learned JWT_SECRET could sign a token
+    // for their own ordinary account claiming role "admin" and walk straight
+    // into every admin route. This way a forged claim changes nothing: they'd
+    // need the _id of a real admin account too.
+    req.user = { id: String(user._id), role: user.role };
     next();
   } catch (error) {
     console.error("Auth lookup error:", error);

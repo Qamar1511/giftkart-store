@@ -23,6 +23,14 @@ exports.createRazorpayOrder = async (req, res) => {
     const { orderId } = req.body;
     const order = await Order.findOne({ _id: orderId, user: req.user.id });
     if (!order) return res.status(404).json({ message: "Order not found" });
+    // Each payment endpoint only works on an order that was actually created
+    // for that payment method. Without this, a customer could create an
+    // ordinary order and then run it through a DIFFERENT gateway's endpoint
+    // — e.g. a PayPal sandbox account that pays with fake money — to get it
+    // marked paid.
+    if (!["razorpay", "card", "debit_card"].includes(order.paymentMethod) || order.orderStatus === "cancelled") {
+      return res.status(400).json({ message: "This order can't be paid with Razorpay." });
+    }
 
     const razorpayOrder = await razorpay.orders.create({
       amount: Math.round(order.totalAmount * 100), // paise
@@ -59,6 +67,14 @@ exports.verifyRazorpayPayment = async (req, res) => {
 
     const order = await Order.findOne({ _id: orderId, user: req.user.id });
     if (!order) return res.status(404).json({ message: "Order not found" });
+    // Each payment endpoint only works on an order that was actually created
+    // for that payment method. Without this, a customer could create an
+    // ordinary order and then run it through a DIFFERENT gateway's endpoint
+    // — e.g. a PayPal sandbox account that pays with fake money — to get it
+    // marked paid.
+    if (!["razorpay", "card", "debit_card"].includes(order.paymentMethod) || order.orderStatus === "cancelled") {
+      return res.status(400).json({ message: "This order can't be paid with Razorpay." });
+    }
 
     const expectedSignature = crypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
@@ -150,6 +166,14 @@ exports.createPaypalOrder = async (req, res) => {
     const { orderId } = req.body;
     const order = await Order.findOne({ _id: orderId, user: req.user.id });
     if (!order) return res.status(404).json({ message: "Order not found" });
+    // Each payment endpoint only works on an order that was actually created
+    // for that payment method. Without this, a customer could create an
+    // ordinary order and then run it through a DIFFERENT gateway's endpoint
+    // — e.g. a PayPal sandbox account that pays with fake money — to get it
+    // marked paid.
+    if (order.paymentMethod !== "paypal" || order.orderStatus === "cancelled") {
+      return res.status(400).json({ message: "This order can't be paid with PayPal." });
+    }
 
     const accessToken = await getPaypalAccessToken();
 
@@ -190,6 +214,14 @@ exports.capturePaypalOrder = async (req, res) => {
     const { orderId } = req.body;
     const order = await Order.findOne({ _id: orderId, user: req.user.id });
     if (!order) return res.status(404).json({ message: "Order not found" });
+    // Each payment endpoint only works on an order that was actually created
+    // for that payment method. Without this, a customer could create an
+    // ordinary order and then run it through a DIFFERENT gateway's endpoint
+    // — e.g. a PayPal sandbox account that pays with fake money — to get it
+    // marked paid.
+    if (order.paymentMethod !== "paypal" || order.orderStatus === "cancelled" || order.paymentStatus === "paid") {
+      return res.status(400).json({ message: "This order can't be paid with PayPal." });
+    }
 
     const accessToken = await getPaypalAccessToken();
     const { data } = await axios.post(
@@ -390,36 +422,5 @@ exports.getUpiQrDetails = async (req, res) => {
   } catch (error) {
     console.error("UPI QR error:", error);
     res.status(500).json({ message: "Couldn't load UPI payment details." });
-  }
-};
-
-/* ------------------------------ TEST MODE ------------------------------
-   Lets you exercise the full order -> paid -> auto-delivery -> invoice
-   flow WITHOUT a real Razorpay/PayPal/NOWPayments account. Disabled
-   automatically in production (NODE_ENV=production) so it can never be
-   used to get a free gift card on a live store.
------------------------------------------------------------------------- */
-
-// @route  POST /api/payments/mock/confirm
-// @access Private (and only when NODE_ENV !== "production")
-exports.mockConfirmPayment = async (req, res) => {
-  try {
-    if (process.env.NODE_ENV === "production") {
-      return res.status(403).json({ message: "Test mode is disabled in production" });
-    }
-
-    const { orderId } = req.body;
-    const order = await Order.findOne({ _id: orderId, user: req.user.id });
-    if (!order) return res.status(404).json({ message: "Order not found" });
-
-    order.paymentStatus = "paid";
-    order.providerPaymentId = `MOCK-${Date.now()}`;
-    await order.save();
-
-    const deliveredOrder = await deliverGiftCard(order);
-    res.status(200).json({ message: "Test payment confirmed", order: deliveredOrder });
-  } catch (error) {
-    console.error("Mock payment error:", error);
-    res.status(500).json({ message: "Couldn't simulate the payment." });
   }
 };

@@ -42,4 +42,64 @@ const otpLimiter = rateLimit({
   handler,
 });
 
-module.exports = { loginLimiter, signupLimiter, otpLimiter };
+// Contact form: it's public (no login) and sends an email + can save a file
+// per request, so it's the easiest thing to flood. 5 per hour per IP is
+// plenty for a real person — the one-open-query-per-email rule in
+// contactController.js stops the same person re-sending, and this stops
+// someone rotating through made-up email addresses from one machine.
+const contactLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler,
+});
+
+// Logged-in actions are limited per ACCOUNT (falling back to IP), not just
+// per IP — many customers share one mobile-carrier IP in India, and one
+// abusive account shouldn't be able to dodge a limit by changing networks.
+// These routes all sit behind `protect`, so req.user is always set here.
+const perUser = (req) => req.user?.id || req.ip;
+
+// Creating orders: each one reserves real stock for a while, so spamming it
+// is a way to lock stock up without paying.
+const orderLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 20,
+  keyGenerator: perUser,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler,
+});
+
+// Submitting payment proof (UTR / tx hash / exchange UID). A real customer
+// submits this once per order; this just caps abuse.
+const proofLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 30,
+  keyGenerator: perUser,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler,
+});
+
+// Safety net over the whole API, per IP. Deliberately generous so normal
+// browsing — including several people behind one shared IP — never trips it,
+// but a script hammering endpoints does.
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 1000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler,
+});
+
+module.exports = {
+  loginLimiter,
+  signupLimiter,
+  otpLimiter,
+  contactLimiter,
+  orderLimiter,
+  proofLimiter,
+  apiLimiter,
+};

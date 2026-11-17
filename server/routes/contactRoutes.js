@@ -6,27 +6,22 @@ const {
   updateContactStatus,
 } = require("../controllers/contactController");
 const { protect, adminOnly } = require("../middleware/authMiddleware");
+const { contactLimiter } = require("../middleware/rateLimiter");
 
 const router = express.Router();
 
-// Memory storage — the file is only ever forwarded as an email attachment,
-// never written to disk. 5MB cap keeps things reasonable.
+// Memory storage — the file is held in memory while the controller checks
+// what it really is (submitContactForm → detectUploadType) and only then
+// writes it to disk. Limits keep a flood of junk cheap: 5MB, one file, and
+// a handful of text fields.
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 5 * 1024 * 1024, files: 1, fields: 6, fieldSize: 10 * 1024 },
 });
 
-// Contact form kill switch.
-// Closed by default. To reopen set CONTACT_FORM_OPEN=true in the server env
-// (Render -> Environment) and redeploy. Admin inbox routes are unaffected.
-const contactOpen = (req, res, next) => {
-  if (String(process.env.CONTACT_FORM_OPEN || "").toLowerCase() === "true") return next();
-  return res.status(403).json({
-    message: "The contact form is temporarily unavailable. Please try again later.",
-  });
-};
-
-router.post("/", contactOpen, upload.single("attachment"), submitContactForm);
+// contactLimiter runs first so a flood is turned away before any file
+// parsing or database work happens.
+router.post("/", contactLimiter, upload.single("attachment"), submitContactForm);
 router.get("/", protect, adminOnly, getContactSubmissions);
 router.patch("/:id", protect, adminOnly, updateContactStatus);
 

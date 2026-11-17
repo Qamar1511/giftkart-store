@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const { sendEmail } = require("../utils/sendEmail");
 const Contact = require("../models/Contact");
+const { escapeHtml, isValidName, isValidEmail, isValidPhone, detectUploadType } = require("../utils/security");
 
 const UPLOAD_DIR = path.join(__dirname, "..", "uploads", "contacts");
 
@@ -16,10 +17,41 @@ const UPLOAD_DIR = path.join(__dirname, "..", "uploads", "contacts");
 // if email delivery isn't configured or fails.
 exports.submitContactForm = async (req, res) => {
   try {
-    const { fullName, email, phone, message } = req.body;
+    // multipart fields can arrive as non-strings (e.g. `fullName[x]=y` is
+    // parsed into an object), so only accept plain strings and normalise.
+    const asText = (v) => (typeof v === "string" ? v.trim() : "");
+    const fullName = asText(req.body.fullName);
+    const email = asText(req.body.email).toLowerCase();
+    const phone = asText(req.body.phone);
+    const message = asText(req.body.message);
 
     if (!fullName || !email || !message) {
       return res.status(400).json({ message: "Name, email and query are required." });
+    }
+    if (!isValidName(fullName)) {
+      return res.status(400).json({ message: "Please enter your name using letters only." });
+    }
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ message: "Please enter a valid email address." });
+    }
+    if (phone && !isValidPhone(phone)) {
+      return res.status(400).json({ message: "Please enter a valid phone number." });
+    }
+    if (message.length < 10 || message.length > 2000) {
+      return res.status(400).json({ message: "Please describe your query in 10 to 2000 characters." });
+    }
+
+    // Work out what the attachment REALLY is from its contents. The filename
+    // and Content-Type are chosen by the sender, so a .txt/.html/.svg/.exe
+    // renamed to look harmless would sail through a check on either. Only
+    // PDF and common image formats are accepted — these are payment
+    // screenshots/receipts, nothing else is needed.
+    let fileType = null;
+    if (req.file) {
+      fileType = detectUploadType(req.file.buffer);
+      if (!fileType) {
+        return res.status(400).json({ message: "Only PDF, PNG, JPG or WebP files can be attached." });
+      }
     }
 
     // One open query per person at a time. This form is public (no login),
@@ -28,9 +60,8 @@ exports.submitContactForm = async (req, res) => {
     // an admin merely opening a query doesn't mean it's been dealt with.
     // Checked before the attachment is saved or the support inbox is emailed,
     // so a blocked duplicate leaves no trace at all (no stray file, no email).
-    const normalizedEmail = String(email).trim().toLowerCase();
     const openQuery = await Contact.findOne({
-      email: normalizedEmail,
+      email,
       status: { $ne: "resolved" },
     });
     if (openQuery) {
@@ -47,17 +78,22 @@ exports.submitContactForm = async (req, res) => {
 
     if (req.file) {
       fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-      const safeExt = path.extname(req.file.originalname).slice(0, 10);
-      const storedFilename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${safeExt}`;
+      // The stored extension comes from the detected file type, never from
+      // the uploaded filename, so nothing like `.html` or `.php` can ever
+      // end up on disk. The name shown to admins is stripped to harmless
+      // characters for the same reason.
+      const storedFilename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${fileType.ext}`;
       fs.writeFileSync(path.join(UPLOAD_DIR, storedFilename), req.file.buffer);
 
-      attachmentName = req.file.originalname;
+      const displayName =
+        path.basename(req.file.originalname).replace(/[^\w.\- ]/g, "_").slice(0, 80) || `attachment${fileType.ext}`;
+      attachmentName = displayName;
       attachmentUrl = `/uploads/contacts/${storedFilename}`;
 
       attachments.push({
-        filename: req.file.originalname,
+        filename: displayName,
         content: req.file.buffer,
-        contentType: req.file.mimetype,
+        contentType: fileType.mime,
       });
     }
 
@@ -70,13 +106,16 @@ exports.submitContactForm = async (req, res) => {
           to: supportInbox,
           replyTo: email,
           subject: `New contact form message from ${fullName}`,
+          // Everything below is visitor-supplied, so it's HTML-escaped —
+          // otherwise a message containing markup renders as live HTML in
+          // the support inbox (fake buttons, phishing links, tracking pixels).
           html: `
-            <p><strong>Name:</strong> ${fullName}</p>
-            <p><strong>Email:</strong> ${email}</p>
-            <p><strong>Phone:</strong> ${phone || "—"}</p>
+            <p><strong>Name:</strong> ${escapeHtml(fullName)}</p>
+            <p><strong>Email:</strong> ${escapeHtml(email)}</p>
+            <p><strong>Phone:</strong> ${escapeHtml(phone) || "—"}</p>
             <p><strong>Message:</strong></p>
-            <p>${String(message).replace(/\n/g, "<br/>")}</p>
-            ${req.file ? `<p><em>Attachment: ${req.file.originalname}</em></p>` : ""}
+            <p>${escapeHtml(message).replace(/\n/g, "<br/>")}</p>
+            ${attachmentName ? `<p><em>Attachment: ${escapeHtml(attachmentName)}</em></p>` : ""}
           `,
           attachments,
         });
@@ -102,7 +141,9 @@ exports.submitContactForm = async (req, res) => {
     });
 
     if (!emailSent) {
-      console.log("Contact form submission:", { fullName, email, phone, message });
+      // Deliberately not logging the visitor's text: it's attacker-controlled
+      // (log flooding) and personal data. The full record is in the database.
+      console.log(`Contact form submission saved (email not sent) from ${email}`);
     }
   } catch (error) {
     console.error("Contact form error:", error);
