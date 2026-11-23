@@ -11,8 +11,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build && node scripts/prerender-seo.js",
-    "prerender": "node scripts/prerender-seo.js",
+    "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
@@ -20,7 +19,7 @@
     "extends": ["react-app"]
   },
   "browserslist": {
-    "production": ["chrome >= 87", "firefox >= 78", "edge >= 88", "safari >= 14", "not dead", "not op_mini all"],
+    "production": [">0.2%", "not dead", "not op_mini all"],
     "development": ["last 1 chrome version", "last 1 firefox version", "last 1 safari version"]
   }
 }

@@ -26,31 +26,21 @@ async function verify() {
     process.exit(1);
   }
 
-  if (!["upi_manual", "usdt", "binance_uid", "bybit_uid"].includes(order.paymentMethod)) {
-    console.error("This order isn't a manual UPI, USDT, or internal-transfer order.");
+  if (order.paymentMethod !== "upi_manual") {
+    console.error("This order isn't a manual UPI order.");
     await mongoose.disconnect();
     process.exit(1);
   }
 
   console.log(`Order ${order._id}`);
-  console.log(`  Total: ${order.currency} ${order.totalAmount}`);
-  if (order.paymentMethod === "upi_manual") {
-    console.log(`  UTR submitted by customer: ${order.utrNumber || "(none yet)"}`);
-  } else if (order.paymentMethod === "binance_uid" || order.paymentMethod === "bybit_uid") {
-    const exchange = order.paymentMethod === "binance_uid" ? "Binance" : "Bybit";
-    console.log(`  ${exchange} internal transfer — customer's own UID: ${order.internalTransferUid || "(none yet)"}`);
-    console.log(`  Check your ${exchange} internal-transfer history for this UID + amount to verify.`);
-  } else {
-    console.log(`  USDT network: ${order.usdtNetwork || "(not recorded — assume TRC20)"}`);
-    console.log(`  USDT tx ID submitted by customer: ${order.usdtTxId || "(none yet)"}`);
-  }
+  console.log(`  Total: ₹${order.totalAmount}`);
+  console.log(`  UTR submitted by customer: ${order.utrNumber || "(none yet)"}`);
   console.log(`  Current verification status: ${order.verificationStatus}`);
 
   order.paymentStatus = "paid";
   order.verificationStatus = "verified";
-  order.providerPaymentId =
-    order.utrNumber || order.usdtTxId || order.internalTransferUid || `MANUAL-${Date.now()}`;
-  await order.save({ validateModifiedOnly: true });
+  order.providerPaymentId = order.utrNumber || `MANUAL-${Date.now()}`;
+  await order.save();
 
   const delivered = await deliverGiftCard(order);
   console.log(`Marked as paid. Order status is now: ${delivered.orderStatus}`);

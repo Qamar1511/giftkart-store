@@ -19,22 +19,7 @@ const userSchema = new mongoose.Schema(
     phone: {
       type: String,
       required: [true, "Phone number is required"],
-      unique: true,
       trim: true,
-      validate: {
-        // Phone is stored with its country code prepended (e.g.
-        // "+919149783414"). Indian numbers still get the strict
-        // 10-digit-starting-6-9 check; other countries just need a
-        // sane digit count.
-        validator: function (value) {
-          if (value.startsWith("+91")) {
-            return /^[6-9]\d{9}$/.test(value.slice(3));
-          }
-          const digitsOnly = value.replace(/\D/g, "");
-          return digitsOnly.length >= 6 && digitsOnly.length <= 14;
-        },
-        message: "Enter a valid phone number",
-      },
     },
     password: {
       type: String,
@@ -46,19 +31,6 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: ["customer", "admin"],
       default: "customer",
-    },
-    // Set from Admin → Users. A blocked customer can't log in, and any
-    // session they already have stops working on its next request (see
-    // `protect` in middleware/authMiddleware.js).
-    isBlocked: { type: Boolean, default: false },
-    blockedAt: Date,
-    // Buying currency the customer chose at signup; switchable later from
-    // the navbar. Drives which prices they see and the currency their
-    // orders are charged in. INR = pay in rupees (UPI/cards), USDT = crypto.
-    currency: {
-      type: String,
-      enum: ["INR", "USDT"],
-      default: "INR",
     },
     // Default address, used to prefill the buy flow. Orders can still store
     // their own address snapshot separately.
@@ -73,25 +45,6 @@ const userSchema = new mongoose.Schema(
     isVerified: {
       type: Boolean,
       default: false,
-    },
-    // 2Factor.in's session ID for the OTP currently in flight (signup phone
-    // verification) — not the code itself, 2Factor tracks that on their
-    // end. otpExpires is our own short client-side timeout on top of it.
-    otpSessionId: {
-      type: String,
-      select: false,
-    },
-    otpExpires: {
-      type: Date,
-      select: false,
-    },
-    resetPasswordToken: {
-      type: String,
-      select: false,
-    },
-    resetPasswordExpires: {
-      type: Date,
-      select: false,
     },
   },
   { timestamps: true }

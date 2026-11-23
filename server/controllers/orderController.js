@@ -1,43 +1,19 @@
 const Order = require("../models/Order");
-const User = require("../models/User");
 const generateInvoiceNumber = require("../utils/generateInvoiceNumber");
 const streamInvoicePDF = require("../utils/pdfInvoice");
-const { notifyAdminNewOrder } = require("../utils/notifyAdmin");
-const {
-  isValidName,
-  isValidEmail,
-  isValidPhone,
-  isValidCountry,
-  isValidTxHash,
-  isValidExchangeUid,
-} = require("../utils/security");
-const {
-  getBrand,
-  priceFor,
-  CURRENCY_CODES,
-  CURRENCY_PAYMENT_METHODS,
-  DEFAULT_CURRENCY,
-  MAX_CARDS_PER_ORDER,
-  MONTHLY_SPEND_LIMIT_INR,
-  MONTHLY_WINDOW_DAYS,
-  orderInrValue,
-} = require("../config/catalog");
-const { getAvailableCount, reserveStockForOrder } = require("../utils/stockReservation");
+const { getBrand, INR_TO_USD_RATE } = require("../config/catalog");
+const { refundRazorpayPayment, refundPaypalCapture } = require("./paymentController");
 
-const MAX_QUANTITY_PER_ITEM = 10;
+const ALLOWED_PAYMENT_METHODS = ["razorpay", "card", "debit_card", "upi_manual", "usdt", "paypal"];
+const FOREIGN_CURRENCY_METHODS = ["paypal", "usdt"]; // charged in USD, not INR
 
 // @route  POST /api/orders
 // @access Private
 // Creates the order (one or more cart line items) in "placed / pending
-// payment" state. Pricing is always computed server-side from `items` +
-// the buyer's saved currency — we never trust a client-supplied amount or
-// currency. The buying currency comes from the User document (chosen at
-// signup, switchable from the navbar) and decides BOTH the price of each
-// denomination (INR = face × 1.1, USDT = face × 0.011) and which payment
-// methods are allowed (INR → UPI/cards, USDT → crypto). Stock is checked
-// here too, against real-time available codes, so a customer can never pay
-// for more units than we can deliver. The actual payment is created and
-// confirmed in separate calls that reference this order's _id.
+// payment" state. Pricing is always computed server-side from `items` —
+// we never trust a client-supplied amount. The actual payment (Razorpay /
+// PayPal / USDT / manual UPI) is created and confirmed in separate calls
+// that reference this order's _id.
 exports.createOrder = async (req, res) => {
   try {
     const { items, paymentMethod, address } = req.body;
@@ -45,57 +21,15 @@ exports.createOrder = async (req, res) => {
     if (!Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ message: "Your cart is empty" });
     }
-    // Every line costs a stock lookup below, so an unbounded array is a cheap
-    // way to make the server grind. No real cart comes anywhere near this.
-    if (items.length > 20) {
-      return res.status(400).json({ message: "Too many different items in one order." });
+    if (!address || !address.line1 || !address.city || !address.pincode) {
+      return res.status(400).json({ message: "A complete address is required" });
     }
-    if (!address || !address.fullName || !address.phone || !address.email || !address.country) {
-      return res.status(400).json({ message: "Name, phone, email and country are required" });
-    }
-
-    // Rebuilt from validated strings rather than saving whatever object the
-    // request carried — free-text fields here are shown to admins and put in
-    // emails, so they must look like a name/phone/email/country, not code.
-    const asText = (v) => (typeof v === "string" ? v.trim() : "");
-    const cleanAddress = {
-      fullName: asText(address.fullName),
-      phone: asText(address.phone),
-      email: asText(address.email).toLowerCase(),
-      country: asText(address.country),
-    };
-    if (
-      !isValidName(cleanAddress.fullName) ||
-      !isValidPhone(cleanAddress.phone) ||
-      !isValidEmail(cleanAddress.email) ||
-      !isValidCountry(cleanAddress.country)
-    ) {
-      return res
-        .status(400)
-        .json({ message: "Please enter a valid name, phone number, email and country." });
-    }
-
-    // Buying currency is a server-side truth: read it from the user's saved
-    // preference, never from the request body.
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-    const currency = CURRENCY_CODES.includes(user.currency)
-      ? user.currency
-      : DEFAULT_CURRENCY;
-
-    // The payment method must be valid for that currency (INR is paid in
-    // rupees, USDT is paid on-chain) — reject any mismatch.
-    const allowedMethods = CURRENCY_PAYMENT_METHODS[currency] || [];
-    if (!allowedMethods.includes(paymentMethod)) {
-      return res
-        .status(400)
-        .json({ message: `That payment method isn't available for ${currency} orders.` });
+    if (!ALLOWED_PAYMENT_METHODS.includes(paymentMethod)) {
+      return res.status(400).json({ message: "Invalid payment method" });
     }
 
     const orderItems = [];
-    let totalAmount = 0;
+    let totalInr = 0;
 
     for (const rawItem of items) {
       const brandSlug = rawItem.brand;
@@ -111,30 +45,8 @@ exports.createOrder = async (req, res) => {
           .status(400)
           .json({ message: `Invalid ${brand.name} denomination: ${rawItem.denomination}` });
       }
-      if (!Number.isInteger(quantity) || quantity < 1 || quantity > MAX_QUANTITY_PER_ITEM) {
-        return res
-          .status(400)
-          .json({ message: `Quantity must be between 1 and ${MAX_QUANTITY_PER_ITEM} per item` });
-      }
-
-      // Friendly pre-check — the real guarantee against over-selling comes
-      // from reserveStockForOrder() below, which atomically claims the
-      // exact units right after the order is created. This check just
-      // avoids creating an order doc at all for an obviously-out-of-stock
-      // request.
-      const availableStock = await getAvailableCount(brand.slug, denomination);
-      if (availableStock < quantity) {
-        return res.status(400).json({
-          message:
-            availableStock > 0
-              ? `Only ${availableStock} × ₹${denomination} ${brand.name} code${
-                  availableStock === 1 ? "" : "s"
-                } left in stock. Please lower the quantity in your cart.`
-              : `${brand.name} ₹${denomination} is out of stock right now.`,
-          brand: brand.slug,
-          denomination,
-          availableStock,
-        });
+      if (!Number.isInteger(quantity) || quantity < 1 || quantity > 20) {
+        return res.status(400).json({ message: "Quantity must be between 1 and 20" });
       }
 
       orderItems.push({
@@ -142,65 +54,15 @@ exports.createOrder = async (req, res) => {
         brandName: brand.name,
         denomination,
         quantity,
-        unitPrice: priceFor(denomination, currency),
+        unitPrice: denomination,
         giftCardCodes: [],
       });
-      totalAmount += priceFor(denomination, currency) * quantity;
+      totalInr += denomination * quantity;
     }
 
-    // INR is charged in whole rupees; USDT keeps 2 decimals. Round the summed
-    // total to kill any floating-point drift from the per-unit USDT prices.
-    totalAmount =
-      currency === "INR" ? Math.round(totalAmount) : +totalAmount.toFixed(2);
-
-    // ----------------------------- Purchase limits -----------------------
-    // These caps are enforced here, on the server, because the client cart
-    // can be bypassed. See config/catalog.js for the values.
-    //
-    // (1) At most MAX_CARDS_PER_ORDER gift cards in a single order — counted
-    //     as the sum of every line's quantity.
-    const totalCards = orderItems.reduce((n, it) => n + it.quantity, 0);
-    if (totalCards > MAX_CARDS_PER_ORDER) {
-      return res.status(400).json({
-        message: `You can buy a maximum of ${MAX_CARDS_PER_ORDER} gift cards in a single order. Please lower the quantity in your cart.`,
-        limit: MAX_CARDS_PER_ORDER,
-        totalCards,
-      });
-    }
-
-    // (2) At most MONTHLY_SPEND_LIMIT_INR of purchases per user in any rolling
-    //     MONTHLY_WINDOW_DAYS window. We measure in an INR-equivalent value so
-    //     the same cap applies to USDT buyers. Orders still counting toward
-    //     the tally are the user's non-cancelled orders in the window that are
-    //     either paid or awaiting payment (pending) — pending orders count so
-    //     a buyer can't slip past the cap by stacking unpaid orders; cancelled,
-    //     failed and refunded orders are excluded.
-    const since = new Date(Date.now() - MONTHLY_WINDOW_DAYS * 24 * 60 * 60 * 1000);
-    const recentOrders = await Order.find({
-      user: req.user.id,
-      createdAt: { $gte: since },
-      paymentStatus: { $in: ["pending", "paid"] },
-      orderStatus: { $ne: "cancelled" },
-    }).select("items");
-    const spentInr = Math.round(
-      recentOrders.reduce((sum, o) => sum + orderInrValue(o.items), 0)
-    );
-    const thisOrderInr = Math.round(orderInrValue(orderItems));
-    if (spentInr + thisOrderInr > MONTHLY_SPEND_LIMIT_INR) {
-      const remaining = Math.max(0, MONTHLY_SPEND_LIMIT_INR - spentInr);
-      const limitStr = MONTHLY_SPEND_LIMIT_INR.toLocaleString("en-IN");
-      return res.status(400).json({
-        message:
-          remaining > 0
-            ? `This order would take you over your monthly purchase limit of ₹${limitStr}. You can still spend ₹${remaining.toLocaleString(
-                "en-IN"
-              )} this month — please lower the quantity in your cart.`
-            : `You've reached your monthly purchase limit of ₹${limitStr}. Please try again next month.`,
-        monthlyLimitInr: MONTHLY_SPEND_LIMIT_INR,
-        spentInr,
-        remainingInr: remaining,
-      });
-    }
+    const isForeignCurrency = FOREIGN_CURRENCY_METHODS.includes(paymentMethod);
+    const totalAmount = isForeignCurrency ? +(totalInr * INR_TO_USD_RATE).toFixed(2) : totalInr;
+    const currency = isForeignCurrency ? "USD" : "INR";
 
     const order = await Order.create({
       user: req.user.id,
@@ -208,30 +70,8 @@ exports.createOrder = async (req, res) => {
       totalAmount,
       currency,
       paymentMethod,
-      address: cleanAddress,
+      address,
     });
-
-    // Actually claim the stock now — atomically, per unit — so a second
-    // customer's order can never succeed against the same codes while this
-    // one is still going through checkout. If we can't get everything this
-    // order needs (a race lost to someone else, or stock changed between
-    // the pre-check above and now), undo the order and say so clearly.
-    const reservation = await reserveStockForOrder(order._id, orderItems);
-    if (!reservation.success) {
-      await Order.deleteOne({ _id: order._id });
-      const rBrand = getBrand(reservation.brand);
-      return res.status(409).json({
-        message:
-          reservation.availableStock > 0
-            ? `Only ${reservation.availableStock} × ₹${reservation.denomination} ${rBrand.name} code${
-                reservation.availableStock === 1 ? "" : "s"
-              } left — someone just grabbed the rest. Please lower the quantity in your cart.`
-            : `${rBrand.name} ₹${reservation.denomination} just sold out. Please remove it from your cart.`,
-        brand: reservation.brand,
-        denomination: reservation.denomination,
-        availableStock: reservation.availableStock,
-      });
-    }
 
     res.status(201).json({ order });
   } catch (error) {
@@ -267,10 +107,10 @@ exports.getOrderById = async (req, res) => {
 
 // @route  POST /api/orders/:id/cancel
 // @access Private
-// Doesn't cancel immediately — raises a cancellation REQUEST for an admin to
-// approve (cancel + refund) or reject (order proceeds to delivery). This
-// stops a customer from cancelling out from under an order that's already
-// being fulfilled, and gives admin a chance to catch mistaken cancellations.
+// Cancels the order and attempts an automatic refund where the provider
+// supports it. USDT/crypto payments can't be auto-reversed, so those are
+// flagged for manual review instead. Manual UPI orders that were already
+// verified are also flagged for manual review (no gateway to call).
 exports.cancelOrder = async (req, res) => {
   try {
     const order = await Order.findOne({ _id: req.params.id, user: req.user.id });
@@ -278,9 +118,6 @@ exports.cancelOrder = async (req, res) => {
 
     if (order.orderStatus === "cancelled") {
       return res.status(400).json({ message: "This order is already cancelled" });
-    }
-    if (order.cancelRequested) {
-      return res.status(400).json({ message: "A cancellation request is already pending review." });
     }
     const anyCodesDelivered = order.items.some((item) => item.giftCardCodes.length > 0);
     if (anyCodesDelivered) {
@@ -290,16 +127,29 @@ exports.cancelOrder = async (req, res) => {
       });
     }
 
-    order.cancelRequested = true;
+    order.orderStatus = "cancelled";
     order.cancelReason = req.body.reason || "Cancelled by customer";
-    await order.save({ validateModifiedOnly: true });
 
-    res
-      .status(200)
-      .json({ message: "Cancellation requested — we'll review it and get back to you shortly.", order });
+    if (order.paymentStatus === "paid") {
+      if (["razorpay", "card", "debit_card"].includes(order.paymentMethod)) {
+        await refundRazorpayPayment(order);
+        order.refundStatus = "processed";
+        order.paymentStatus = "refunded";
+      } else if (order.paymentMethod === "paypal") {
+        await refundPaypalCapture(order);
+        order.refundStatus = "processed";
+        order.paymentStatus = "refunded";
+      } else {
+        // usdt (can't auto-reverse crypto) and upi_manual (no gateway at all)
+        order.refundStatus = "manual_review";
+      }
+    }
+
+    await order.save();
+    res.status(200).json({ message: "Order cancelled", order });
   } catch (error) {
     console.error("Cancel order error:", error);
-    res.status(500).json({ message: "Couldn't request cancellation. Please try again." });
+    res.status(500).json({ message: "Couldn't cancel this order. Please try again." });
   }
 };
 
@@ -313,9 +163,8 @@ exports.cancelOrder = async (req, res) => {
 exports.submitUtr = async (req, res) => {
   try {
     const { utrNumber } = req.body;
-    const trimmedUtr = typeof utrNumber === "string" ? utrNumber.trim() : "";
-    if (!/^\d{12}$/.test(trimmedUtr)) {
-      return res.status(400).json({ message: "Enter a valid 12-digit UTR / reference number" });
+    if (!utrNumber || utrNumber.trim().length < 4) {
+      return res.status(400).json({ message: "Enter a valid UTR / reference number" });
     }
 
     const order = await Order.findOne({ _id: req.params.id, user: req.user.id });
@@ -324,86 +173,14 @@ exports.submitUtr = async (req, res) => {
       return res.status(400).json({ message: "This order isn't a manual UPI order" });
     }
 
-    order.utrNumber = trimmedUtr;
+    order.utrNumber = utrNumber.trim();
     order.verificationStatus = "submitted";
     await order.save();
-    await order.populate("user", "fullName email");
-    notifyAdminNewOrder(order).catch((err) => console.error("New order email failed:", err));
 
     res.status(200).json({ message: "UTR submitted — we'll verify and deliver shortly", order });
   } catch (error) {
     console.error("Submit UTR error:", error);
     res.status(500).json({ message: "Couldn't submit the UTR. Please try again." });
-  }
-};
-
-// @route  POST /api/orders/:id/submit-usdt-tx
-// @access Private
-// Used by the manual-USDT flow: customer sends USDT to the wallet address
-// we show them, then submits the transaction hash here. This does NOT mark
-// the order as paid automatically — someone has to check the tx on a block
-// explorer first. See scripts/verifyManualPayment.js for that step.
-exports.submitUsdtTx = async (req, res) => {
-  try {
-    const { txId } = req.body;
-    const trimmedTxId = typeof txId === "string" ? txId.trim() : "";
-    // A real hash is one unbroken 20–128 character string of letters/digits
-    // (0x… for ERC20/BEP20, 64 hex for TRC20, base58 for SOL, base64 for TON).
-    // Free text here used to be accepted — and then shown to admins.
-    if (!isValidTxHash(trimmedTxId)) {
-      return res.status(400).json({ message: "Enter a valid transaction hash / ID" });
-    }
-
-    const order = await Order.findOne({ _id: req.params.id, user: req.user.id });
-    if (!order) return res.status(404).json({ message: "Order not found" });
-    if (order.paymentMethod !== "usdt") {
-      return res.status(400).json({ message: "This order isn't a manual USDT order" });
-    }
-
-    order.usdtTxId = trimmedTxId;
-    order.verificationStatus = "submitted";
-    await order.save();
-    await order.populate("user", "fullName email");
-    notifyAdminNewOrder(order).catch((err) => console.error("New order email failed:", err));
-
-    res.status(200).json({ message: "Transaction ID submitted — we'll verify and deliver shortly", order });
-  } catch (error) {
-    console.error("Submit USDT tx error:", error);
-    res.status(500).json({ message: "Couldn't submit the transaction ID. Please try again." });
-  }
-};
-
-// @route  POST /api/orders/:id/submit-internal-transfer-uid
-// @access Private
-// Used by the Binance/Bybit internal-transfer flow: customer sends USDT
-// from their own account (on the same exchange) to the UID we show them,
-// then submits THEIR OWN UID here as proof — there's no tx hash for an
-// internal transfer. Admin matches this against the exchange's
-// internal-transfer history to verify, same manual step as UPI/USDT.
-exports.submitInternalTransferUid = async (req, res) => {
-  try {
-    const { uid } = req.body;
-    const trimmedUid = typeof uid === "string" ? uid.trim() : "";
-    if (!isValidExchangeUid(trimmedUid)) {
-      return res.status(400).json({ message: "Enter the UID you sent from (letters and numbers only)." });
-    }
-
-    const order = await Order.findOne({ _id: req.params.id, user: req.user.id });
-    if (!order) return res.status(404).json({ message: "Order not found" });
-    if (!["binance_uid", "bybit_uid"].includes(order.paymentMethod)) {
-      return res.status(400).json({ message: "This order isn't an internal-transfer order" });
-    }
-
-    order.internalTransferUid = trimmedUid;
-    order.verificationStatus = "submitted";
-    await order.save();
-    await order.populate("user", "fullName email");
-    notifyAdminNewOrder(order).catch((err) => console.error("New order email failed:", err));
-
-    res.status(200).json({ message: "UID submitted — we'll verify and deliver shortly", order });
-  } catch (error) {
-    console.error("Submit internal transfer UID error:", error);
-    res.status(500).json({ message: "Couldn't submit your UID. Please try again." });
   }
 };
 

@@ -1,10 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { getCatalog } from "../services/productService";
-import { getBrandReviews } from "../services/reviewService";
 import GiftCardCard from "../components/GiftCardCard";
 import BrandBadge from "../components/BrandBadge";
-import Seo, { SITE_URL } from "../components/Seo";
 import "../styles/Shop.css";
 
 const BrandProducts = () => {
@@ -12,8 +10,6 @@ const BrandProducts = () => {
   const [brand, setBrand] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [reviews, setReviews] = useState([]);
-  const [reviewStats, setReviewStats] = useState({ average: 0, count: 0 });
 
   useEffect(() => {
     const load = async () => {
@@ -34,19 +30,6 @@ const BrandProducts = () => {
       }
     };
     load();
-  }, [slug]);
-
-  useEffect(() => {
-    const loadReviews = async () => {
-      try {
-        const { reviews: list, average, count } = await getBrandReviews(slug);
-        setReviews(list);
-        setReviewStats({ average, count });
-      } catch (err) {
-        // Non-fatal — the product page still works without reviews.
-      }
-    };
-    loadReviews();
   }, [slug]);
 
   if (loading) {
@@ -70,49 +53,11 @@ const BrandProducts = () => {
 
   return (
     <div className="shop-page">
-      <Seo
-        title={`Buy ${brand.name} Gift Cards Online in India | Instant Delivery — GIFTKART`}
-        description={`Buy ${brand.name} gift cards online in India. ${brand.tagline}. Instant digital delivery, 100% genuine codes, UPI & USDT accepted.`}
-        path={`/brand/${brand.slug}`}
-        jsonLd={{
-          "@context": "https://schema.org",
-          "@type": "ItemList",
-          name: `${brand.name} Gift Cards`,
-          url: `${SITE_URL}/brand/${brand.slug}`,
-          itemListElement: (brand.products || []).map((product, index) => ({
-            "@type": "ListItem",
-            position: index + 1,
-            item: {
-              "@type": "Product",
-              name: `${brand.name} Gift Card ₹${product.denomination}`,
-              image: product.image ? `${SITE_URL}${product.image}` : undefined,
-              brand: { "@type": "Brand", name: brand.name },
-              offers: {
-                "@type": "Offer",
-                priceCurrency: "INR",
-                price: product.pricing?.INR ?? product.denomination,
-                availability: product.inStock
-                  ? "https://schema.org/InStock"
-                  : "https://schema.org/OutOfStock",
-              },
-            },
-          })),
-        }}
-      />
       <div className="brand-page-header">
-        <BrandBadge name={brand.name} color={brand.color} image={brand.image} size="lg" />
+        <BrandBadge name={brand.name} color={brand.color} size="lg" />
         <div>
-          <h1 className="section-heading" style={{ margin: 0 }}>{brand.name} Gift Cards</h1>
+          <h1 className="section-heading" style={{ margin: 0 }}>{brand.name}</h1>
           <p className="shop-status" style={{ margin: 0 }}>{brand.tagline}</p>
-          {reviewStats.count > 0 && (
-            <p className="brand-review-summary">
-              <span className="brand-review-stars-static">
-                {"★".repeat(Math.round(reviewStats.average))}
-                {"☆".repeat(5 - Math.round(reviewStats.average))}
-              </span>
-              {reviewStats.average} out of 5 ({reviewStats.count} review{reviewStats.count === 1 ? "" : "s"})
-            </p>
-          )}
         </div>
       </div>
 
@@ -121,31 +66,6 @@ const BrandProducts = () => {
           <GiftCardCard key={product.id} product={product} color={brand.color} />
         ))}
       </div>
-
-      {reviews.length > 0 && (
-        <div className="brand-reviews-section">
-          <h2 className="section-heading" style={{ fontSize: "1.3rem" }}>
-            Customer reviews
-          </h2>
-          <div className="brand-reviews-list">
-            {reviews.map((review) => (
-              <div className="brand-review-card" key={review._id}>
-                <div className="brand-review-card-head">
-                  <span className="brand-review-stars-static">
-                    {"★".repeat(review.rating)}
-                    {"☆".repeat(5 - review.rating)}
-                  </span>
-                  <strong>{review.reviewerName}</strong>
-                  <span className="brand-review-date">
-                    {new Date(review.createdAt).toLocaleDateString("en-IN")}
-                  </span>
-                </div>
-                {review.comment && <p className="brand-review-comment">{review.comment}</p>}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

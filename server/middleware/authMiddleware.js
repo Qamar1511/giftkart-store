@@ -1,7 +1,6 @@
 const jwt = require("jsonwebtoken");
-const User = require("../models/User");
 
-const protect = async (req, res, next) => {
+const protect = (req, res, next) => {
   let token;
   const authHeader = req.headers.authorization;
 
@@ -13,38 +12,12 @@ const protect = async (req, res, next) => {
     return res.status(401).json({ message: "Not authorized. Please log in." });
   }
 
-  let decoded;
   try {
-    decoded = jwt.verify(token, process.env.JWT_SECRET);
-  } catch (error) {
-    return res.status(401).json({ message: "Session expired. Please log in again." });
-  }
-
-  // The token alone can't know the account was blocked after it was issued
-  // (it's valid for 7 days), so look the user up on every request. One small
-  // indexed lookup, and it means blocking takes effect immediately rather
-  // than whenever the customer's token happens to expire.
-  try {
-    const user = await User.findById(decoded.id).select("isBlocked role");
-    if (!user) {
-      return res.status(401).json({ message: "Session expired. Please log in again." });
-    }
-    if (user.isBlocked) {
-      return res.status(403).json({
-        message: "Your account has been blocked. Please contact support.",
-        blocked: true,
-      });
-    }
-    // The role comes from the DATABASE, never from the token. If the token's
-    // `role` were trusted, anyone who learned JWT_SECRET could sign a token
-    // for their own ordinary account claiming role "admin" and walk straight
-    // into every admin route. This way a forged claim changes nothing: they'd
-    // need the _id of a real admin account too.
-    req.user = { id: String(user._id), role: user.role };
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded; // { id, role }
     next();
   } catch (error) {
-    console.error("Auth lookup error:", error);
-    return res.status(500).json({ message: "Something went wrong. Please try again." });
+    return res.status(401).json({ message: "Session expired. Please log in again." });
   }
 };
 

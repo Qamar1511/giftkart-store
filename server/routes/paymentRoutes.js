@@ -4,14 +4,18 @@ const {
   verifyRazorpayPayment,
   createPaypalOrder,
   capturePaypalOrder,
-  getUsdtNetworks,
-  getUsdtWalletDetails,
-  getInternalTransferDetails,
+  createUsdtInvoice,
+  usdtWebhook,
+  getUsdtPaymentStatus,
   getUpiQrDetails,
+  mockConfirmPayment,
 } = require("../controllers/paymentController");
 const { protect } = require("../middleware/authMiddleware");
 
 const router = express.Router();
+
+// Public webhook — must stay unauthenticated, NOWPayments calls this directly
+router.post("/usdt/webhook", express.json(), usdtWebhook);
 
 router.use(protect);
 
@@ -21,12 +25,12 @@ router.post("/razorpay/verify", verifyRazorpayPayment);
 router.post("/paypal/create", createPaypalOrder);
 router.post("/paypal/capture", capturePaypalOrder);
 
-router.get("/usdt/networks", getUsdtNetworks);
-router.get("/usdt/wallet/:orderId", getUsdtWalletDetails);
-
-router.get("/internal-transfer/:platform/:orderId", getInternalTransferDetails);
+router.post("/usdt/create", createUsdtInvoice);
+router.get("/usdt/status/:orderId", getUsdtPaymentStatus);
 
 router.get("/upi/qr/:orderId", getUpiQrDetails);
 
+// Test mode only — see mockConfirmPayment for the production safety check
+router.post("/mock/confirm", mockConfirmPayment);
 
 module.exports = router;

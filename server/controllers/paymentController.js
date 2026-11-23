@@ -3,7 +3,6 @@ const axios = require("axios");
 const Razorpay = require("razorpay");
 const Order = require("../models/Order");
 const deliverGiftCard = require("../utils/deliverGiftCard");
-const { notifyAdminNewOrder } = require("../utils/notifyAdmin");
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -23,14 +22,6 @@ exports.createRazorpayOrder = async (req, res) => {
     const { orderId } = req.body;
     const order = await Order.findOne({ _id: orderId, user: req.user.id });
     if (!order) return res.status(404).json({ message: "Order not found" });
-    // Each payment endpoint only works on an order that was actually created
-    // for that payment method. Without this, a customer could create an
-    // ordinary order and then run it through a DIFFERENT gateway's endpoint
-    // — e.g. a PayPal sandbox account that pays with fake money — to get it
-    // marked paid.
-    if (!["razorpay", "card", "debit_card"].includes(order.paymentMethod) || order.orderStatus === "cancelled") {
-      return res.status(400).json({ message: "This order can't be paid with Razorpay." });
-    }
 
     const razorpayOrder = await razorpay.orders.create({
       amount: Math.round(order.totalAmount * 100), // paise
@@ -56,25 +47,12 @@ exports.createRazorpayOrder = async (req, res) => {
 // @route  POST /api/payments/razorpay/verify
 // @access Private
 // Called by the frontend from the Razorpay Checkout success handler.
-//
-// This does NOT auto-deliver the gift card. Like the manual UPI/USDT
-// flow, every Razorpay payment is checked by an admin in the dashboard
-// before delivery — this just confirms the payment signature is genuine
-// and puts the order in the "awaiting verification" queue.
 exports.verifyRazorpayPayment = async (req, res) => {
   try {
     const { orderId, razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
 
     const order = await Order.findOne({ _id: orderId, user: req.user.id });
     if (!order) return res.status(404).json({ message: "Order not found" });
-    // Each payment endpoint only works on an order that was actually created
-    // for that payment method. Without this, a customer could create an
-    // ordinary order and then run it through a DIFFERENT gateway's endpoint
-    // — e.g. a PayPal sandbox account that pays with fake money — to get it
-    // marked paid.
-    if (!["razorpay", "card", "debit_card"].includes(order.paymentMethod) || order.orderStatus === "cancelled") {
-      return res.status(400).json({ message: "This order can't be paid with Razorpay." });
-    }
 
     const expectedSignature = crypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
@@ -87,38 +65,14 @@ exports.verifyRazorpayPayment = async (req, res) => {
       return res.status(400).json({ message: "Payment verification failed" });
     }
 
-    // Signature checks out — the payment is genuine — but we still hold off
-    // on delivery until an admin confirms it in the dashboard, same as
-    // manual UPI/USDT. paymentStatus stays as-is (not "paid" yet).
+    order.paymentStatus = "paid";
     order.providerPaymentId = razorpay_payment_id;
     order.providerSignature = razorpay_signature;
-    order.verificationStatus = "submitted";
-
-    // Pull the UTR/bank reference number so it shows up in the admin
-    // dashboard next to the order (same column as manual UPI/USDT), instead
-    // of just Razorpay's own internal payment ID. Only UPI payments carry
-    // this — card/netbanking payments won't have an rrn, which is fine,
-    // that column just stays blank for those.
-    try {
-      const paymentDetails = await razorpay.payments.fetch(razorpay_payment_id);
-      const utr =
-        paymentDetails.acquirer_data?.rrn ||
-        paymentDetails.acquirer_data?.upi_transaction_id ||
-        paymentDetails.acquirer_data?.bank_transaction_id ||
-        null;
-      if (utr) order.utrNumber = utr;
-    } catch (fetchErr) {
-      console.error("Couldn't fetch Razorpay payment details for UTR:", fetchErr.message);
-    }
-
     await order.save();
-    await order.populate("user", "fullName email");
-    notifyAdminNewOrder(order).catch((err) => console.error("New order email failed:", err));
 
-    res.status(200).json({
-      message: "Payment received — we'll verify it and deliver your code shortly.",
-      order,
-    });
+    const deliveredOrder = await deliverGiftCard(order);
+
+    res.status(200).json({ message: "Payment verified", order: deliveredOrder });
   } catch (error) {
     console.error("Razorpay verify error:", error);
     res.status(500).json({ message: "Couldn't verify the payment." });
@@ -166,14 +120,6 @@ exports.createPaypalOrder = async (req, res) => {
     const { orderId } = req.body;
     const order = await Order.findOne({ _id: orderId, user: req.user.id });
     if (!order) return res.status(404).json({ message: "Order not found" });
-    // Each payment endpoint only works on an order that was actually created
-    // for that payment method. Without this, a customer could create an
-    // ordinary order and then run it through a DIFFERENT gateway's endpoint
-    // — e.g. a PayPal sandbox account that pays with fake money — to get it
-    // marked paid.
-    if (order.paymentMethod !== "paypal" || order.orderStatus === "cancelled") {
-      return res.status(400).json({ message: "This order can't be paid with PayPal." });
-    }
 
     const accessToken = await getPaypalAccessToken();
 
@@ -214,14 +160,6 @@ exports.capturePaypalOrder = async (req, res) => {
     const { orderId } = req.body;
     const order = await Order.findOne({ _id: orderId, user: req.user.id });
     if (!order) return res.status(404).json({ message: "Order not found" });
-    // Each payment endpoint only works on an order that was actually created
-    // for that payment method. Without this, a customer could create an
-    // ordinary order and then run it through a DIFFERENT gateway's endpoint
-    // — e.g. a PayPal sandbox account that pays with fake money — to get it
-    // marked paid.
-    if (order.paymentMethod !== "paypal" || order.orderStatus === "cancelled" || order.paymentStatus === "paid") {
-      return res.status(400).json({ message: "This order can't be paid with PayPal." });
-    }
 
     const accessToken = await getPaypalAccessToken();
     const { data } = await axios.post(
@@ -258,133 +196,87 @@ exports.refundPaypalCapture = async (order) => {
   );
 };
 
-/* --------------------- INTERNAL EXCHANGE TRANSFER -----------------------
-   Binance/Bybit "internal transfer" — sending USDT to another UID on the
-   SAME exchange, off-chain, so it's free and instant for the customer.
-   Requires the customer to also have an account on that exchange. Set
-   BINANCE_UID / BYBIT_UID in .env (whichever you support — each is only
-   offered at checkout if its UID is set).
-
-   There's no blockchain transaction here, so there's no tx hash to check —
-   instead the customer submits THEIR OWN UID (the account they sent from)
-   as proof. Admin matches that against the exchange's internal-transfer
-   history (sender UID + amount + time) to verify — see submitInternalTransferUid
-   in orderController.js and scripts/verifyManualPayment.js.
+/* ------------------------------- USDT --------------------------------
+   Crypto payments via NOWPayments (or any similar IPN-based gateway).
+   Set NOWPAYMENTS_API_KEY and NOWPAYMENTS_IPN_SECRET in .env.
 ------------------------------------------------------------------------ */
 
-const INTERNAL_TRANSFER_PLATFORMS = {
-  binance_uid: { label: "Binance", envVar: "BINANCE_UID" },
-  bybit_uid: { label: "Bybit", envVar: "BYBIT_UID" },
-};
-
-// @route  GET /api/payments/internal-transfer/:platform/:orderId
+// @route  POST /api/payments/usdt/create
 // @access Private
-exports.getInternalTransferDetails = async (req, res) => {
+exports.createUsdtInvoice = async (req, res) => {
   try {
-    const platform = INTERNAL_TRANSFER_PLATFORMS[req.params.platform];
-    if (!platform) {
-      return res.status(400).json({ message: "Unsupported transfer platform." });
-    }
-
-    const order = await Order.findOne({ _id: req.params.orderId, user: req.user.id });
+    const { orderId } = req.body;
+    const order = await Order.findOne({ _id: orderId, user: req.user.id });
     if (!order) return res.status(404).json({ message: "Order not found" });
 
-    const uid = process.env[platform.envVar];
-    if (!uid) {
-      return res
-        .status(500)
-        .json({ message: `${platform.label} internal transfer isn't configured on the server yet.` });
-    }
+    const { data } = await axios.post(
+      "https://api.nowpayments.io/v1/payment",
+      {
+        price_amount: order.totalAmount,
+        price_currency: "usd",
+        pay_currency: "usdttrc20",
+        order_id: order._id.toString(),
+        ipn_callback_url: `${process.env.SERVER_URL}/api/payments/usdt/webhook`,
+      },
+      { headers: { "x-api-key": process.env.NOWPAYMENTS_API_KEY } }
+    );
 
-    res.status(200).json({ platform: platform.label, uid, amount: order.totalAmount });
-  } catch (error) {
-    console.error("Internal transfer details error:", error);
-    res.status(500).json({ message: "Couldn't load transfer details." });
-  }
-};
-
-/* --------------------------- MANUAL USDT -------------------------------
-   No payment gateway involved — same idea as manual UPI below, but for
-   crypto. We show one of YOUR OWN wallet addresses (copy it from Binance,
-   Bybit, or any exchange/wallet that supports the chosen network) as a QR
-   code, and let the customer paste in the transaction hash after sending
-   USDT. Verification is manual — see scripts/verifyManualPayment.js.
-
-   Set whichever of these you actually support in .env — a network is only
-   offered at checkout if its address is configured:
-     USDT_WALLET_TRC20, USDT_WALLET_BEP20, USDT_WALLET_ERC20,
-     USDT_WALLET_TON, USDT_WALLET_SOL
-   USDT_WALLET_ADDRESS / USDT_NETWORK (the old single-network variables) are
-   still read as a fallback for whichever network they named, so existing
-   deployments don't lose their configured address on upgrade.
------------------------------------------------------------------------- */
-
-const USDT_NETWORKS = ["TRC20", "BEP20", "ERC20", "TON", "SOL"];
-
-// Every configured network → its wallet address, honoring the legacy single
-// USDT_WALLET_ADDRESS/USDT_NETWORK pair as a fallback for whichever one
-// network it named.
-const usdtWalletAddresses = () => {
-  const addresses = {
-    TRC20: process.env.USDT_WALLET_TRC20,
-    BEP20: process.env.USDT_WALLET_BEP20,
-    ERC20: process.env.USDT_WALLET_ERC20,
-    TON: process.env.USDT_WALLET_TON,
-    SOL: process.env.USDT_WALLET_SOL,
-  };
-  const legacyNetwork = (process.env.USDT_NETWORK || "").toUpperCase();
-  if (process.env.USDT_WALLET_ADDRESS && USDT_NETWORKS.includes(legacyNetwork) && !addresses[legacyNetwork]) {
-    addresses[legacyNetwork] = process.env.USDT_WALLET_ADDRESS;
-  }
-  return addresses;
-};
-
-// @route  GET /api/payments/usdt/networks
-// @access Private
-// Lists only the networks that actually have a wallet address configured,
-// so the checkout dropdown never offers one that would just 500 if picked.
-exports.getUsdtNetworks = async (req, res) => {
-  const addresses = usdtWalletAddresses();
-  const networks = USDT_NETWORKS.filter((network) => addresses[network]);
-  res.status(200).json({ networks });
-};
-
-// @route  GET /api/payments/usdt/wallet/:orderId?network=TRC20
-// @access Private
-exports.getUsdtWalletDetails = async (req, res) => {
-  try {
-    const order = await Order.findOne({ _id: req.params.orderId, user: req.user.id });
-    if (!order) return res.status(404).json({ message: "Order not found" });
-
-    const requestedNetwork = (req.query.network || "TRC20").toUpperCase();
-    if (!USDT_NETWORKS.includes(requestedNetwork)) {
-      return res.status(400).json({ message: "Unsupported USDT network." });
-    }
-
-    const walletAddress = usdtWalletAddresses()[requestedNetwork];
-    if (!walletAddress) {
-      return res.status(500).json({ message: `USDT (${requestedNetwork}) isn't configured on the server yet.` });
-    }
-
-    // Recorded now (not just at tx-hash submission) so it's on the order even
-    // if the customer never comes back to paste the transaction hash.
-    order.usdtNetwork = requestedNetwork;
+    order.providerOrderId = data.payment_id;
     await order.save();
 
-    const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(
-      walletAddress
-    )}`;
-
     res.status(200).json({
-      walletAddress,
-      network: requestedNetwork,
-      amount: order.totalAmount,
-      qrImageUrl,
+      paymentId: data.payment_id,
+      payAddress: data.pay_address,
+      payAmount: data.pay_amount,
+      payCurrency: data.pay_currency,
     });
   } catch (error) {
-    console.error("USDT wallet details error:", error);
-    res.status(500).json({ message: "Couldn't load USDT payment details." });
+    console.error("USDT invoice error:", error?.response?.data || error);
+    res.status(500).json({ message: "Couldn't create the crypto payment." });
   }
+};
+
+// @route  POST /api/payments/usdt/webhook
+// @access Public (verified via HMAC signature header from NOWPayments)
+exports.usdtWebhook = async (req, res) => {
+  try {
+    const signature = req.headers["x-nowpayments-sig"];
+    const expected = crypto
+      .createHmac("sha512", process.env.NOWPAYMENTS_IPN_SECRET)
+      .update(JSON.stringify(req.body, Object.keys(req.body).sort()))
+      .digest("hex");
+
+    if (signature !== expected) {
+      return res.status(401).json({ message: "Invalid signature" });
+    }
+
+    const { payment_id, payment_status } = req.body;
+    const order = await Order.findOne({ providerOrderId: String(payment_id) });
+    if (!order) return res.status(404).json({ message: "Order not found" });
+
+    if (payment_status === "finished" && order.paymentStatus !== "paid") {
+      order.paymentStatus = "paid";
+      order.providerPaymentId = String(payment_id);
+      await order.save();
+      await deliverGiftCard(order);
+    } else if (payment_status === "failed" || payment_status === "expired") {
+      order.paymentStatus = "failed";
+      await order.save();
+    }
+
+    res.status(200).json({ received: true });
+  } catch (error) {
+    console.error("USDT webhook error:", error);
+    res.status(500).json({ message: "Webhook processing failed" });
+  }
+};
+
+// @route  GET /api/payments/usdt/status/:orderId  (used by the frontend to poll)
+// @access Private
+exports.getUsdtPaymentStatus = async (req, res) => {
+  const order = await Order.findOne({ _id: req.params.orderId, user: req.user.id });
+  if (!order) return res.status(404).json({ message: "Order not found" });
+  res.status(200).json({ paymentStatus: order.paymentStatus, orderStatus: order.orderStatus });
 };
 
 /* ---------------------------- MANUAL UPI ------------------------------
@@ -422,5 +314,36 @@ exports.getUpiQrDetails = async (req, res) => {
   } catch (error) {
     console.error("UPI QR error:", error);
     res.status(500).json({ message: "Couldn't load UPI payment details." });
+  }
+};
+
+/* ------------------------------ TEST MODE ------------------------------
+   Lets you exercise the full order -> paid -> auto-delivery -> invoice
+   flow WITHOUT a real Razorpay/PayPal/NOWPayments account. Disabled
+   automatically in production (NODE_ENV=production) so it can never be
+   used to get a free gift card on a live store.
+------------------------------------------------------------------------ */
+
+// @route  POST /api/payments/mock/confirm
+// @access Private (and only when NODE_ENV !== "production")
+exports.mockConfirmPayment = async (req, res) => {
+  try {
+    if (process.env.NODE_ENV === "production") {
+      return res.status(403).json({ message: "Test mode is disabled in production" });
+    }
+
+    const { orderId } = req.body;
+    const order = await Order.findOne({ _id: orderId, user: req.user.id });
+    if (!order) return res.status(404).json({ message: "Order not found" });
+
+    order.paymentStatus = "paid";
+    order.providerPaymentId = `MOCK-${Date.now()}`;
+    await order.save();
+
+    const deliveredOrder = await deliverGiftCard(order);
+    res.status(200).json({ message: "Test payment confirmed", order: deliveredOrder });
+  } catch (error) {
+    console.error("Mock payment error:", error);
+    res.status(500).json({ message: "Couldn't simulate the payment." });
   }
 };

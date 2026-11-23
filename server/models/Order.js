@@ -4,7 +4,11 @@ const addressSchema = new mongoose.Schema(
   {
     fullName: { type: String, required: true },
     phone: { type: String, required: true },
-    email: { type: String, required: true },
+    line1: { type: String, required: true },
+    line2: String,
+    city: { type: String, required: true },
+    state: { type: String, required: true },
+    pincode: { type: String, required: true },
     country: { type: String, default: "India" },
   },
   { _id: false }
@@ -20,7 +24,7 @@ const orderItemSchema = new mongoose.Schema(
     brandName: { type: String, required: true },
     denomination: { type: Number, required: true },
     quantity: { type: Number, required: true, min: 1 },
-    unitPrice: { type: Number, required: true }, // in the order's `currency`, snapshotted at order time
+    unitPrice: { type: Number, required: true }, // INR, snapshotted at order time
     giftCardCodes: { type: [String], default: [] },
   },
   { _id: false }
@@ -47,7 +51,7 @@ const orderSchema = new mongoose.Schema(
 
     paymentMethod: {
       type: String,
-      enum: ["razorpay", "card", "debit_card", "upi_manual", "usdt", "binance_uid", "bybit_uid", "paypal"],
+      enum: ["razorpay", "card", "debit_card", "upi_manual", "usdt", "paypal"],
       required: true,
     },
 
@@ -62,26 +66,6 @@ const orderSchema = new mongoose.Schema(
     // the actual bank/UPI statement and mark it verified (see
     // scripts/verifyManualPayment.js) before the gift card is delivered.
     utrNumber: String,
-
-    // Manual USDT flow: same idea as manual UPI, but customer sends USDT to
-    // your own wallet address (e.g. copied from Binance/Bybit) and pastes in
-    // the transaction hash/ID here. Someone has to check it on a block
-    // explorer and mark it verified before the gift card is delivered.
-    usdtTxId: String,
-    // Which chain the wallet address shown to the customer was on (TRC20,
-    // BEP20, ERC20, TON, SOL — see getUsdtWalletDetails in
-    // paymentController.js). Needed at verification time: the same tx hash
-    // format can exist on more than one chain, so admin needs to know which
-    // block explorer to check it on.
-    usdtNetwork: String,
-
-    // Internal exchange transfer (Binance/Bybit): no blockchain involved, so
-    // there's no tx hash to check — instead the customer sends from their
-    // own account to ours (see BINANCE_UID/BYBIT_UID in .env) and submits
-    // THEIR OWN UID here. Admin looks up the exchange's internal-transfer
-    // history and matches it by sender UID + amount + time.
-    internalTransferUid: String,
-
     verificationStatus: {
       type: String,
       enum: ["not_submitted", "submitted", "verified", "rejected"],
@@ -105,12 +89,6 @@ const orderSchema = new mongoose.Schema(
 
     invoiceNumber: { type: String, unique: true, sparse: true },
 
-    // A customer's "Cancel order" click no longer cancels immediately — it
-    // raises this flag and waits for an admin to approve (cancel + refund)
-    // or reject (order proceeds to delivery as normal) it. See cancelOrder
-    // in orderController.js and approveCancelRequest/rejectCancelRequest in
-    // adminController.js.
-    cancelRequested: { type: Boolean, default: false },
     cancelReason: String,
     refundStatus: {
       type: String,

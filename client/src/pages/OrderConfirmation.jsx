@@ -2,10 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { getOrderById, downloadInvoice } from "../services/orderService";
 import { getDisplayStatus } from "../utils/orderStatus";
-import { reorderItems } from "../utils/reorderItems";
 import { useCart } from "../context/CartContext";
-import { formatMoney } from "../data/catalog";
-import Seo from "../components/Seo";
 import "../styles/Shop.css";
 
 const STATUS_COPY = {
@@ -46,8 +43,6 @@ const OrderConfirmation = () => {
   const [order, setOrder] = useState(null);
   const [error, setError] = useState("");
   const [downloading, setDownloading] = useState(false);
-  const [reordering, setReordering] = useState(false);
-  const [reorderNotice, setReorderNotice] = useState("");
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -72,30 +67,11 @@ const OrderConfirmation = () => {
     }
   };
 
-  const handleReorder = async () => {
-    setReordering(true);
-    setReorderNotice("");
-    try {
-      const { addedAny, limitedItems } = await reorderItems(order, addToCart);
-      if (limitedItems.length > 0) {
-        const detail = limitedItems
-          .map((li) =>
-            li.available > 0
-              ? `${li.brandName} ₹${li.denomination} (only ${li.available} available, added ${li.available})`
-              : `${li.brandName} ₹${li.denomination} (out of stock, not added)`
-          )
-          .join("; ");
-        setReorderNotice(`Some quantities were reduced to match current stock: ${detail}`);
-        // Don't auto-navigate away — let them read the warning first, then
-        // go to the cart themselves when ready.
-      } else if (addedAny) {
-        navigate("/cart");
-      }
-    } catch (err) {
-      setReorderNotice("Couldn't check current stock. Please try again.");
-    } finally {
-      setReordering(false);
-    }
+  const handleReorder = () => {
+    (order.items || [])
+      .filter((item) => item && item.denomination != null)
+      .forEach((item) => addToCart(item.brand, item.denomination, item.quantity || 1));
+    navigate("/cart");
   };
 
   if (error) {
@@ -121,20 +97,11 @@ const OrderConfirmation = () => {
 
   const status = getDisplayStatus(order);
   const copy = STATUS_COPY[status.key] || STATUS_COPY.placed;
-  // Every manual-review payment method (UPI, USDT, Binance/Bybit internal
-  // transfer, and Razorpay too — no order auto-delivers anymore) shows the
-  // same "we're checking it" state until an admin verifies it in the dashboard.
-  const isManualReview = ["upi_manual", "usdt", "binance_uid", "bybit_uid", "razorpay"].includes(order.paymentMethod);
-  const showUtrPending = isManualReview && order.verificationStatus === "submitted";
+  const showUtrPending = order.paymentMethod === "upi_manual" && order.verificationStatus === "submitted";
   const items = (Array.isArray(order.items) ? order.items : []).filter((item) => item && item.denomination != null);
-  // A historical order is shown in the currency it was actually charged in,
-  // using the unit price snapshotted at order time — never the shopper's
-  // current active currency (which may have changed since).
-  const currency = order.currency || "INR";
 
   return (
     <div className="buy-page">
-      <Seo title="Order Confirmation — GIFTKART" path="/order-confirmation" noindex />
       <div className="confirmation-card">
         <span className={`order-status-pill status-${status.key}`}>
           {showUtrPending ? "Verification pending" : status.label}
@@ -142,7 +109,7 @@ const OrderConfirmation = () => {
         <h1 className="confirmation-heading">{copy.heading}</h1>
         <p className="auth-form-sub">
           {showUtrPending
-            ? "We've received your payment details — we'll verify it and deliver your code shortly."
+            ? "We've received your UTR — we'll verify it against our bank statement and deliver your code shortly."
             : copy.sub}
         </p>
 
@@ -156,13 +123,13 @@ const OrderConfirmation = () => {
               <span>
                 {item.brandName || "Gift Card"} ₹{item.denomination.toLocaleString("en-IN")} × {item.quantity ?? 1}
               </span>
-              <strong>{formatMoney((item.unitPrice ?? item.denomination) * (item.quantity ?? 1), currency)}</strong>
+              <strong>₹{(item.denomination * (item.quantity ?? 1)).toLocaleString("en-IN")}</strong>
             </div>
           ))}
           <div className="confirmation-row" style={{ borderTop: "1px solid var(--card-border)", marginTop: "0.5rem", paddingTop: "0.5rem" }}>
             <span>Total paid</span>
             <strong>
-              {formatMoney(order.totalAmount ?? 0, currency)}
+              {order.currency || "INR"} {(order.totalAmount ?? 0).toLocaleString("en-IN")}
             </strong>
           </div>
           <div className="confirmation-row">
@@ -192,14 +159,9 @@ const OrderConfirmation = () => {
           >
             {downloading ? "Preparing PDF…" : "Download invoice"}
           </button>
-          <button className="navbar-btn navbar-btn-ghost" onClick={handleReorder} disabled={reordering}>
-            {reordering ? "Checking stock…" : "Reorder these items"}
+          <button className="navbar-btn navbar-btn-ghost" onClick={handleReorder}>
+            Reorder these items
           </button>
-          {reorderNotice && (
-            <p className="shop-status shop-status-error" style={{ textAlign: "left", fontSize: "0.82rem" }}>
-              {reorderNotice} <Link to="/cart">Go to cart →</Link>
-            </p>
-          )}
           <Link to="/" className="navbar-btn navbar-btn-ghost" style={{ textAlign: "center" }}>
             Go to homepage
           </Link>

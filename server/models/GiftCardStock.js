@@ -23,20 +23,6 @@ const giftCardStockSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    // Set the moment an order is placed (before payment) so a second
-    // customer can't also "buy" the same unit while this one is still
-    // going through checkout/payment/manual UPI review. Cleared again if
-    // the order is cancelled, delivered, or abandoned (see
-    // utils/stockReservation.js).
-    reservedFor: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Order",
-      default: null,
-    },
-    reservedAt: {
-      type: Date,
-      default: null,
-    },
     order: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Order",
@@ -46,14 +32,7 @@ const giftCardStockSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Fast lookup of the next available/reservable code for a brand + denomination
-giftCardStockSchema.index({ brand: 1, denomination: 1, isUsed: 1, reservedFor: 1 });
-
-// Same four fields, availability first, for the catalog's bulk stock-count
-// aggregation (utils/stockReservation.js → getAvailableCounts). The index above
-// can't serve it: that query filters on isUsed/reservedFor without a brand, so
-// it isn't an index prefix and Mongo would scan the collection. With this
-// ordering the whole count is answered from the index alone.
-giftCardStockSchema.index({ isUsed: 1, reservedFor: 1, brand: 1, denomination: 1 });
+// Fast lookup of the next available code for a brand + denomination
+giftCardStockSchema.index({ brand: 1, denomination: 1, isUsed: 1 });
 
 module.exports = mongoose.model("GiftCardStock", giftCardStockSchema);
