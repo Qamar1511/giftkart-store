@@ -51,7 +51,7 @@ export const DEFAULT_CURRENCY = "INR";
 // paid on-chain. Checkout shows only the methods for the shopper's currency.
 export const CURRENCY_PAYMENT_METHODS = {
   INR: ["razorpay", "card", "debit_card", "upi_manual"],
-  USDT: ["usdt"],
+  USDT: ["usdt", "binance_uid", "bybit_uid"],
 };
 
 export const isCurrency = (code) => CURRENCY_CODES.includes(code);

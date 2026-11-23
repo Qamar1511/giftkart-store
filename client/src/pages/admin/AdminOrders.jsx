@@ -1,16 +1,31 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { getAdminOrders, verifyUpiOrder, rejectUpiOrder } from "../../services/adminService";
+import {
+  getAdminOrders,
+  verifyUpiOrder,
+  rejectUpiOrder,
+  approveCancelRequest,
+  rejectCancelRequest,
+  exportDeliveredOrders,
+} from "../../services/adminService";
 import { getDisplayStatus } from "../../utils/orderStatus";
 import { formatMoney } from "../../data/catalog";
 
 const FILTERS = [
   { key: "", label: "All orders" },
   { key: "upi_pending", label: "Manual — needs verification" },
+  { key: "cancel_pending", label: "Cancellation requested" },
   { key: "delivered", label: "Delivered" },
   { key: "cancelled", label: "Cancelled" },
 ];
 const VALID_FILTER_KEYS = FILTERS.map((f) => f.key);
+
+const EXPORT_RANGES = [
+  { key: "month", label: "This month" },
+  { key: "6months", label: "Last 6 months" },
+  { key: "year", label: "This year" },
+  { key: "custom", label: "Custom dates" },
+];
 
 const AdminOrders = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -35,6 +50,13 @@ const AdminOrders = () => {
   const [error, setError] = useState("");
   const [actioningId, setActioningId] = useState(null);
   const [notice, setNotice] = useState("");
+
+  // ---- Delivered-orders export (Excel/PDF) ----
+  const [exportRange, setExportRange] = useState("month");
+  const [exportFrom, setExportFrom] = useState("");
+  const [exportTo, setExportTo] = useState("");
+  const [exporting, setExporting] = useState(""); // "csv" | "pdf" | ""
+  const [exportError, setExportError] = useState("");
 
   // Keep the URL in sync so the tab you land on is also the tab in the
   // address bar (bookmarkable, and matches whatever the dashboard linked to).
@@ -94,6 +116,62 @@ const AdminOrders = () => {
     }
   };
 
+  // Approve: cancels the order and refunds it — see approveCancelRequest in
+  // adminController.js for exactly how the refund is issued per payment method.
+  const handleApproveCancel = async (orderId) => {
+    if (!window.confirm("Approve this cancellation? The order will be cancelled and refunded.")) {
+      return;
+    }
+    setActioningId(orderId);
+    setNotice("");
+    setError("");
+    try {
+      const data = await approveCancelRequest(orderId);
+      setNotice(data.message);
+      load(filter);
+    } catch (err) {
+      setError(err.response?.data?.message || "Couldn't approve this cancellation.");
+    } finally {
+      setActioningId(null);
+    }
+  };
+
+  // Reject: the cancellation request is dismissed and the order proceeds —
+  // if payment is already verified, this delivers the gift card right away.
+  const handleRejectCancel = async (orderId) => {
+    if (!window.confirm("Reject this cancellation? The order will proceed to delivery as normal.")) {
+      return;
+    }
+    setActioningId(orderId);
+    setNotice("");
+    setError("");
+    try {
+      const data = await rejectCancelRequest(orderId);
+      setNotice(data.message);
+      load(filter);
+    } catch (err) {
+      setError(err.response?.data?.message || "Couldn't reject this cancellation.");
+    } finally {
+      setActioningId(null);
+    }
+  };
+
+  const handleExport = async (format) => {
+    setExportError("");
+    if (exportRange === "custom" && (!exportFrom || !exportTo)) {
+      setExportError("Pick both a from and to date for a custom range.");
+      return;
+    }
+    setExporting(format);
+    try {
+      await exportDeliveredOrders(format, exportRange, { from: exportFrom, to: exportTo });
+    } catch (err) {
+      setExportError("Couldn't generate that export. Please try again.");
+    } finally {
+      setExporting("");
+    }
+  };
+
   return (
     <div>
       <h1 className="admin-page-title">Orders</h1>
@@ -102,6 +180,56 @@ const AdminOrders = () => {
         For UPI/USDT, check the UTR / transaction ID shown below against your bank/UPI app or
         block explorer. For Razorpay, check the payment in your Razorpay dashboard.
       </p>
+
+      <div className="admin-card">
+        <h2 className="admin-card-title">Export delivered orders</h2>
+        <div className="admin-filter-tabs">
+          {EXPORT_RANGES.map((r) => (
+            <button
+              key={r.key}
+              type="button"
+              className={`admin-filter-tab ${exportRange === r.key ? "is-active" : ""}`}
+              onClick={() => setExportRange(r.key)}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
+
+        {exportRange === "custom" && (
+          <div className="admin-form-grid" style={{ marginBottom: "1rem", maxWidth: "28rem" }}>
+            <label className="admin-field">
+              <span>From</span>
+              <input type="date" value={exportFrom} onChange={(e) => setExportFrom(e.target.value)} />
+            </label>
+            <label className="admin-field">
+              <span>To</span>
+              <input type="date" value={exportTo} onChange={(e) => setExportTo(e.target.value)} />
+            </label>
+          </div>
+        )}
+
+        {exportError && <div className="admin-error">{exportError}</div>}
+
+        <div className="admin-table-actions" style={{ flexDirection: "row" }}>
+          <button
+            type="button"
+            className="admin-btn admin-btn-approve"
+            disabled={exporting !== ""}
+            onClick={() => handleExport("csv")}
+          >
+            {exporting === "csv" ? "Preparing…" : "⬇ Download Excel (CSV)"}
+          </button>
+          <button
+            type="button"
+            className="admin-btn"
+            disabled={exporting !== ""}
+            onClick={() => handleExport("pdf")}
+          >
+            {exporting === "pdf" ? "Preparing…" : "⬇ Download PDF"}
+          </button>
+        </div>
+      </div>
 
       <div className="admin-filter-tabs">
         {FILTERS.map((f) => (
@@ -142,8 +270,9 @@ const AdminOrders = () => {
               {orders.map((order) => {
                 const status = getDisplayStatus(order);
                 const isUpiPending =
-                  ["upi_manual", "usdt", "razorpay"].includes(order.paymentMethod) &&
+                  ["upi_manual", "usdt", "binance_uid", "bybit_uid", "razorpay"].includes(order.paymentMethod) &&
                   order.verificationStatus === "submitted";
+                const hasCancelRequest = order.cancelRequested === true;
                 const items = Array.isArray(order.items) ? order.items : [];
                 return (
                   <tr key={order._id}>
@@ -174,31 +303,78 @@ const AdminOrders = () => {
                     </td>
                     <td>{(order.paymentMethod || "—").replace("_", " ").toUpperCase()}</td>
                     <td>
-                      <span className={`admin-status-pill status-${isUpiPending ? "refund_pending" : status.key}`}>
-                        {isUpiPending ? "Verification pending" : status.label}
+                      <span
+                        className={`admin-status-pill status-${
+                          hasCancelRequest ? "refund_pending" : isUpiPending ? "refund_pending" : status.key
+                        }`}
+                      >
+                        {hasCancelRequest ? "Cancellation requested" : isUpiPending ? "Verification pending" : status.label}
                       </span>
+                      {hasCancelRequest && order.cancelReason && (
+                        <>
+                          <br />
+                          <span className="admin-table-muted">"{order.cancelReason}"</span>
+                        </>
+                      )}
                     </td>
-                    <td className="admin-table-mono">{order.utrNumber || order.usdtTxId || "—"}</td>
+                    <td className="admin-table-mono">
+                      {order.utrNumber || order.usdtTxId || order.internalTransferUid || "—"}
+                      {order.paymentMethod === "usdt" && order.usdtNetwork && (
+                        <>
+                          <br />
+                          <span className="admin-table-muted">{order.usdtNetwork}</span>
+                        </>
+                      )}
+                      {(order.paymentMethod === "binance_uid" || order.paymentMethod === "bybit_uid") && (
+                        <>
+                          <br />
+                          <span className="admin-table-muted">
+                            Sender's {order.paymentMethod === "binance_uid" ? "Binance" : "Bybit"} UID
+                          </span>
+                        </>
+                      )}
+                    </td>
                     <td>
-                      {isUpiPending && (
+                      {hasCancelRequest ? (
                         <div className="admin-table-actions">
                           <button
                             type="button"
                             className="admin-btn admin-btn-approve"
                             disabled={actioningId === order._id}
-                            onClick={() => handleVerify(order._id)}
+                            onClick={() => handleApproveCancel(order._id)}
                           >
-                            {actioningId === order._id ? "Working…" : "Verify & deliver"}
+                            {actioningId === order._id ? "Working…" : "Approve & refund"}
                           </button>
                           <button
                             type="button"
                             className="admin-btn admin-btn-reject"
                             disabled={actioningId === order._id}
-                            onClick={() => handleReject(order._id)}
+                            onClick={() => handleRejectCancel(order._id)}
                           >
-                            Reject
+                            Reject & deliver
                           </button>
                         </div>
+                      ) : (
+                        isUpiPending && (
+                          <div className="admin-table-actions">
+                            <button
+                              type="button"
+                              className="admin-btn admin-btn-approve"
+                              disabled={actioningId === order._id}
+                              onClick={() => handleVerify(order._id)}
+                            >
+                              {actioningId === order._id ? "Working…" : "Verify & deliver"}
+                            </button>
+                            <button
+                              type="button"
+                              className="admin-btn admin-btn-reject"
+                              disabled={actioningId === order._id}
+                              onClick={() => handleReject(order._id)}
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        )
                       )}
                     </td>
                   </tr>

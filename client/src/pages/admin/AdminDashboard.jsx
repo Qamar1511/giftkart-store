@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getSession } from "../../services/authService";
-import { getAdminOrders, getMonthlyRevenue, getStockSummary, getContactQueries } from "../../services/adminService";
+import { getAdminOrders, getStockSummary, getContactQueries } from "../../services/adminService";
 import { formatMoney, CURRENCY_CODES } from "../../data/catalog";
 
 const LOW_STOCK_THRESHOLD = 5;
@@ -9,7 +9,6 @@ const LOW_STOCK_THRESHOLD = 5;
 const AdminDashboard = () => {
   const session = getSession();
   const [orders, setOrders] = useState(null);
-  const [monthlyRevenue, setMonthlyRevenue] = useState(null);
   const [stock, setStock] = useState(null);
   const [queries, setQueries] = useState(null);
   const [error, setError] = useState("");
@@ -17,14 +16,12 @@ const AdminDashboard = () => {
   useEffect(() => {
     const loadAll = async () => {
       try {
-        const [ordersData, monthlyRevenueData, stockData, queriesData] = await Promise.all([
+        const [ordersData, stockData, queriesData] = await Promise.all([
           getAdminOrders(),
-          getMonthlyRevenue(),
           getStockSummary(),
           getContactQueries(),
         ]);
         setOrders(ordersData);
-        setMonthlyRevenue(monthlyRevenueData);
         setStock(stockData);
         setQueries(queriesData);
       } catch (err) {
@@ -34,7 +31,7 @@ const AdminDashboard = () => {
     loadAll();
   }, []);
 
-  const loading = orders === null || monthlyRevenue === null || stock === null || queries === null;
+  const loading = orders === null || stock === null || queries === null;
 
   // ---- Derived stats (all computed client-side from the same data the
   // Orders / Stock / Queries pages already use — no extra backend route
@@ -54,15 +51,6 @@ const AdminDashboard = () => {
   const revenueLabel =
     CURRENCY_CODES.filter((c) => revenueByCurrency[c]).map((c) => formatMoney(revenueByCurrency[c], c)).join(" · ") ||
     formatMoney(0, "INR");
-
-  // Monthly revenue breakdown for the "Revenue collected" section — comes
-  // from a dedicated aggregation endpoint (see getMonthlyRevenue) so it
-  // covers every paid order, not just the most recent 200 that getAdminOrders
-  // returns for the orders table.
-  const monthlyRevenueRows = (monthlyRevenue || [])
-    .map((row) => ({ ...row, date: new Date(row.year, row.month - 1, 1) }))
-    .sort((a, b) => b.date - a.date);
-  const formatMonthLabel = (date) => date.toLocaleDateString("en-IN", { month: "long", year: "numeric" });
 
   const pendingVerification =
     orders?.filter((o) => o.paymentMethod === "upi_manual" && o.verificationStatus === "submitted")
@@ -85,7 +73,7 @@ const AdminDashboard = () => {
       label: "Revenue collected",
       value: revenueLabel,
       icon: "💰",
-      to: "/admin/orders?status=all",
+      to: "/admin/revenue",
     },
     {
       label: "Pending UPI verification",
@@ -104,7 +92,7 @@ const AdminDashboard = () => {
       label: "Low stock items",
       value: lowStockItems.length,
       icon: "⚠️",
-      to: "/admin/stock",
+      to: "/admin/low-stock",
       highlight: lowStockItems.length > 0,
     },
     {
@@ -140,61 +128,6 @@ const AdminDashboard = () => {
               </Link>
             ))}
           </div>
-
-          {monthlyRevenueRows.length > 0 && (
-            <div className="admin-card">
-              <h2 className="admin-card-title">💰 Revenue collected — by month</h2>
-              <div className="admin-table-wrap">
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>Month</th>
-                      <th>Revenue</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {monthlyRevenueRows.map((row) => (
-                      <tr key={row.monthKey}>
-                        <td>{formatMonthLabel(row.date)}</td>
-                        <td className="admin-table-mono">
-                          {CURRENCY_CODES.filter((c) => row.totals[c])
-                            .map((c) => formatMoney(row.totals[c], c))
-                            .join(" · ") || formatMoney(0, "INR")}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {lowStockItems.length > 0 && (
-            <div className="admin-card">
-              <h2 className="admin-card-title">⚠️ Low stock — top up soon</h2>
-              <div className="admin-table-wrap">
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>Brand</th>
-                      <th>Denomination</th>
-                      <th>Codes left</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {lowStockItems.map((item) => (
-                      <tr key={`${item.brand}-${item.denomination}`}>
-                        <td>{item.brandName}</td>
-                        <td>₹{item.denomination}</td>
-                        <td className="admin-table-mono">{item.available}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <Link to="/admin/stock" className="admin-link-btn">Add more stock →</Link>
-            </div>
-          )}
         </>
       )}
     </div>

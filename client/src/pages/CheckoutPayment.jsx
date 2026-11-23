@@ -1,21 +1,24 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useCurrency } from "../context/CurrencyContext";
-import { createOrder, submitUtr, submitUsdtTx } from "../services/orderService";
+import { createOrder, submitUtr, submitUsdtTx, submitInternalTransferUid } from "../services/orderService";
 import {
   createRazorpayOrder,
   openRazorpayCheckout,
   loadRazorpayCheckout,
   verifyRazorpayPayment,
   createPaypalOrder,
+  getUsdtNetworks,
   getUsdtWalletDetails,
+  getInternalTransferDetails,
   getUpiQrDetails,
   mockConfirmPayment, // eslint-disable-line no-unused-vars -- kept for potential future dev/testing use
 } from "../services/paymentService";
 import { getSession } from "../services/authService";
 import { getBrand, CURRENCY_PAYMENT_METHODS } from "../data/catalog";
 import Seo from "../components/Seo";
+import Captcha from "../components/Captcha";
 import "../styles/Shop.css";
 
 // Only these methods are live. Anything listed in PAYMENT_METHODS but missing
@@ -23,13 +26,30 @@ import "../styles/Shop.css";
 // the payment page at the exact moment a shopper decides whether to trust the
 // store, and it advertised an unfinished site for no gain. Nothing is lost by
 // hiding them: the Razorpay tile already takes cards, netbanking and wallets.
-const ENABLED_METHODS = ["upi_manual", "usdt", "razorpay"];
+const ENABLED_METHODS = ["upi_manual", "usdt", "binance_uid", "bybit_uid", "razorpay"];
+
+// Full names shown next to the network code in the dropdown — helps avoid
+// someone picking the wrong chain, which is an unrecoverable mistake once
+// USDT has actually been sent.
+const USDT_NETWORK_LABELS = {
+  TRC20: "TRC20 (Tron)",
+  BEP20: "BEP20 (BNB Smart Chain)",
+  ERC20: "ERC20 (Ethereum)",
+  TON: "TON (The Open Network)",
+  SOL: "SOL (Solana)",
+};
 
 const PAYMENT_METHODS = [
   {
     id: "razorpay",
     label: "Razorpay",
-    hint: "Cards, UPI, Netbanking, Wallets",
+    // Paused: Razorpay flagged/disabled our account for suspicious activity
+    // review, so this is temporarily unusable — still shown so shoppers know
+    // it exists, but greyed out and unclickable (see the `disabled` checks in
+    // methodsForCurrency, defaultMethodFor and the tile's onClick/disabled
+    // props below). Manual UPI is enabled below to cover UPI in the meantime.
+    disabled: true,
+    hint: "Temporarily unavailable",
     iconBg: "#eef2ff",
     icon: (
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
@@ -53,7 +73,7 @@ const PAYMENT_METHODS = [
   {
     id: "usdt",
     label: "USDT",
-    hint: "Crypto (TRC20)",
+    hint: "Crypto — choose network",
     iconBg: "#e7f9f1",
     icon: (
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
@@ -62,6 +82,30 @@ const PAYMENT_METHODS = [
           d="M13 9.6v-2h4V6H7v1.6h4v2c-3.2.15-5.6.8-5.6 1.55S7.8 12.5 11 12.65v4.35h2v-4.35c3.2-.15 5.6-.8 5.6-1.55S16.2 9.75 13 9.6Zm-1 2.65c-2.9 0-5.25-.5-5.25-1.1s2.35-1.1 5.25-1.1 5.25.5 5.25 1.1-2.35 1.1-5.25 1.1Z"
           fill="#fff"
         />
+      </svg>
+    ),
+  },
+  {
+    id: "binance_uid",
+    label: "Binance Internal Transfer",
+    hint: "Instant, free — same exchange only",
+    iconBg: "#fff8e1",
+    icon: (
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
+        <path d="M12 2 2 12l10 10 10-10L12 2Z" fill="#f0b90b" />
+        <path d="M12 8.5 8.5 12 12 15.5 15.5 12 12 8.5Z" fill="#fff" />
+      </svg>
+    ),
+  },
+  {
+    id: "bybit_uid",
+    label: "Bybit Internal Transfer",
+    hint: "Instant, free — same exchange only",
+    iconBg: "#fff0f0",
+    icon: (
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
+        <rect x="2" y="2" width="20" height="20" rx="4" fill="#f7a600" />
+        <path d="M7 8h4.5c1.9 0 3 .9 3 2.4 0 1-.5 1.7-1.3 2 1 .3 1.6 1.1 1.6 2.2 0 1.6-1.2 2.6-3.1 2.6H7V8Zm2 3.6h2.2c.8 0 1.2-.4 1.2-1s-.4-1-1.2-1H9v2Zm0 3.9h2.4c.9 0 1.4-.4 1.4-1.1s-.5-1.1-1.4-1.1H9v2.2Z" fill="#fff" />
       </svg>
     ),
   },
@@ -120,9 +164,13 @@ const methodsForCurrency = (currency) => {
 };
 
 // The method to pre-select (INR → Razorpay, USDT → USDT). Razorpay leads the
-// INR list because it settles automatically — manual UPI still works, but it
-// needs a UTR to be checked by hand before delivery.
-const defaultMethodFor = (currency) => methodsForCurrency(currency)[0]?.id || "upi_manual";
+// INR list because it settles automatically — manual UPI still works when
+// it isn't paused, but it needs a UTR to be checked by hand before delivery.
+// Falls back past any paused/disabled method so one is never pre-selected.
+const defaultMethodFor = (currency) => {
+  const methods = methodsForCurrency(currency);
+  return (methods.find((m) => !m.disabled) || methods[0])?.id || "upi_manual";
+};
 
 const CheckoutPayment = () => {
   const navigate = useNavigate();
@@ -137,6 +185,8 @@ const CheckoutPayment = () => {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [usdtInvoice, setUsdtInvoice] = useState(null);
+  const [usdtNetworks, setUsdtNetworks] = useState([]);
+  const [usdtNetwork, setUsdtNetwork] = useState("");
   const [txIdValue, setTxIdValue] = useState("");
   const [txIdSubmitting, setTxIdSubmitting] = useState(false);
   const [txIdSubmitted, setTxIdSubmitted] = useState(false);
@@ -144,6 +194,16 @@ const CheckoutPayment = () => {
   const [utrValue, setUtrValue] = useState("");
   const [utrSubmitting, setUtrSubmitting] = useState(false);
   const [utrSubmitted, setUtrSubmitted] = useState(false);
+  // One captcha per place a captcha is asked for: the Pay button, and the
+  // three payment-proof forms (UTR / transaction hash / exchange UID).
+  const payCaptchaRef = useRef(null);
+  const utrCaptchaRef = useRef(null);
+  const txCaptchaRef = useRef(null);
+  const uidCaptchaRef = useRef(null);
+  const [internalTransferInvoice, setInternalTransferInvoice] = useState(null);
+  const [uidValue, setUidValue] = useState("");
+  const [uidSubmitting, setUidSubmitting] = useState(false);
+  const [uidSubmitted, setUidSubmitted] = useState(false);
 
   useEffect(() => {
     if (!address || items.length === 0) {
@@ -153,16 +213,29 @@ const CheckoutPayment = () => {
   }, []);
 
   // If the shopper switches buying currency (e.g. via the navbar) while on this
-  // page, the previously-selected tile may no longer be valid for that currency.
-  // Snap the selection back to that currency's default method (INR → Razorpay,
-  // USDT → USDT) so it always matches what the server will accept.
+  // page, the previously-selected tile may no longer be valid for that currency
+  // — or may have since been paused. Snap the selection back to that currency's
+  // default method (INR → Razorpay, USDT → USDT) so it always matches what the
+  // server will accept.
   useEffect(() => {
-    const allowed = CURRENCY_PAYMENT_METHODS[currency] || [];
-    if (!allowed.includes(paymentMethod)) {
+    const current = methodsForCurrency(currency).find((m) => m.id === paymentMethod);
+    if (!current || current.disabled) {
       setPaymentMethod(defaultMethodFor(currency));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currency]);
+
+  // Fetch which USDT networks are actually configured server-side, once —
+  // the dropdown only ever offers these, never a hardcoded list, so it can't
+  // show a network with no wallet address behind it.
+  useEffect(() => {
+    getUsdtNetworks()
+      .then((networks) => {
+        setUsdtNetworks(networks);
+        setUsdtNetwork((current) => current || networks[0] || "");
+      })
+      .catch(() => {}); // USDT tile just won't be usable if this fails; no need to surface an error yet
+  }, []);
 
   // Razorpay's checkout.js is no longer in index.html (it cost every visitor a
   // few hundred KB of third-party JS, which hurt mobile most). Fetch it as soon
@@ -186,45 +259,93 @@ const CheckoutPayment = () => {
       setError("Enter the 12-digit UTR / reference number from your UPI app.");
       return;
     }
+    const captcha = utrCaptchaRef.current?.getValue();
+    if (!captcha?.captchaAnswer) {
+      setError("Please enter the characters shown in the captcha image.");
+      return;
+    }
     setUtrSubmitting(true);
     setError("");
     try {
-      await submitUtr(upiInvoice.dbOrderId, utrValue.trim());
+      await submitUtr(upiInvoice.dbOrderId, utrValue.trim(), captcha);
       clearCart();
       setUtrSubmitted(true);
       setTimeout(() => navigate(`/order-confirmation/${upiInvoice.dbOrderId}`), 1200);
     } catch (err) {
       setError(err.response?.data?.message || "Couldn't submit the UTR. Please try again.");
       setUtrSubmitting(false);
+      utrCaptchaRef.current?.reload(); // the server spends a captcha when it checks it
     }
   };
 
   const handleTxIdSubmit = async (e) => {
     e.preventDefault();
-    if (txIdValue.trim().length < 10) {
-      setError("Enter the transaction hash / ID from your wallet or exchange app.");
+    // Same rule the server enforces (utils/security.js isValidTxHash) — checked
+    // here first so an obviously wrong value doesn't use up the captcha.
+    if (!/^[A-Za-z0-9+/=_-]{20,128}$/.test(txIdValue.trim())) {
+      setError("Enter the transaction hash / ID from your wallet or exchange app (one unbroken string, no spaces).");
+      return;
+    }
+    const captcha = txCaptchaRef.current?.getValue();
+    if (!captcha?.captchaAnswer) {
+      setError("Please enter the characters shown in the captcha image.");
       return;
     }
     setTxIdSubmitting(true);
     setError("");
     try {
-      await submitUsdtTx(usdtInvoice.dbOrderId, txIdValue.trim());
+      await submitUsdtTx(usdtInvoice.dbOrderId, txIdValue.trim(), captcha);
       clearCart();
       setTxIdSubmitted(true);
       setTimeout(() => navigate(`/order-confirmation/${usdtInvoice.dbOrderId}`), 1200);
     } catch (err) {
       setError(err.response?.data?.message || "Couldn't submit the transaction ID. Please try again.");
       setTxIdSubmitting(false);
+      txCaptchaRef.current?.reload();
+    }
+  };
+
+  const handleUidSubmit = async (e) => {
+    e.preventDefault();
+    if (!/^[A-Za-z0-9_-]{3,30}$/.test(uidValue.trim())) {
+      setError("Enter the UID of the account you sent from (letters and numbers only).");
+      return;
+    }
+    const captcha = uidCaptchaRef.current?.getValue();
+    if (!captcha?.captchaAnswer) {
+      setError("Please enter the characters shown in the captcha image.");
+      return;
+    }
+    setUidSubmitting(true);
+    setError("");
+    try {
+      await submitInternalTransferUid(internalTransferInvoice.dbOrderId, uidValue.trim(), captcha);
+      clearCart();
+      setUidSubmitted(true);
+      setTimeout(() => navigate(`/order-confirmation/${internalTransferInvoice.dbOrderId}`), 1200);
+    } catch (err) {
+      setError(err.response?.data?.message || "Couldn't submit your UID. Please try again.");
+      setUidSubmitting(false);
+      uidCaptchaRef.current?.reload();
     }
   };
 
   const handlePayment = async (e) => {
     e.preventDefault();
+    if (paymentMethod === "usdt" && !usdtNetwork) {
+      setError("No USDT network is available right now. Please choose a different payment method.");
+      return;
+    }
+    const captcha = payCaptchaRef.current?.getValue();
+    if (!captcha?.captchaAnswer) {
+      setError("Please enter the characters shown in the captcha image.");
+      return;
+    }
     setSubmitting(true);
     setError("");
 
     try {
-      const order = await createOrder({ items: buildItemsPayload(), paymentMethod, address });
+      const order = await createOrder({ items: buildItemsPayload(), paymentMethod, address, ...captcha });
 
       if (paymentMethod === "paypal") {
         const approveUrl = await createPaypalOrder(order._id);
@@ -234,8 +355,15 @@ const CheckoutPayment = () => {
       }
 
       if (paymentMethod === "usdt") {
-        const wallet = await getUsdtWalletDetails(order._id);
+        const wallet = await getUsdtWalletDetails(order._id, usdtNetwork);
         setUsdtInvoice({ ...wallet, dbOrderId: order._id });
+        setSubmitting(false);
+        return;
+      }
+
+      if (paymentMethod === "binance_uid" || paymentMethod === "bybit_uid") {
+        const details = await getInternalTransferDetails(paymentMethod, order._id);
+        setInternalTransferInvoice({ ...details, dbOrderId: order._id });
         setSubmitting(false);
         return;
       }
@@ -281,6 +409,8 @@ const CheckoutPayment = () => {
         err.response?.data?.message || err.userMessage || "Something went wrong. Please try again.";
       setError(message);
       setSubmitting(false);
+      // The captcha was spent when the order request was checked — show a new one.
+      payCaptchaRef.current?.reload();
     }
   };
 
@@ -323,6 +453,7 @@ const CheckoutPayment = () => {
                   {utrValue.length}/12 digits
                 </span>
               </label>
+              <Captcha ref={utrCaptchaRef} />
               <button type="submit" className="auth-submit" disabled={utrSubmitting} style={{ marginTop: "0.5rem" }}>
                 {utrSubmitting ? "Submitting…" : "Submit UTR"}
               </button>
@@ -369,6 +500,7 @@ const CheckoutPayment = () => {
                   placeholder="e.g. a1b2c3d4e5f6…"
                 />
               </label>
+              <Captcha ref={txCaptchaRef} />
               <button type="submit" className="auth-submit" disabled={txIdSubmitting} style={{ marginTop: "0.5rem" }}>
                 {txIdSubmitting ? "Submitting…" : "Submit transaction ID"}
               </button>
@@ -376,6 +508,62 @@ const CheckoutPayment = () => {
           )}
           <p className="shop-status" style={{ marginTop: "1rem" }}>
             Double-check the network before sending — sending on the wrong network can lose your funds. We'll verify your transaction and deliver your code shortly after.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ---- Binance/Bybit internal transfer: UID + amount, then sender UID entry ----
+  if (internalTransferInvoice) {
+    return (
+      <div className="buy-page">
+        <div className="usdt-invoice-card">
+          <h2>Send USDT via {internalTransferInvoice.platform} internal transfer</h2>
+          <p className="shop-status">
+            Only works if you also have a {internalTransferInvoice.platform} account — this is an
+            internal, off-chain transfer between UIDs on the same exchange, so it's free and instant.
+          </p>
+          <div className="usdt-field usdt-field-highlight">
+            <span>Send to this {internalTransferInvoice.platform} UID</span>
+            <div className="usdt-field-highlight-row">
+              <code>{internalTransferInvoice.uid}</code>
+              <button
+                type="button"
+                className="usdt-copy-btn"
+                onClick={() => navigator.clipboard?.writeText(internalTransferInvoice.uid)}
+              >
+                Copy
+              </button>
+            </div>
+          </div>
+          <div className="usdt-field">
+            <span>Amount</span>
+            <strong>{internalTransferInvoice.amount} USDT</strong>
+          </div>
+
+          {uidSubmitted ? (
+            <p className="shop-status">✅ UID submitted — redirecting…</p>
+          ) : (
+            <form onSubmit={handleUidSubmit}>
+              {error && <div className="auth-error" role="alert">{error}</div>}
+              <label className="auth-field" style={{ textAlign: "left" }}>
+                <span>Your {internalTransferInvoice.platform} UID (the account you sent from)</span>
+                <input
+                  value={uidValue}
+                  onChange={(e) => setUidValue(e.target.value)}
+                  placeholder="e.g. 123456789"
+                />
+              </label>
+              <Captcha ref={uidCaptchaRef} />
+              <button type="submit" className="auth-submit" disabled={uidSubmitting} style={{ marginTop: "0.5rem" }}>
+                {uidSubmitting ? "Submitting…" : "Submit UID"}
+              </button>
+            </form>
+          )}
+          <p className="shop-status" style={{ marginTop: "1rem" }}>
+            We'll match your UID against the transfer in our {internalTransferInvoice.platform} account and
+            deliver your code shortly after.
           </p>
         </div>
       </div>
@@ -421,14 +609,43 @@ const CheckoutPayment = () => {
             <button
               type="button"
               key={method.id}
-              className={`payment-method-tile ${paymentMethod === method.id ? "is-selected" : ""}`}
-              onClick={() => setPaymentMethod(method.id)}
+              className={`payment-method-tile ${paymentMethod === method.id ? "is-selected" : ""} ${
+                method.disabled ? "is-disabled" : ""
+              }`}
+              disabled={method.disabled}
+              aria-disabled={method.disabled}
+              onClick={() => !method.disabled && setPaymentMethod(method.id)}
             >
               <span className="payment-method-label">{method.label}</span>
               <span className="payment-method-hint">{method.hint}</span>
             </button>
           ))}
         </div>
+
+        {paymentMethod === "usdt" && (
+          <label className="auth-field" style={{ textAlign: "left", marginTop: "1rem" }}>
+            <span>USDT network</span>
+            {usdtNetworks.length > 0 ? (
+              <select value={usdtNetwork} onChange={(e) => setUsdtNetwork(e.target.value)}>
+                {usdtNetworks.map((network) => (
+                  <option key={network} value={network}>
+                    {USDT_NETWORK_LABELS[network] || network}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <span className="shop-status" style={{ fontSize: "0.85rem" }}>
+                No USDT network is available right now.
+              </span>
+            )}
+            <span className="shop-status" style={{ fontSize: "0.78rem", marginTop: "0.25rem" }}>
+              Double-check this matches the network your wallet will send from — sending on the wrong
+              network can't be reversed.
+            </span>
+          </label>
+        )}
+
+        <Captcha ref={payCaptchaRef} />
 
         <button type="submit" className="auth-submit" disabled={submitting} style={{ marginTop: "1.5rem" }}>
           {submitting ? "Processing…" : "Pay & get my gift cards"}

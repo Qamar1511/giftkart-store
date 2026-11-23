@@ -12,6 +12,7 @@ const contactRoutes = require("./routes/contactRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const blogRoutes = require("./routes/blogRoutes");
 const reviewRoutes = require("./routes/reviewRoutes");
+const captchaRoutes = require("./routes/captchaRoutes");
 const { generateSitemap } = require("./utils/generateSitemap");
 const { cancelAbandonedOrders } = require("./utils/stockReservation");
 const { hydratePricing } = require("./utils/pricing");
@@ -111,6 +112,7 @@ app.use(
 );
 
 // Routes
+app.use("/api/captcha", captchaRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);

@@ -6,6 +6,7 @@ import { useCurrency } from "../context/CurrencyContext";
 import OtpInput from "../components/OtpInput";
 import "../styles/Auth.css";
 import Seo from "../components/Seo";
+import Captcha from "../components/Captcha";
 
 // Decorative neon circuit backdrop shared by every auth screen.
 const AuthBackdrop = () => (
@@ -88,6 +89,7 @@ const Signup = () => {
   const location = useLocation();
   const { currencies, currencyCodes, syncFromUser } = useCurrency();
   const [form, setForm] = useState(initialForm);
+  const captchaRef = useRef(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false); // once true, fields lock and the OTP block appears
@@ -171,11 +173,21 @@ const Signup = () => {
       return;
     }
 
+    // Checked before any request, so an empty box doesn't use up the captcha.
+    // (The "Verify" button next to the email field also lands here, so the
+    // message points at where the captcha is.)
+    const captcha = captchaRef.current?.getValue();
+    if (!captcha?.captchaAnswer) {
+      setError("Please enter the characters shown in the captcha image, just above the button.");
+      setIsClientError(true);
+      return;
+    }
+
     setLoading(true);
     setError("");
     try {
       const combinedPhone = `${form.countryCode}${form.phone.replace(/\D/g, "")}`;
-      const data = await signupUser({ ...form, phone: combinedPhone });
+      const data = await signupUser({ ...form, phone: combinedPhone, ...captcha });
       setOtpSent(true);
       setOtpNotice(data.message || "We've emailed you a 6-digit code.");
     } catch (err) {
@@ -183,6 +195,8 @@ const Signup = () => {
         err.response?.data?.message || "Couldn't create your account. Please try again.";
       setError(message);
       setIsClientError(false);
+      // The server spends a captcha the moment it checks it — show a new one.
+      captchaRef.current?.reload();
     } finally {
       setLoading(false);
     }
@@ -434,6 +448,10 @@ const Signup = () => {
                   disabled={otpSent}
                 />
               </label>
+
+              {/* Only needed for the step that creates the pending signup and
+                  emails the code; it comes back if they choose "Edit details". */}
+              {!otpSent && <Captcha ref={captchaRef} />}
 
               {!otpSent && (
                 <button type="submit" className="auth-submit" disabled={loading}>

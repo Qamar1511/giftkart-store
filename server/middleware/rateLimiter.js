@@ -94,7 +94,19 @@ const apiLimiter = rateLimit({
   handler,
 });
 
+// Fetching a captcha image. Each page that shows one asks once on load and
+// again whenever the person taps "refresh" or gets one wrong, so this is
+// roomy — it only exists so the endpoint can't be used to flood server memory.
+const captchaLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler,
+});
+
 module.exports = {
+  captchaLimiter,
   loginLimiter,
   signupLimiter,
   otpLimiter,

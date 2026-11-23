@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { loginUser, saveSession } from "../services/authService";
 import { useCurrency } from "../context/CurrencyContext";
 import "../styles/Auth.css";
 import Seo from "../components/Seo";
+import Captcha from "../components/Captcha";
 
 // Decorative neon circuit backdrop shared by every auth screen.
 const AuthBackdrop = () => (
@@ -24,6 +25,7 @@ const Login = () => {
   const { syncFromUser } = useCurrency();
   const redirectTo = location.state?.from?.pathname || "/";
   const [form, setForm] = useState({ email: "", password: "" });
+  const captchaRef = useRef(null);
   const [showPassword, setShowPassword] = useState(false);
   // ?blocked=1 is set by apiClient when an already-logged-in account gets
   // blocked by an admin and is signed out.
@@ -52,9 +54,16 @@ const Login = () => {
       return;
     }
 
+    // Checked before any request, so an empty box doesn't use up the captcha.
+    const captcha = captchaRef.current?.getValue();
+    if (!captcha?.captchaAnswer) {
+      setError("Please enter the characters shown in the captcha image.");
+      return;
+    }
+
     setLoading(true);
     try {
-      const data = await loginUser(form);
+      const data = await loginUser({ ...form, ...captcha });
       saveSession(data);
       syncFromUser(data.user);
       navigate(redirectTo, { replace: true });
@@ -68,6 +77,9 @@ const Login = () => {
       if (err.response?.data?.notRegistered) {
         setNotRegistered(true);
       }
+      // The server spends a captcha the moment it checks it, so whatever went
+      // wrong (captcha, password, …) the one on screen is used up — show a new one.
+      captchaRef.current?.reload();
     } finally {
       setLoading(false);
     }
@@ -140,6 +152,8 @@ const Login = () => {
                   </button>
                 </div>
               </label>
+
+              <Captcha ref={captchaRef} />
 
               <button type="submit" className="auth-submit" disabled={loading}>
                 {loading ? "Logging in…" : "Login"}

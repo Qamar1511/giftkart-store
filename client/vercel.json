@@ -14,7 +14,8 @@
     { "source": "/gift-cards", "destination": "/", "permanent": true }
   ],
   "rewrites": [
-    { "source": "/sitemap.xml", "destination": "https://api.giftkartstore.in/sitemap.xml" }
+    { "source": "/sitemap.xml", "destination": "https://api.giftkartstore.in/sitemap.xml" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
     {

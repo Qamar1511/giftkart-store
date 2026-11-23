@@ -189,7 +189,7 @@ const DEFAULT_CURRENCY = "INR";
 // paid in rupees (UPI/Razorpay/cards); USDT is paid on-chain.
 const CURRENCY_PAYMENT_METHODS = {
   INR: ["razorpay", "card", "debit_card", "upi_manual"],
-  USDT: ["usdt"],
+  USDT: ["usdt", "binance_uid", "bybit_uid"],
 };
 
 // ---------------------- Admin-editable price rates ----------------------

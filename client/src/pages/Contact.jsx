@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { submitContactForm } from "../services/contactService";
+import Captcha from "../components/Captcha";
 import Seo from "../components/Seo";
 import "../styles/Shop.css";
 
@@ -10,6 +11,7 @@ const initialForm = { fullName: "", email: "", phone: "", message: "" };
 const Contact = () => {
   const [form, setForm] = useState(initialForm);
   const [file, setFile] = useState(null);
+  const captchaRef = useRef(null);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
@@ -40,14 +42,23 @@ const Contact = () => {
       return;
     }
 
+    // Checked before any request, so an empty box doesn't use up the captcha.
+    const captcha = captchaRef.current?.getValue();
+    if (!captcha?.captchaAnswer) {
+      setError("Please enter the characters shown in the captcha image.");
+      return;
+    }
+
     setSubmitting(true);
     try {
-      const data = await submitContactForm({ ...form, file });
+      const data = await submitContactForm({ ...form, file, ...captcha });
       setSuccessMessage(data.message || "Thanks — we've received your message.");
       setForm(initialForm);
       setFile(null);
     } catch (err) {
       setError(err.response?.data?.message || "Couldn't send your message. Please try again.");
+      // The server spends a captcha the moment it checks it — show a new one.
+      captchaRef.current?.reload();
     } finally {
       setSubmitting(false);
     }
@@ -151,6 +162,8 @@ const Contact = () => {
                 </div>
               </label>
             </div>
+
+            <Captcha ref={captchaRef} />
 
             <button type="submit" className="auth-submit" disabled={submitting} style={{ marginTop: "1rem" }}>
               {submitting ? "Sending…" : "Submit"}

@@ -121,10 +121,10 @@ const OrderConfirmation = () => {
 
   const status = getDisplayStatus(order);
   const copy = STATUS_COPY[status.key] || STATUS_COPY.placed;
-  // Every manual-review payment method (UPI, USDT, and now Razorpay too —
-  // no order auto-delivers anymore) shows the same "we're checking it"
-  // state until an admin verifies it in the dashboard.
-  const isManualReview = ["upi_manual", "usdt", "razorpay"].includes(order.paymentMethod);
+  // Every manual-review payment method (UPI, USDT, Binance/Bybit internal
+  // transfer, and Razorpay too — no order auto-delivers anymore) shows the
+  // same "we're checking it" state until an admin verifies it in the dashboard.
+  const isManualReview = ["upi_manual", "usdt", "binance_uid", "bybit_uid", "razorpay"].includes(order.paymentMethod);
   const showUtrPending = isManualReview && order.verificationStatus === "submitted";
   const items = (Array.isArray(order.items) ? order.items : []).filter((item) => item && item.denomination != null);
   // A historical order is shown in the currency it was actually charged in,

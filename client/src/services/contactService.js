@@ -1,6 +1,6 @@
 import apiClient from "./apiClient";
 
-// payload: { fullName, email, phone, message, file } — file is an optional
+// payload: { fullName, email, phone, message, file, captchaId, captchaAnswer } — file is an optional
 // File object from an <input type="file">. Sent as multipart/form-data so
 // the attachment reaches the backend.
 export const submitContactForm = async (payload) => {
@@ -9,6 +9,8 @@ export const submitContactForm = async (payload) => {
   formData.append("email", payload.email);
   formData.append("phone", payload.phone || "");
   formData.append("message", payload.message);
+  formData.append("captchaId", payload.captchaId || "");
+  formData.append("captchaAnswer", payload.captchaAnswer || "");
   if (payload.file) {
     formData.append("attachment", payload.file);
   }

@@ -7,6 +7,7 @@ const {
 } = require("../controllers/contactController");
 const { protect, adminOnly } = require("../middleware/authMiddleware");
 const { contactLimiter } = require("../middleware/rateLimiter");
+const { requireCaptcha } = require("../middleware/captcha");
 
 const router = express.Router();
 
@@ -21,7 +22,9 @@ const upload = multer({
 
 // contactLimiter runs first so a flood is turned away before any file
 // parsing or database work happens.
-router.post("/", contactLimiter, upload.single("attachment"), submitContactForm);
+// requireCaptcha sits after multer because the captcha fields arrive in the
+// multipart body, which multer is what parses.
+router.post("/", contactLimiter, upload.single("attachment"), requireCaptcha, submitContactForm);
 router.get("/", protect, adminOnly, getContactSubmissions);
 router.patch("/:id", protect, adminOnly, updateContactStatus);
 

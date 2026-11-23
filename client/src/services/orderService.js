@@ -20,13 +20,20 @@ export const cancelOrder = async (orderId, reason) => {
   return data.order;
 };
 
-export const submitUtr = async (orderId, utrNumber) => {
-  const { data } = await apiClient.post(`/orders/${orderId}/submit-utr`, { utrNumber });
+// `captcha` is { captchaId, captchaAnswer } from the <Captcha> box — the server
+// rejects these three proof submissions without a valid one.
+export const submitUtr = async (orderId, utrNumber, captcha = {}) => {
+  const { data } = await apiClient.post(`/orders/${orderId}/submit-utr`, { utrNumber, ...captcha });
   return data.order;
 };
 
-export const submitUsdtTx = async (orderId, txId) => {
-  const { data } = await apiClient.post(`/orders/${orderId}/submit-usdt-tx`, { txId });
+export const submitUsdtTx = async (orderId, txId, captcha = {}) => {
+  const { data } = await apiClient.post(`/orders/${orderId}/submit-usdt-tx`, { txId, ...captcha });
+  return data.order;
+};
+
+export const submitInternalTransferUid = async (orderId, uid, captcha = {}) => {
+  const { data } = await apiClient.post(`/orders/${orderId}/submit-internal-transfer-uid`, { uid, ...captcha });
   return data.order;
 };
 

@@ -1,0 +1,132 @@
+/* Self-contained on purpose: the captcha appears on the login/signup screens,
+   the contact page and the checkout page, which each style their forms
+   differently, so this uses only neutral colours and `currentColor`/inherit
+   instead of any one page's theme variables. */
+.captcha-box,
+.captcha-box * {
+  box-sizing: border-box; /* don't depend on a page-wide reset for the exact 210×70 box */
+}
+
+.captcha-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin: 1rem 0 0.25rem;
+  text-align: left;
+}
+
+.captcha-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.captcha-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.captcha-image-wrap {
+  width: 210px;
+  height: 70px;
+  max-width: calc(100% - 3rem);
+  flex-shrink: 1;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  border: 1px solid rgba(128, 128, 128, 0.35);
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.captcha-image-wrap img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.captcha-placeholder {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.captcha-refresh {
+  flex-shrink: 0;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 50%;
+  border: 1px solid rgba(128, 128, 128, 0.45);
+  background: transparent;
+  color: inherit;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.25s ease, background 0.15s ease;
+}
+
+.captcha-refresh:hover:not(:disabled) {
+  background: rgba(128, 128, 128, 0.15);
+  transform: rotate(180deg);
+}
+
+.captcha-refresh:focus-visible,
+.captcha-input:focus-visible,
+.captcha-retry:focus-visible {
+  outline: 2px solid #2f6fed;
+  outline-offset: 2px;
+}
+
+.captcha-refresh:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.captcha-input {
+  width: 100%;
+  max-width: 16rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 0.55rem;
+  border: 1px solid rgba(128, 128, 128, 0.5);
+  background: transparent;
+  color: inherit;
+  font-size: 1rem;
+  font-family: "Roboto Mono", ui-monospace, monospace;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.captcha-input::placeholder {
+  letter-spacing: normal;
+  text-transform: none;
+  opacity: 0.55;
+}
+
+.captcha-input:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.captcha-retry {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  padding: 0;
+  color: #dc2626;
+  font-size: 0.82rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .captcha-refresh {
+    transition: none;
+  }
+  .captcha-refresh:hover:not(:disabled) {
+    transform: none;
+  }
+}

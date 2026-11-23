@@ -382,6 +382,7 @@
 .auth-forgot-link { font-size: 0.8rem; font-weight: 600; }
 
 .auth-field input,
+.auth-field select,
 .auth-field textarea {
   background: var(--a-field);
   border: 1px solid var(--a-field-border);
@@ -394,9 +395,14 @@
   transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 
+.auth-field select {
+  cursor: pointer;
+}
+
 .auth-field textarea { resize: vertical; min-height: 6rem; }
 
 .auth-field input:focus,
+.auth-field select:focus,
 .auth-field textarea:focus {
   border-color: var(--a-cyan);
   background: rgba(255, 255, 255, 0.06);
@@ -406,7 +412,8 @@
 .auth-field input::placeholder,
 .auth-field textarea::placeholder { color: var(--a-placeholder); }
 
-.auth-field input:disabled { opacity: 0.55; cursor: not-allowed; }
+.auth-field input:disabled,
+.auth-field select:disabled { opacity: 0.55; cursor: not-allowed; }
 
 /* Currency choice (segmented two-option control) */
 .auth-currency-toggle {

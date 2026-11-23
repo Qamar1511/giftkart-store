@@ -52,7 +52,9 @@ const BlogPost = lazy(importBlogPost);
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminOrders = lazy(() => import("./pages/admin/AdminOrders"));
+const AdminRevenue = lazy(() => import("./pages/admin/AdminRevenue"));
 const AdminStock = lazy(() => import("./pages/admin/AdminStock"));
+const AdminLowStock = lazy(() => import("./pages/admin/AdminLowStock"));
 const AdminPricing = lazy(() => import("./pages/admin/AdminPricing"));
 const AdminReviews = lazy(() => import("./pages/admin/AdminReviews"));
 const AdminQueries = lazy(() => import("./pages/admin/AdminQueries"));
@@ -133,7 +135,9 @@ function App() {
           >
             <Route index element={<AdminDashboard />} />
             <Route path="orders" element={<AdminOrders />} />
+            <Route path="revenue" element={<AdminRevenue />} />
             <Route path="stock" element={<AdminStock />} />
+            <Route path="low-stock" element={<AdminLowStock />} />
             <Route path="pricing" element={<AdminPricing />} />
             <Route path="reviews" element={<AdminReviews />} />
             <Route path="queries" element={<AdminQueries />} />

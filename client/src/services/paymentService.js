@@ -115,8 +115,23 @@ export const capturePaypalOrder = async (orderId) => {
 
 /* ------------------------------- Manual USDT -------------------------------- */
 
-export const getUsdtWalletDetails = async (orderId) => {
-  const { data } = await apiClient.get(`/payments/usdt/wallet/${orderId}`);
+// Only the networks the server actually has a wallet address configured
+// for — see getUsdtNetworks in paymentController.js.
+export const getUsdtNetworks = async () => {
+  const { data } = await apiClient.get("/payments/usdt/networks");
+  return data.networks;
+};
+
+export const getUsdtWalletDetails = async (orderId, network) => {
+  const { data } = await apiClient.get(`/payments/usdt/wallet/${orderId}`, { params: { network } });
+  return data;
+};
+
+/* ------------------------ Internal exchange transfer ------------------------ */
+// platform is "binance_uid" or "bybit_uid" — same ids used as paymentMethod,
+// and exactly what the backend's INTERNAL_TRANSFER_PLATFORMS map expects.
+export const getInternalTransferDetails = async (platform, orderId) => {
+  const { data } = await apiClient.get(`/payments/internal-transfer/${platform}/${orderId}`);
   return data;
 };
 
