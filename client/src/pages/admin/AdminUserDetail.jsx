@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { getAdminUserDetail, downloadUserInvoice } from "../../services/adminService";
+import { getAdminUserDetail, downloadUserInvoice, setUserBlocked } from "../../services/adminService";
 import { formatMoney } from "../../data/catalog";
 
 const AdminUserDetail = () => {
@@ -10,6 +10,9 @@ const AdminUserDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [downloadingId, setDownloadingId] = useState(null);
+  const [blocking, setBlocking] = useState(false);
+  const [notice, setNotice] = useState("");
+  const [actionError, setActionError] = useState("");
 
   useEffect(() => {
     getAdminUserDetail(id)
@@ -32,6 +35,27 @@ const AdminUserDetail = () => {
     }
   };
 
+  const handleToggleBlock = async () => {
+    const block = !user.isBlocked;
+    const question = block
+      ? `Block ${user.fullName}? They won't be able to log in or place orders until you unblock them.`
+      : `Unblock ${user.fullName}? They'll be able to log in and order again.`;
+    if (!window.confirm(question)) return;
+
+    setBlocking(true);
+    setNotice("");
+    setActionError("");
+    try {
+      const data = await setUserBlocked(id, block);
+      setUser((prev) => ({ ...prev, isBlocked: data.isBlocked }));
+      setNotice(data.message);
+    } catch (err) {
+      setActionError(err.response?.data?.message || "Couldn't update this user.");
+    } finally {
+      setBlocking(false);
+    }
+  };
+
   if (loading) return <p className="shop-status">Loading…</p>;
   if (error) return <p className="shop-status shop-status-error">{error}</p>;
   if (!user) return null;
@@ -41,7 +65,26 @@ const AdminUserDetail = () => {
       <Link to="/admin/users" className="admin-table-muted" style={{ textDecoration: "none" }}>
         ← Back to users
       </Link>
-      <h1 className="admin-page-title" style={{ marginTop: "0.5rem" }}>{user.fullName}</h1>
+      <div className="admin-page-header">
+        <h1 className="admin-page-title" style={{ marginTop: "0.5rem" }}>
+          {user.fullName}{" "}
+          <span className={`admin-status-pill ${user.isBlocked ? "status-empty" : "status-ok"}`}>
+            {user.isBlocked ? "Blocked" : "Active"}
+          </span>
+        </h1>
+        {user.role !== "admin" && (
+          <button
+            type="button"
+            className={user.isBlocked ? "admin-btn admin-btn-approve" : "admin-btn admin-btn-reject"}
+            disabled={blocking}
+            onClick={handleToggleBlock}
+          >
+            {blocking ? "Working…" : user.isBlocked ? "Unblock user" : "Block user"}
+          </button>
+        )}
+      </div>
+      {notice && <div className="admin-notice">{notice}</div>}
+      {actionError && <div className="admin-error">{actionError}</div>}
 
       <div className="admin-user-profile-grid">
         <div className="admin-user-profile-item">

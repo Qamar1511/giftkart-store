@@ -1,4 +1,5 @@
 const BlogPost = require("../models/BlogPost");
+const { sanitizeBlogHtml } = require("../utils/sanitizeBlogHtml");
 
 // Published posts change rarely (a post is written once, then read many
 // times), so both public endpoints below allow a short shared cache. This
@@ -35,6 +36,11 @@ exports.getPostBySlug = async (req, res) => {
   try {
     const post = await BlogPost.findOne({ slug: req.params.slug, published: true }).lean();
     if (!post) return res.status(404).json({ message: "Post not found" });
+
+    // Sanitised on the way out as well as on the way in: a post saved before
+    // this protection existed (or written straight into the database) must
+    // not be able to run script in visitors' browsers.
+    post.content = sanitizeBlogHtml(post.content);
 
     res.set("Cache-Control", PUBLIC_CACHE);
     res.status(200).json({ post });

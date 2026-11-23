@@ -1,4 +1,10 @@
 const { sendEmail } = require("./sendEmail");
+const { escapeHtml } = require("./security");
+
+// Customer names/emails and anything else typed by a visitor is escaped
+// before going into these admin emails. These land in the owner's own inbox,
+// so unescaped markup there (a name like <a href="…">) is a direct
+// phishing/injection route aimed at the one person with admin access.
 
 // Where these three admin alerts go. Falls back to a fixed address if
 // CONTACT_INBOX isn't set in .env/Render — but setting CONTACT_INBOX is
@@ -12,7 +18,7 @@ const ADMIN_INBOX = process.env.CONTACT_INBOX || "support@giftkartstore.in";
 exports.notifyAdminNewOrder = async (order) => {
   try {
     const itemsHtml = (order.items || [])
-      .map((item) => `${item.brand} ₹${item.denomination} × ${item.quantity}`)
+      .map((item) => `${escapeHtml(item.brand)} ₹${escapeHtml(item.denomination)} × ${escapeHtml(item.quantity)}`)
       .join("<br/>");
 
     await sendEmail({
@@ -20,10 +26,10 @@ exports.notifyAdminNewOrder = async (order) => {
       subject: `New order to verify — ${order.currency} ${order.totalAmount}`,
       html: `
         <p><strong>Order ID:</strong> ${order._id}</p>
-        <p><strong>Customer:</strong> ${order.user?.fullName || "—"} (${order.user?.email || "—"})</p>
+        <p><strong>Customer:</strong> ${escapeHtml(order.user?.fullName) || "—"} (${escapeHtml(order.user?.email) || "—"})</p>
         <p><strong>Items:</strong><br/>${itemsHtml}</p>
         <p><strong>Total:</strong> ${order.currency} ${order.totalAmount}</p>
-        <p><strong>Payment method:</strong> ${order.paymentMethod}</p>
+        <p><strong>Payment method:</strong> ${escapeHtml(order.paymentMethod)}</p>
         <p>Head to the admin panel's Orders tab to verify and deliver.</p>
       `,
     });
@@ -40,7 +46,7 @@ exports.notifyAdminStockRequest = async ({ brandName, denomination, customerEmai
       to: ADMIN_INBOX,
       subject: `Stock request — ${brandName} ₹${denomination}`,
       html: `
-        <p>${customerEmail} asked to be notified when <strong>${brandName} ₹${denomination}</strong> is back in stock.</p>
+        <p>${escapeHtml(customerEmail)} asked to be notified when <strong>${escapeHtml(brandName)} ₹${escapeHtml(denomination)}</strong> is back in stock.</p>
       `,
     });
   } catch (err) {

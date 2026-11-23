@@ -3,8 +3,11 @@ const multer = require("multer");
 const {
   getAllOrders,
   getMonthlyRevenue,
+  exportDeliveredOrders,
   verifyUpiPayment,
   rejectUpiPayment,
+  approveCancelRequest,
+  rejectCancelRequest,
   getStockSummary,
   getStockCodes,
   addStockCodes,
@@ -22,7 +25,7 @@ const {
   uploadCoverImage,
 } = require("../controllers/adminBlogController");
 const { getAllReviews, approveReview, rejectReview } = require("../controllers/reviewController");
-const { getAllUsers, getUserDetail, downloadUserInvoice } = require("../controllers/adminUserController");
+const { getAllUsers, getUserDetail, setUserBlocked, downloadUserInvoice } = require("../controllers/adminUserController");
 const { protect, adminOnly } = require("../middleware/authMiddleware");
 
 const router = express.Router();
@@ -36,8 +39,11 @@ const uploadImage = multer({
 
 router.get("/orders", getAllOrders);
 router.get("/orders/revenue-by-month", getMonthlyRevenue);
+router.get("/orders/export", exportDeliveredOrders);
 router.post("/orders/:id/verify-upi", verifyUpiPayment);
 router.post("/orders/:id/reject-upi", rejectUpiPayment);
+router.post("/orders/:id/approve-cancel", approveCancelRequest);
+router.post("/orders/:id/reject-cancel", rejectCancelRequest);
 
 router.get("/stock", getStockSummary);
 router.get("/stock/:brand/:denomination", getStockCodes);
@@ -63,6 +69,7 @@ router.post("/reviews/:id/reject", rejectReview);
 
 router.get("/users", getAllUsers);
 router.get("/users/:id", getUserDetail);
+router.patch("/users/:id/block", setUserBlocked);
 router.get("/users/:userId/orders/:orderId/invoice", downloadUserInvoice);
 
 module.exports = router;

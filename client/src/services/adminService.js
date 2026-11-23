@@ -22,6 +22,45 @@ export const rejectUpiOrder = async (orderId, reason) => {
   return data;
 };
 
+export const approveCancelRequest = async (orderId) => {
+  const { data } = await apiClient.post(`/admin/orders/${orderId}/approve-cancel`);
+  return data;
+};
+
+export const rejectCancelRequest = async (orderId, reason) => {
+  const { data } = await apiClient.post(`/admin/orders/${orderId}/reject-cancel`, { reason });
+  return data;
+};
+
+// range: "month" | "6months" | "year" | "custom"
+// For "custom", also pass { from: "YYYY-MM-DD", to: "YYYY-MM-DD" }.
+export const exportDeliveredOrders = async (format, range, { from, to } = {}) => {
+  const params = { format, range };
+  if (range === "custom") {
+    params.from = from;
+    params.to = to;
+  }
+  const response = await apiClient.get("/admin/orders/export", {
+    params,
+    responseType: "blob",
+  });
+
+  // Filename comes from the server's Content-Disposition header — fall back
+  // to a generic name if that's ever missing for some reason.
+  const disposition = response.headers["content-disposition"] || "";
+  const match = disposition.match(/filename="([^"]+)"/);
+  const filename = match ? match[1] : `delivered-orders.${format}`;
+
+  const url = window.URL.createObjectURL(new Blob([response.data]));
+  const link = document.createElement("a");
+  link.href = url;
+  link.setAttribute("download", filename);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+};
+
 export const getStockSummary = async () => {
   const { data } = await apiClient.get("/admin/stock");
   return data.summary;
@@ -46,6 +85,13 @@ export const getAdminUsers = async () => {
 
 export const getAdminUserDetail = async (userId) => {
   const { data } = await apiClient.get(`/admin/users/${userId}`);
+  return data;
+};
+
+// Block or unblock a customer. See setUserBlocked in
+// server/controllers/adminUserController.js.
+export const setUserBlocked = async (userId, blocked) => {
+  const { data } = await apiClient.patch(`/admin/users/${userId}/block`, { blocked });
   return data;
 };
 

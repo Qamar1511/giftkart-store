@@ -5,6 +5,7 @@ const User = require("../models/User");
 const PendingSignup = require("../models/PendingSignup");
 const { sendEmail, isEmailConfigured } = require("../utils/sendEmail");
 const { CURRENCY_CODES, DEFAULT_CURRENCY } = require("../config/catalog");
+const { escapeHtml, isValidName, isValidEmail } = require("../utils/security");
 
 const generateToken = (userId, role) => {
   return jwt.sign({ id: userId, role }, process.env.JWT_SECRET, {
@@ -38,7 +39,7 @@ const sendOtpEmail = (fullName, email, otp) =>
     to: email,
     subject: "Verify your GIFTKART account",
     html: `
-      <p>Hi ${fullName},</p>
+      <p>Hi ${escapeHtml(fullName)},</p>
       <p>Your GIFTKART verification code is:</p>
       <p style="font-size: 28px; font-weight: 700; letter-spacing: 4px;">${otp}</p>
       <p>This code expires in 10 minutes. If you did not create a GIFTKART account, you can ignore this email.</p>
@@ -61,6 +62,21 @@ exports.signup = async (req, res) => {
     if (!fullName || !email || !phone || !password) {
       return res.status(400).json({ message: "All fields are required" });
     }
+    // Only plain strings from here on — an object or array in any of these
+    // fields is never a real signup and would otherwise surface as a 500.
+    if ([fullName, email, phone, password].some((v) => typeof v !== "string")) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+    // The name is stored, shown to admins and put into emails sent to the
+    // address given here (which isn't verified yet) — so it has to look like a
+    // name. Letters, spaces, . ' - only; code-like input (<, {, $, ;, =, digits…)
+    // is rejected rather than "cleaned".
+    if (!isValidName(fullName)) {
+      return res.status(400).json({ message: "Please enter your name using letters only (2–60 characters)." });
+    }
+    if (password.length > 128) {
+      return res.status(400).json({ message: "Password is too long." });
+    }
 
     if (confirmPassword !== undefined && password !== confirmPassword) {
       return res.status(400).json({ message: "Passwords do not match" });
@@ -72,7 +88,7 @@ exports.signup = async (req, res) => {
       });
     }
 
-    if (!/^\S+@\S+\.\S+$/.test(email)) {
+    if (!isValidEmail(email)) {
       return res.status(400).json({ message: "Enter a valid email address" });
     }
     // `phone` arrives with its country code already prepended by the
@@ -107,7 +123,7 @@ exports.signup = async (req, res) => {
     const passwordHash = await bcrypt.hash(password, 10);
 
     await PendingSignup.create({
-      fullName,
+      fullName: fullName.trim(),
       email: normalisedEmail,
       phone,
       passwordHash,
@@ -117,7 +133,7 @@ exports.signup = async (req, res) => {
     });
 
     try {
-      await sendOtpEmail(fullName, normalisedEmail, otp);
+      await sendOtpEmail(fullName.trim(), normalisedEmail, otp);
     } catch (mailError) {
       console.error("Failed to send signup OTP email:", mailError);
       await PendingSignup.deleteOne({ email: normalisedEmail });
@@ -169,7 +185,20 @@ exports.verifyOtp = async (req, res) => {
       return res.status(400).json({ message: "This code has expired. Please request a new one." });
     }
 
+    // Lock the code after 5 wrong guesses rather than letting it be retried
+    // indefinitely — a 6-digit code is only 1,000,000 possibilities, so an
+    // unlimited number of tries within the 10-minute expiry window would let
+    // it be brute-forced. The pending signup itself isn't deleted, so the
+    // person can still request a fresh code with "Resend OTP".
+    if (pending.otpAttempts >= 5) {
+      return res.status(429).json({
+        message: "Too many incorrect attempts. Please request a new code.",
+      });
+    }
+
     if (hashOtp(otp) !== pending.otpHash) {
+      pending.otpAttempts += 1;
+      await pending.save();
       return res.status(400).json({ message: "Incorrect code. Please try again." });
     }
 
@@ -231,6 +260,7 @@ exports.resendOtp = async (req, res) => {
     const otp = generateOtp();
     pending.otpHash = hashOtp(otp);
     pending.otpExpires = Date.now() + 10 * 60 * 1000;
+    pending.otpAttempts = 0;
     await pending.save();
 
     await sendOtpEmail(pending.fullName, normalisedEmail, otp);
@@ -263,6 +293,15 @@ exports.login = async (req, res) => {
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(401).json({ message: "Incorrect password. Please try again." });
+    }
+
+    // Checked after the password on purpose: that way only someone who
+    // actually knows the password learns the account is blocked.
+    if (user.isBlocked) {
+      return res.status(403).json({
+        message: "Your account has been blocked. Please contact support.",
+        blocked: true,
+      });
     }
 
     // No unverified User documents can exist anymore — accounts are only
@@ -363,7 +402,7 @@ exports.forgotPassword = async (req, res) => {
         to: user.email,
         subject: "Reset your GIFTKART password",
         html: `
-          <p>Hi ${user.fullName},</p>
+          <p>Hi ${escapeHtml(user.fullName)},</p>
           <p>Click the link below to set a new password. This link expires in 1 hour.</p>
           <p><a href="${resetLink}">${resetLink}</a></p>
           <p>If you didn't request this, you can safely ignore this email.</p>

@@ -4,6 +4,14 @@ const generateInvoiceNumber = require("../utils/generateInvoiceNumber");
 const streamInvoicePDF = require("../utils/pdfInvoice");
 const { notifyAdminNewOrder } = require("../utils/notifyAdmin");
 const {
+  isValidName,
+  isValidEmail,
+  isValidPhone,
+  isValidCountry,
+  isValidTxHash,
+  isValidExchangeUid,
+} = require("../utils/security");
+const {
   getBrand,
   priceFor,
   CURRENCY_CODES,
@@ -14,8 +22,7 @@ const {
   MONTHLY_WINDOW_DAYS,
   orderInrValue,
 } = require("../config/catalog");
-const { refundRazorpayPayment, refundPaypalCapture } = require("./paymentController");
-const { getAvailableCount, reserveStockForOrder, releaseStockForOrder } = require("../utils/stockReservation");
+const { getAvailableCount, reserveStockForOrder } = require("../utils/stockReservation");
 
 const MAX_QUANTITY_PER_ITEM = 10;
 
@@ -38,8 +45,34 @@ exports.createOrder = async (req, res) => {
     if (!Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ message: "Your cart is empty" });
     }
+    // Every line costs a stock lookup below, so an unbounded array is a cheap
+    // way to make the server grind. No real cart comes anywhere near this.
+    if (items.length > 20) {
+      return res.status(400).json({ message: "Too many different items in one order." });
+    }
     if (!address || !address.fullName || !address.phone || !address.email || !address.country) {
       return res.status(400).json({ message: "Name, phone, email and country are required" });
+    }
+
+    // Rebuilt from validated strings rather than saving whatever object the
+    // request carried — free-text fields here are shown to admins and put in
+    // emails, so they must look like a name/phone/email/country, not code.
+    const asText = (v) => (typeof v === "string" ? v.trim() : "");
+    const cleanAddress = {
+      fullName: asText(address.fullName),
+      phone: asText(address.phone),
+      email: asText(address.email).toLowerCase(),
+      country: asText(address.country),
+    };
+    if (
+      !isValidName(cleanAddress.fullName) ||
+      !isValidPhone(cleanAddress.phone) ||
+      !isValidEmail(cleanAddress.email) ||
+      !isValidCountry(cleanAddress.country)
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Please enter a valid name, phone number, email and country." });
     }
 
     // Buying currency is a server-side truth: read it from the user's saved
@@ -175,7 +208,7 @@ exports.createOrder = async (req, res) => {
       totalAmount,
       currency,
       paymentMethod,
-      address,
+      address: cleanAddress,
     });
 
     // Actually claim the stock now — atomically, per unit — so a second
@@ -234,10 +267,10 @@ exports.getOrderById = async (req, res) => {
 
 // @route  POST /api/orders/:id/cancel
 // @access Private
-// Cancels the order and attempts an automatic refund where the provider
-// supports it. USDT/crypto payments can't be auto-reversed, so those are
-// flagged for manual review instead. Manual UPI orders that were already
-// verified are also flagged for manual review (no gateway to call).
+// Doesn't cancel immediately — raises a cancellation REQUEST for an admin to
+// approve (cancel + refund) or reject (order proceeds to delivery). This
+// stops a customer from cancelling out from under an order that's already
+// being fulfilled, and gives admin a chance to catch mistaken cancellations.
 exports.cancelOrder = async (req, res) => {
   try {
     const order = await Order.findOne({ _id: req.params.id, user: req.user.id });
@@ -245,6 +278,9 @@ exports.cancelOrder = async (req, res) => {
 
     if (order.orderStatus === "cancelled") {
       return res.status(400).json({ message: "This order is already cancelled" });
+    }
+    if (order.cancelRequested) {
+      return res.status(400).json({ message: "A cancellation request is already pending review." });
     }
     const anyCodesDelivered = order.items.some((item) => item.giftCardCodes.length > 0);
     if (anyCodesDelivered) {
@@ -254,30 +290,16 @@ exports.cancelOrder = async (req, res) => {
       });
     }
 
-    order.orderStatus = "cancelled";
+    order.cancelRequested = true;
     order.cancelReason = req.body.reason || "Cancelled by customer";
+    await order.save({ validateModifiedOnly: true });
 
-    if (order.paymentStatus === "paid") {
-      if (["razorpay", "card", "debit_card"].includes(order.paymentMethod)) {
-        await refundRazorpayPayment(order);
-        order.refundStatus = "processed";
-        order.paymentStatus = "refunded";
-      } else if (order.paymentMethod === "paypal") {
-        await refundPaypalCapture(order);
-        order.refundStatus = "processed";
-        order.paymentStatus = "refunded";
-      } else {
-        // usdt (can't auto-reverse crypto) and upi_manual (no gateway at all)
-        order.refundStatus = "manual_review";
-      }
-    }
-
-    await order.save();
-    await releaseStockForOrder(order._id);
-    res.status(200).json({ message: "Order cancelled", order });
+    res
+      .status(200)
+      .json({ message: "Cancellation requested — we'll review it and get back to you shortly.", order });
   } catch (error) {
     console.error("Cancel order error:", error);
-    res.status(500).json({ message: "Couldn't cancel this order. Please try again." });
+    res.status(500).json({ message: "Couldn't request cancellation. Please try again." });
   }
 };
 
@@ -291,7 +313,7 @@ exports.cancelOrder = async (req, res) => {
 exports.submitUtr = async (req, res) => {
   try {
     const { utrNumber } = req.body;
-    const trimmedUtr = (utrNumber || "").trim();
+    const trimmedUtr = typeof utrNumber === "string" ? utrNumber.trim() : "";
     if (!/^\d{12}$/.test(trimmedUtr)) {
       return res.status(400).json({ message: "Enter a valid 12-digit UTR / reference number" });
     }
@@ -324,8 +346,11 @@ exports.submitUtr = async (req, res) => {
 exports.submitUsdtTx = async (req, res) => {
   try {
     const { txId } = req.body;
-    const trimmedTxId = (txId || "").trim();
-    if (trimmedTxId.length < 10) {
+    const trimmedTxId = typeof txId === "string" ? txId.trim() : "";
+    // A real hash is one unbroken 20–128 character string of letters/digits
+    // (0x… for ERC20/BEP20, 64 hex for TRC20, base58 for SOL, base64 for TON).
+    // Free text here used to be accepted — and then shown to admins.
+    if (!isValidTxHash(trimmedTxId)) {
       return res.status(400).json({ message: "Enter a valid transaction hash / ID" });
     }
 
@@ -345,6 +370,40 @@ exports.submitUsdtTx = async (req, res) => {
   } catch (error) {
     console.error("Submit USDT tx error:", error);
     res.status(500).json({ message: "Couldn't submit the transaction ID. Please try again." });
+  }
+};
+
+// @route  POST /api/orders/:id/submit-internal-transfer-uid
+// @access Private
+// Used by the Binance/Bybit internal-transfer flow: customer sends USDT
+// from their own account (on the same exchange) to the UID we show them,
+// then submits THEIR OWN UID here as proof — there's no tx hash for an
+// internal transfer. Admin matches this against the exchange's
+// internal-transfer history to verify, same manual step as UPI/USDT.
+exports.submitInternalTransferUid = async (req, res) => {
+  try {
+    const { uid } = req.body;
+    const trimmedUid = typeof uid === "string" ? uid.trim() : "";
+    if (!isValidExchangeUid(trimmedUid)) {
+      return res.status(400).json({ message: "Enter the UID you sent from (letters and numbers only)." });
+    }
+
+    const order = await Order.findOne({ _id: req.params.id, user: req.user.id });
+    if (!order) return res.status(404).json({ message: "Order not found" });
+    if (!["binance_uid", "bybit_uid"].includes(order.paymentMethod)) {
+      return res.status(400).json({ message: "This order isn't an internal-transfer order" });
+    }
+
+    order.internalTransferUid = trimmedUid;
+    order.verificationStatus = "submitted";
+    await order.save();
+    await order.populate("user", "fullName email");
+    notifyAdminNewOrder(order).catch((err) => console.error("New order email failed:", err));
+
+    res.status(200).json({ message: "UID submitted — we'll verify and deliver shortly", order });
+  } catch (error) {
+    console.error("Submit internal transfer UID error:", error);
+    res.status(500).json({ message: "Couldn't submit your UID. Please try again." });
   }
 };
 
