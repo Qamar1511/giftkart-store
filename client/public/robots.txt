@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /login
+Disallow: /signup
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /cart
+Disallow: /checkout
+Disallow: /orders
+Disallow: /order-confirmation
+Disallow: /paypal
+
+Sitemap: https://giftkartstore.in/sitemap.xml

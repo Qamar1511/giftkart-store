@@ -1,0 +1,2293 @@
+/* ---------- Shared page shell ---------- */
+.shop-page,
+.buy-page {
+  max-width: 78rem;
+  margin: 0 auto;
+  padding: 3rem 1.75rem 5rem;
+}
+
+.shop-status {
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+
+.shop-status-error {
+  color: #c62828;
+}
+
+.section-heading {
+  font-family: "Rajdhani", sans-serif;
+  font-size: 1.7rem;
+  font-weight: 700;
+  margin: 0 0 1.5rem;
+}
+
+/* ---------- Homepage hero carousel (contained card, not full-bleed —
+   sits inside the same max-width/padding as the rest of the site) ---------- */
+.hero-carousel-wrap {
+  max-width: 82rem;
+  margin: 0 auto;
+  padding: 1.5rem 1.75rem 0;
+}
+
+.hero-image-carousel {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1.975 / 1;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  background: var(--bg-panel);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+}
+
+/* Dark theme's hero art is pure black, so the side padding/margin around
+   the card revealed the page's dark glow as a visible lighter band on
+   either side. Go full width there; keep everything else identical. */
+[data-theme="dark"] .hero-carousel-wrap {
+  max-width: 100%;
+  padding: 0;
+}
+
+[data-theme="dark"] .hero-image-carousel {
+  border-radius: 0;
+}
+
+.hero-image-carousel a {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.hero-image-carousel img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center center;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
+.hero-image-carousel img.is-active {
+  opacity: 1;
+}
+
+.hero-carousel-dots {
+  position: absolute;
+  z-index: 2;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.5rem;
+}
+
+.hero-carousel-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  border: none;
+  background: rgba(15, 23, 42, 0.25);
+  cursor: pointer;
+  padding: 0;
+}
+
+.hero-carousel-dot.is-active {
+  background: var(--accent-blue);
+}
+
+/* ---------- Category quick-nav ---------- */
+.category-nav {
+  max-width: 78rem;
+  margin: 0 auto;
+  padding: 1.25rem 1.75rem 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+.category-nav-pill {
+  font-family: "Rajdhani", sans-serif;
+  font-weight: 600;
+  font-size: 0.88rem;
+  letter-spacing: 0.02em;
+  color: var(--text-primary);
+  text-decoration: none;
+  background: var(--bg-panel);
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  padding: 0.45rem 1rem;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.category-nav-pill:hover {
+  border-color: var(--accent-blue);
+  color: var(--accent-cyan);
+}
+
+/* ---------- Brand badge (colored initials, stand-in for brand logos) ---------- */
+.brand-badge {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.6rem;
+  color: #fff;
+  font-family: "Rajdhani", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.brand-badge-has-image {
+  padding: 0.4rem;
+}
+
+.brand-badge-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.brand-badge-sm {
+  width: 3rem;
+  height: 3rem;
+  font-size: 0.95rem;
+  border-radius: 0.5rem;
+}
+
+.brand-badge-md {
+  width: 3.4rem;
+  height: 3.4rem;
+  font-size: 1.05rem;
+}
+
+.brand-badge-lg {
+  width: 4.5rem;
+  height: 4.5rem;
+  font-size: 1.4rem;
+  border-radius: 0.9rem;
+}
+
+/* ---------- Featured brands row (wraps, no scroll) ---------- */
+.featured-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.9rem;
+}
+
+@media (max-width: 900px) {
+  .featured-row {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 680px) {
+  .featured-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.7rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .featured-row {
+    grid-template-columns: repeat(1, 1fr);
+  }
+}
+
+/* ---------- Brand tile (used in featured row + category grids) ---------- */
+.brand-tile {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-panel);
+  border: 1px solid var(--card-border);
+  border-radius: 0.9rem;
+  overflow: hidden;
+  width: 100%;
+  min-width: 0;
+  text-decoration: none;
+  color: var(--text-primary);
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.brand-tile:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent-blue);
+}
+
+.brand-tile-image-wrap {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--overlay-soft);
+}
+
+.brand-tile-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.brand-tile-body {
+  padding: 0.85rem 1rem 1rem;
+}
+
+.brand-tile-name {
+  font-weight: 600;
+  font-size: 0.92rem;
+  margin: 0;
+}
+
+.brand-tile-meta {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  margin: 0.25rem 0 0;
+}
+
+/* ---------- Category blocks + brand grid (All gift cards section) ---------- */
+.category-block {
+  margin-bottom: 2.5rem;
+  scroll-margin-top: 5.5rem;
+}
+
+.category-block-title {
+  font-family: "Rajdhani", sans-serif;
+  font-size: 1.25rem;
+  margin: 0 0 1rem;
+  color: var(--accent-cyan);
+}
+
+.brand-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.9rem;
+}
+
+@media (max-width: 900px) {
+  .brand-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 680px) {
+  .brand-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.7rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .brand-grid {
+    grid-template-columns: repeat(1, 1fr);
+  }
+}
+
+/* ---------- Brand product page header ---------- */
+.brand-page-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+
+/* ---------- Card badge wrap (replaces product image on GiftCardCard) ---------- */
+.giftcard-card-badge-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--overlay-soft);
+}
+
+/* ---------- Homepage hero banner (image variant, kept for other uses) ---------- */
+.hero-banner {
+  position: relative;
+  overflow: hidden;
+  min-height: 34rem;
+  display: flex;
+  align-items: center;
+}
+
+.hero-banner-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.hero-banner-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, var(--bg-deep) 8%, rgba(8, 11, 20, 0.75) 42%, rgba(8, 11, 20, 0.15) 78%),
+    linear-gradient(0deg, var(--bg-deep) 0%, transparent 22%);
+}
+
+.hero-banner-content {
+  position: relative;
+  z-index: 2;
+  max-width: 78rem;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 1.75rem;
+}
+
+.hero-banner-title {
+  font-family: "Rajdhani", sans-serif;
+  font-weight: 700;
+  font-size: 3.6rem;
+  line-height: 1.02;
+  margin: 1rem 0;
+  max-width: 26rem;
+  background: linear-gradient(120deg, #ffffff 30%, var(--accent-cyan) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.hero-banner-sub {
+  color: var(--text-muted);
+  max-width: 28rem;
+  line-height: 1.6;
+  margin: 0 0 1.75rem;
+}
+
+.hero-banner-actions {
+  margin-bottom: 1.5rem;
+}
+
+.hero-banner-cta {
+  display: inline-block;
+  padding: 0.85rem 1.75rem;
+  font-size: 1.05rem;
+  text-decoration: none;
+  width: auto;
+}
+
+.hero-banner-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  letter-spacing: 0.03em;
+}
+
+.hero-banner-badges span:nth-child(even) {
+  color: rgba(137, 145, 168, 0.5);
+}
+
+@media (max-width: 860px) {
+  .hero-banner {
+    min-height: 28rem;
+  }
+
+  .hero-banner-overlay {
+    background: linear-gradient(0deg, var(--bg-deep) 15%, rgba(8, 11, 20, 0.55) 55%, rgba(8, 11, 20, 0.25) 100%);
+  }
+
+  .hero-banner-title {
+    font-size: 2.4rem;
+    max-width: 100%;
+  }
+
+  .hero-banner-sub {
+    max-width: 100%;
+  }
+}
+
+/* ---------- How it works ---------- */
+.how-it-works-wrap {
+  max-width: 78rem;
+  margin: 0 auto;
+  padding: 3.5rem 1.75rem 0.5rem;
+  text-align: center;
+}
+
+.how-it-works-sub {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  margin: 0.4rem 0 0;
+}
+
+.how-it-works {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 1.25rem;
+  margin-top: 2rem;
+  text-align: left;
+}
+
+.how-step {
+  position: relative;
+  background: var(--bg-panel);
+  border: 1px solid var(--card-border);
+  border-radius: 0.9rem;
+  padding: 1.5rem 1.4rem 1.6rem;
+  overflow: hidden;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.how-step::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent-blue), var(--accent-violet));
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.how-step:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent-blue);
+  box-shadow: 0 10px 24px rgba(47, 111, 237, 0.1);
+}
+
+.how-step:hover::before {
+  opacity: 1;
+}
+
+.how-step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 0.6rem;
+  background: linear-gradient(135deg, rgba(47, 111, 237, 0.12), rgba(124, 79, 224, 0.12));
+  font-family: "Rajdhani", sans-serif;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--accent-blue);
+  margin-bottom: 0.9rem;
+}
+
+.how-step h3 {
+  font-family: "Rajdhani", sans-serif;
+  font-size: 1.1rem;
+  margin: 0 0 0.4rem;
+}
+
+.how-step p {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ---------- FAQ ---------- */
+.faq-section {
+  max-width: 78rem;
+  margin: 0 auto;
+  padding: 1rem 1.75rem 4.5rem;
+}
+
+.faq-inner {
+  max-width: 44rem;
+}
+
+.faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.faq-item {
+  background: var(--bg-panel);
+  border: 1px solid var(--card-border);
+  border-radius: 0.7rem;
+  overflow: hidden;
+}
+
+.faq-item.is-open {
+  border-color: var(--accent-blue);
+}
+
+.faq-question {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  background: none;
+  border: none;
+  text-align: left;
+  padding: 1rem 1.25rem;
+  font-family: "Inter", sans-serif;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.faq-icon {
+  flex-shrink: 0;
+  color: var(--accent-cyan);
+  font-size: 1.1rem;
+}
+
+.faq-answer {
+  margin: 0;
+  padding: 0 1.25rem 1.1rem;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+/* ---------- Homepage hero (legacy text-only, kept for other pages) ---------- */
+.hero {
+  text-align: center;
+  padding: 3rem 1rem 4rem;
+}
+
+.hero-title {
+  font-family: "Rajdhani", sans-serif;
+  font-weight: 700;
+  font-size: 3rem;
+  line-height: 1.05;
+  margin: 1rem 0;
+  background: linear-gradient(120deg, #ffffff 30%, var(--accent-cyan) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.hero-sub {
+  color: var(--text-muted);
+  max-width: 34rem;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+/* ---------- Product grid ---------- */
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 1.25rem;
+}
+
+.giftcard-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--card-border);
+  border-radius: 0.9rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.giftcard-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent-blue);
+}
+
+.giftcard-card-image-wrap {
+  position: relative;
+  aspect-ratio: 5 / 4;
+  overflow: hidden;
+}
+
+.giftcard-card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.giftcard-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.giftcard-card-console {
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.giftcard-card-price-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.giftcard-stock-pill {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+}
+
+.giftcard-stock-pill.in-stock {
+  background: rgba(41, 230, 255, 0.2);
+  color: var(--accent-cyan);
+}
+
+.giftcard-stock-pill.out-of-stock {
+  background: rgba(255, 138, 138, 0.2);
+  color: #c62828;
+}
+
+.giftcard-card-body {
+  padding: 1.1rem 1.25rem 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.giftcard-card-amount {
+  font-family: "Rajdhani", sans-serif;
+  font-weight: 700;
+  font-size: 1.8rem;
+  margin: 0;
+}
+
+.giftcard-card-title {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin: 0 0 0.5rem;
+}
+
+.giftcard-card-stock-hint {
+  font-size: 0.76rem;
+  color: #d9822b;
+  margin: 0.5rem 0 0;
+  font-weight: 500;
+}
+
+.cart-row-stock-warning {
+  color: #d9822b;
+  font-weight: 500;
+}
+
+.giftcard-card-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.qty-stepper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid var(--card-border);
+  border-radius: 0.5rem;
+  padding: 0.2rem 0.5rem;
+}
+
+.qty-stepper button {
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  cursor: pointer;
+  border-radius: 0.3rem;
+}
+
+.qty-stepper button:hover:not(:disabled) {
+  background: var(--overlay-hover);
+}
+
+.qty-stepper button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.qty-stepper span {
+  min-width: 1.2rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+.giftcard-card-btn {
+  flex: 1;
+  padding: 0.6rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-family: "Rajdhani", sans-serif;
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: #fff;
+  background: linear-gradient(120deg, var(--accent-blue), var(--accent-violet));
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.giftcard-card-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--bg-panel-raised);
+}
+
+.giftcard-card-btn-notify {
+  background: var(--bg-panel);
+  color: var(--accent-blue);
+  border: 1px solid var(--accent-blue);
+}
+
+.giftcard-card-btn-notify:disabled {
+  color: var(--text-muted);
+  border-color: var(--card-border);
+  background: var(--bg-panel-raised);
+  opacity: 1;
+}
+
+.giftcard-card-notify-error {
+  font-size: 0.76rem;
+  color: #e5484d;
+  margin: 0.4rem 0 0;
+}
+
+.giftcard-card-limit-hint {
+  font-size: 0.76rem;
+  color: #e5484d;
+  font-weight: 600;
+  margin: 0.4rem 0 0;
+}
+
+/* ---------- Buy page ---------- */
+.buy-page {
+  position: relative;
+  display: grid;
+  grid-template-columns: 18rem 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+.checkout-address-page {
+  padding-top: 1.5rem;
+  padding-bottom: 2rem;
+}
+
+.checkout-bg-decor {
+  position: absolute;
+  top: 15rem;
+  left: -3rem;
+  width: 30rem;
+  height: 27rem;
+  background-repeat: no-repeat;
+  background-position: left top;
+  background-size: contain;
+  -webkit-mask-image: radial-gradient(65% 70% at 30% 40%, black 55%, transparent 100%);
+  mask-image: radial-gradient(65% 70% at 30% 40%, black 55%, transparent 100%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.checkout-payment-page {
+  padding-top: 1.5rem;
+  padding-bottom: 2rem;
+}
+
+.payment-bg-decor {
+  top: -1rem;
+  left: -3rem;
+  width: 17rem;
+  height: 32rem;
+}
+
+.upi-wait-page {
+  position: relative;
+}
+
+.upi-wait-bg-decor {
+  top: 4rem;
+  left: -3rem;
+  width: 26rem;
+  height: 32rem;
+}
+
+.usdt-invoice-card {
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 860px) {
+  .upi-wait-bg-decor {
+    display: none;
+  }
+}
+
+.cart-page {
+  position: relative;
+}
+
+.cart-bg-decor {
+  top: 2rem;
+  left: -3rem;
+  width: 26rem;
+  height: 32rem;
+}
+
+.cart-list,
+.cart-summary {
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 860px) {
+  .cart-bg-decor {
+    display: none;
+  }
+}
+
+.buy-summary-card {
+  z-index: 1;
+}
+
+.buy-form-card {
+  position: relative;
+  z-index: 1;
+}
+
+.buy-summary-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--card-border);
+  border-radius: 0.9rem;
+  padding: 1.75rem;
+  position: relative;
+  top: 0.5rem;
+  left: 264px;
+}
+
+.buy-form-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--card-border);
+  border-radius: 0.9rem;
+  padding: 1.5rem 2rem;
+  max-width: 40rem;
+  margin: 0 0 0 auto;
+}
+
+.address-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 1rem;
+}
+
+.address-full-width {
+  grid-column: 1 / -1;
+}
+
+/* State dropdown — styled to match the address text inputs, with a custom
+   caret. Uses global theme tokens so it reads correctly in light + dark. */
+.address-select {
+  width: 100%;
+  background-color: var(--bg-panel-raised, #eef1f9);
+  border: 1px solid var(--card-border);
+  border-radius: 0.6rem;
+  padding: 0.8rem 2.4rem 0.8rem 0.95rem;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-family: "Inter", sans-serif;
+  line-height: 1.2;
+  outline: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%235b6478' d='M1.41 0 6 4.58 10.59 0 12 1.42l-6 6-6-6z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.95rem center;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.address-select:focus {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(47, 111, 237, 0.18);
+}
+
+.address-select option {
+  color: var(--text-primary);
+  background: var(--bg-panel);
+}
+
+/* The address text inputs relied on auth-only CSS variables that don't exist
+   on the checkout page, so they rendered with no border/background (nearly
+   invisible until focused). Give them the same visible treatment as the
+   State dropdown, using global theme tokens. */
+.address-grid input {
+  width: 100%;
+  background-color: var(--bg-panel-raised, #eef1f9);
+  border: 1px solid var(--card-border);
+  border-radius: 0.6rem;
+  padding: 0.8rem 0.95rem;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-family: "Inter", sans-serif;
+  line-height: 1.2;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.address-grid input::placeholder {
+  color: var(--text-muted);
+}
+
+.address-grid input:focus {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(47, 111, 237, 0.18);
+}
+
+.address-grid input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ---------- Contact page ---------- */
+.contact-page-sub {
+  color: var(--text-muted);
+  max-width: 40rem;
+  margin: -0.75rem 0 1.75rem;
+  line-height: 1.55;
+}
+
+.contact-form-card {
+  margin: 0 auto;
+}
+
+.contact-file-input {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+
+.contact-file-input input[type="file"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+}
+
+.contact-file-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--overlay-hover);
+  border: 1px solid var(--card-border);
+  border-radius: 0.55rem;
+  padding: 0.6rem 1rem;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.contact-file-btn:hover {
+  border-color: var(--accent-blue);
+}
+
+.contact-file-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  background: var(--overlay-soft);
+  border-radius: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  max-width: 16rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.contact-file-remove {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+
+.contact-file-remove:hover {
+  color: #c62828;
+}
+
+.payment-method-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.7rem;
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 640px) {
+  .payment-method-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 420px) {
+  .payment-method-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.payment-method-tile {
+  text-align: left;
+  background: var(--overlay-hover);
+  border: 1px solid var(--card-border);
+  border-radius: 0.6rem;
+  padding: 0.75rem 0.9rem;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.payment-method-tile:hover {
+  border-color: var(--accent-blue);
+}
+
+.payment-method-tile.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  background: var(--overlay-soft);
+}
+
+.payment-method-tile.is-disabled:hover {
+  border-color: var(--card-border);
+}
+
+.payment-method-tile.is-selected {
+  border-color: var(--accent-cyan);
+  background: rgba(41, 230, 255, 0.08);
+}
+
+.payment-method-label {
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--text-primary);
+}
+
+.payment-method-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* ---------- USDT invoice ---------- */
+.usdt-invoice-card {
+  grid-column: 1 / -1;
+  background: var(--bg-panel);
+  border: 1px solid var(--card-border);
+  border-radius: 0.9rem;
+  padding: 2rem;
+  max-width: 30rem;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.usdt-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin: 1rem 0;
+  text-align: left;
+}
+
+.usdt-field span {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.usdt-field code {
+  word-break: break-all;
+  font-size: 0.85rem;
+}
+
+/* ---------- Order confirmation ---------- */
+.confirmation-card {
+  grid-column: 1 / -1;
+  max-width: 32rem;
+  margin: 0 auto;
+  background: var(--bg-panel);
+  border: 1px solid var(--card-border);
+  border-radius: 0.9rem;
+  padding: 2.25rem;
+  text-align: center;
+}
+
+.confirmation-heading {
+  font-family: "Rajdhani", sans-serif;
+  font-size: 1.6rem;
+  margin: 0.75rem 0 0.4rem;
+}
+
+.confirmation-summary {
+  text-align: left;
+  margin: 1.5rem 0;
+  border-top: 1px solid var(--card-border);
+  padding-top: 1rem;
+}
+
+.confirmation-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.4rem 0;
+  font-size: 0.9rem;
+}
+
+.confirmation-row span {
+  color: var(--text-muted);
+}
+
+.confirmation-code-row code {
+  background: rgba(41, 230, 255, 0.1);
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.3rem;
+}
+
+.confirmation-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+/* ---------- Status pill (shared by confirmation + order history) ---------- */
+.order-status-pill {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.status-placed {
+  background: rgba(139, 145, 168, 0.15);
+  color: var(--text-muted);
+}
+
+.status-paid {
+  background: rgba(59, 123, 246, 0.15);
+  color: var(--accent-blue);
+}
+
+.status-delivered {
+  background: rgba(41, 230, 255, 0.15);
+  color: var(--accent-cyan);
+}
+
+.status-cancelled,
+.status-refunded,
+.status-failed {
+  background: rgba(255, 138, 138, 0.15);
+  color: #c62828;
+}
+
+.status-refund_pending {
+  background: rgba(255, 193, 7, 0.15);
+  color: #ffc107;
+}
+
+.status-pending {
+  background: rgba(234, 179, 8, 0.15);
+  color: #92650a;
+}
+
+.status-approved {
+  background: rgba(34, 197, 94, 0.15);
+  color: #15803d;
+}
+
+.status-rejected {
+  background: rgba(255, 138, 138, 0.15);
+  color: #c62828;
+}
+
+/* ---------- Order history ---------- */
+.orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.order-row-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--card-border);
+  border-radius: 0.8rem;
+  padding: 1.25rem 1.5rem;
+}
+
+.order-row-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.order-row-amount {
+  font-weight: 600;
+  margin: 0;
+}
+
+.order-row-meta {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  margin: 0.2rem 0 0;
+}
+
+.delivering-to {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.delivering-to-icon {
+  flex-shrink: 0;
+  width: 1.9rem;
+  height: 1.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(124, 79, 224, 0.1);
+  font-size: 0.9rem;
+}
+
+.order-row-code {
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.order-row-code code {
+  color: var(--text-primary);
+}
+
+.order-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.order-row-actions .navbar-btn {
+  font-size: 0.82rem;
+  padding: 0.4rem 0.85rem;
+}
+
+.order-cancel-btn {
+  color: #c62828;
+  border-color: rgba(255, 138, 138, 0.35);
+}
+
+.order-review-block {
+  margin-top: 0.9rem;
+  padding-top: 0.9rem;
+  border-top: 1px dashed var(--card-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.order-review-status {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.order-review-form {
+  background: var(--card-bg-muted, rgba(0, 0, 0, 0.02));
+  border: 1px solid var(--card-border);
+  border-radius: 0.6rem;
+  padding: 0.9rem;
+  max-width: 26rem;
+}
+
+.order-review-stars {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  margin-bottom: 0.6rem;
+}
+
+.order-review-star {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.4rem;
+  line-height: 1;
+  color: var(--card-border);
+  padding: 0.1rem;
+}
+
+.order-review-star.is-filled {
+  color: #f5a623;
+}
+
+.order-review-star-label {
+  margin-left: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.order-review-textarea {
+  width: 100%;
+  border: 1px solid var(--card-border);
+  border-radius: 0.5rem;
+  padding: 0.6rem;
+  font-family: inherit;
+  font-size: 0.85rem;
+  resize: vertical;
+}
+
+.order-review-form-actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.7rem;
+}
+
+.order-review-form-actions .auth-submit {
+  padding: 0.45rem 1rem;
+  width: auto;
+}
+
+.brand-review-summary {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.brand-review-stars-static {
+  color: #f5a623;
+  letter-spacing: 0.05em;
+}
+
+.brand-reviews-section {
+  margin-top: 2.5rem;
+}
+
+.brand-reviews-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.brand-review-card {
+  border: 1px solid var(--card-border);
+  border-radius: 0.6rem;
+  padding: 1rem;
+}
+
+.brand-review-card-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.brand-review-date {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  margin-left: auto;
+}
+
+.brand-review-comment {
+  margin: 0.6rem 0 0;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+.empty-orders {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text-muted);
+}
+
+.empty-orders .auth-submit {
+  max-width: 14rem;
+  margin: 1rem auto 0;
+}
+
+/* ---------- Test mode button (dev-only, disabled in production) ---------- */
+.test-mode-btn {
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.65rem;
+  border: 1px dashed rgba(255, 193, 7, 0.5);
+  border-radius: 0.5rem;
+  background: rgba(255, 193, 7, 0.06);
+  color: #ffc107;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.test-mode-btn:hover:not(:disabled) {
+  background: rgba(255, 193, 7, 0.12);
+}
+
+.test-mode-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---------- Trust / why-us badges (homepage) ---------- */
+.trust-section {
+  max-width: 78rem;
+  margin: 0 auto;
+  padding: 0 1.75rem 3rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 1rem;
+}
+
+.trust-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--card-border);
+  border-radius: 0.8rem;
+  padding: 1.4rem;
+  text-align: center;
+}
+
+.trust-icon {
+  font-size: 1.6rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.trust-card h3 {
+  font-family: "Rajdhani", sans-serif;
+  font-size: 1.05rem;
+  margin: 0 0 0.4rem;
+}
+
+.trust-card p {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ---------- Why buy from us (homepage) ---------- */
+.why-us-section {
+  background: var(--bg-panel);
+  border-top: 1px solid var(--card-border);
+  padding: 3.5rem 0;
+  margin-top: 2rem;
+}
+
+.why-us-inner {
+  max-width: 78rem;
+  margin: 0 auto;
+  padding: 0 1.75rem;
+}
+
+.why-us-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1.5rem;
+}
+
+.why-us-item h4 {
+  font-family: "Rajdhani", sans-serif;
+  font-size: 1.1rem;
+  margin: 0 0 0.5rem;
+  color: var(--accent-cyan);
+}
+
+.why-us-item p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ---------- Cart page ---------- */
+.cart-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-bottom: 1.5rem;
+  max-width: 46rem;
+  margin-left: auto;
+}
+
+.cart-row {
+  display: grid;
+  grid-template-columns: 4.5rem 1fr auto auto auto;
+  align-items: center;
+  gap: 1rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--card-border);
+  border-radius: 0.7rem;
+  padding: 0.75rem 1rem;
+}
+
+.cart-row-image {
+  width: 4.5rem;
+  height: 3rem;
+  object-fit: cover;
+  border-radius: 0.4rem;
+}
+
+.cart-row-title {
+  font-weight: 600;
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.cart-row-subtotal {
+  font-weight: 700;
+  font-family: "Rajdhani", sans-serif;
+  white-space: nowrap;
+}
+
+.cart-row-remove {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0.3rem;
+}
+
+.cart-row-remove:hover {
+  color: #c62828;
+}
+
+.cart-summary {
+  max-width: 22rem;
+  margin-left: auto;
+  background: var(--bg-panel);
+  border: 1px solid var(--card-border);
+  border-radius: 0.8rem;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.cart-summary > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1.05rem;
+}
+
+/* ---------- Manual UPI QR ---------- */
+.upi-qr-image {
+  width: 200px;
+  height: 200px;
+  margin: 1rem auto;
+  display: block;
+  border-radius: 0.5rem;
+  background: #fff;
+  padding: 0.5rem;
+}
+
+/* ---------- Legal pages (Refund Policy, Terms of Service) ---------- */
+.legal-page {
+  max-width: 52rem;
+}
+
+.legal-hero {
+  position: relative;
+  overflow: hidden;
+  padding: 2.5rem 2rem;
+  margin-bottom: 2rem;
+  border-radius: 1.25rem;
+  background: var(--bg-panel-raised);
+  border: 1px solid var(--card-border);
+}
+
+.legal-bg-decor {
+  top: -2rem;
+  right: -4rem;
+  left: auto;
+  width: 22rem;
+  height: 22rem;
+  opacity: 0.9;
+}
+
+.legal-hero-title {
+  position: relative;
+  z-index: 1;
+  font-family: "Rajdhani", sans-serif;
+  font-weight: 700;
+  font-size: 2rem;
+  margin: 0.75rem 0 0.6rem;
+}
+
+.legal-hero-sub {
+  position: relative;
+  z-index: 1;
+  color: var(--text-muted);
+  max-width: 32rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.legal-content {
+  background: var(--bg-panel);
+  border: 1px solid var(--card-border);
+  border-radius: 1rem;
+  padding: 2rem 2.25rem 2.5rem;
+}
+
+/* ---------- 404 / not-found page ----------
+   Reuses the legal-page shell (same hero + panel) so the 404 looks like a real
+   page of the site rather than a bare error. Only these few extras are new. */
+.notfound-badge {
+  position: relative;
+  z-index: 1;
+  display: inline-block;
+  font-family: "Rajdhani", sans-serif;
+  font-weight: 600;
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-cyan);
+  background: var(--bg-panel);
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  padding: 0.35rem 0.85rem;
+}
+
+.notfound-path {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.notfound-path code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85rem;
+  background: var(--bg-panel-raised);
+  border: 1px solid var(--card-border);
+  border-radius: 0.4rem;
+  padding: 0.15rem 0.45rem;
+  /* Junk URLs can be long and have no spaces — don't let one blow out the panel. */
+  word-break: break-all;
+}
+
+.notfound-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+}
+
+.legal-updated {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin: 0 0 1.25rem;
+}
+
+.legal-toc {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  background: var(--bg-panel-raised);
+  border-radius: 0.7rem;
+  padding: 1rem 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.legal-toc a {
+  font-size: 0.88rem;
+  color: var(--accent-blue);
+  text-decoration: none;
+}
+
+.legal-toc a:hover {
+  text-decoration: underline;
+}
+
+.legal-content h2 {
+  font-family: "Rajdhani", sans-serif;
+  font-weight: 700;
+  font-size: 1.25rem;
+  margin: 2rem 0 0.75rem;
+  scroll-margin-top: 5.5rem;
+}
+
+.legal-content h2:first-of-type {
+  margin-top: 0;
+}
+
+.legal-content p {
+  color: var(--text-primary);
+  line-height: 1.7;
+  margin: 0 0 1rem;
+}
+
+.legal-content ul {
+  margin: 0 0 1rem;
+  padding-left: 1.25rem;
+  line-height: 1.7;
+  color: var(--text-primary);
+}
+
+.legal-content li {
+  margin-bottom: 0.35rem;
+}
+
+.legal-content a {
+  color: var(--accent-blue);
+}
+
+.legal-table-wrap {
+  overflow-x: auto;
+  margin: 0 0 1.25rem;
+}
+
+.legal-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.legal-table th,
+.legal-table td {
+  text-align: left;
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid var(--card-border);
+  vertical-align: top;
+}
+
+.legal-table th {
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+@media (max-width: 640px) {
+  .legal-bg-decor {
+    display: none;
+  }
+
+  .legal-content {
+    padding: 1.5rem 1.25rem 2rem;
+  }
+}
+@media (max-width: 860px) {
+  .buy-page {
+    grid-template-columns: 1fr;
+  }
+
+  .checkout-bg-decor {
+    display: none;
+  }
+
+  .buy-summary-card {
+    position: static;
+    left: 0;
+  }
+
+  .address-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-title {
+    font-size: 2.2rem;
+  }
+
+  .cart-row {
+    grid-template-columns: 3.5rem 1fr auto;
+    grid-template-areas:
+      "img title remove"
+      "img qty subtotal";
+    row-gap: 0.5rem;
+  }
+
+  .cart-row-image-wrap {
+    grid-area: img;
+  }
+
+  .cart-row-info {
+    grid-area: title;
+  }
+
+  .qty-stepper {
+    grid-area: qty;
+    justify-self: start;
+  }
+
+  .cart-row-subtotal {
+    grid-area: subtotal;
+    justify-self: end;
+  }
+
+  .cart-row-remove {
+    grid-area: remove;
+    justify-self: end;
+  }
+
+  .cart-summary {
+    max-width: none;
+  }
+
+  .cart-list {
+    max-width: none;
+    margin-left: 0;
+  }
+
+  .buy-form-card {
+    margin: 0;
+    max-width: none;
+  }
+}
+
+/* ---------- Extra-small phones (iPhone SE, older Android, ~360px and below) ---------- */
+@media (max-width: 400px) {
+  .shop-page,
+  .buy-page {
+    padding: 1.5rem 1rem 3.5rem;
+  }
+
+  .hero-carousel-wrap {
+    padding: 1rem 1rem 0;
+  }
+
+  .category-nav,
+  .how-it-works-wrap,
+  .faq-section,
+  .trust-section,
+  .why-us-inner {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .hero-banner-title {
+    font-size: 1.9rem;
+  }
+
+  .section-heading {
+    font-size: 1.4rem;
+  }
+
+  .brand-tile {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .buy-form-card {
+    padding: 1.25rem 1.1rem;
+  }
+
+  .usdt-invoice-card,
+  .confirmation-card {
+    padding: 1.5rem 1.1rem;
+  }
+
+  .cart-summary,
+  .cart-row-card {
+    padding: 1rem;
+  }
+
+  .order-row-card {
+    padding: 1rem;
+  }
+
+  .giftcard-card-amount {
+    font-size: 1.5rem;
+  }
+
+  .contact-file-name {
+    max-width: 10rem;
+  }
+}
+
+/* ---------- Skeleton loading placeholders ---------- */
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: -40rem 0;
+  }
+  100% {
+    background-position: 40rem 0;
+  }
+}
+
+.skeleton-line,
+.skeleton-block {
+  background: linear-gradient(90deg, var(--overlay-soft) 25%, var(--overlay-hover) 50%, var(--overlay-soft) 75%);
+  background-size: 40rem 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+  border-radius: 0.4rem;
+}
+
+.skeleton-heading {
+  width: 12rem;
+  height: 1.6rem;
+  margin-bottom: 1.25rem;
+}
+
+.skeleton-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--card-border);
+  border-radius: 0.9rem;
+  padding: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.skeleton-block {
+  aspect-ratio: 5 / 4;
+  border-radius: 0.6rem;
+}
+
+.skeleton-line {
+  height: 0.85rem;
+}
+
+/* Blog covers are 16/9 (see .blog-card-image and .blog-post-cover), not the
+   5/4 of a gift-card tile, so their placeholders need the matching ratio or
+   the layout shifts when the real image arrives. */
+.skeleton-block-wide {
+  aspect-ratio: 16 / 9;
+}
+/* ---------- Blog ---------- */
+.blog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(17.5rem, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.blog-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-panel);
+  border: 1px solid var(--card-border);
+  border-radius: 0.9rem;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.blog-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
+}
+
+.blog-card-image {
+  aspect-ratio: 16 / 9;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--overlay-soft);
+}
+
+.blog-card-body {
+  padding: 1.1rem 1.25rem 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.blog-card-date {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.blog-card-title {
+  font-family: "Rajdhani", sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.blog-card-excerpt {
+  font-size: 0.92rem;
+  color: var(--text-muted);
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.blog-post-page {
+  max-width: 62rem;
+  margin: 0 auto;
+}
+
+.blog-post-cover {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background-size: cover;
+  background-position: center;
+  border-radius: 0.9rem;
+  margin-top: 1rem;
+}
+
+.blog-post-content {
+  margin-top: 1.5rem;
+  line-height: 1.75;
+  color: var(--text-primary);
+}
+
+.blog-post-content h2,
+.blog-post-content h3 {
+  font-family: "Rajdhani", sans-serif;
+  margin: 1.75rem 0 0.75rem;
+}
+
+.blog-post-content p {
+  margin: 0 0 1rem;
+}
+
+.blog-post-content ul,
+.blog-post-content ol {
+  margin: 0 0 1rem 1.25rem;
+}
+
+.blog-post-content a {
+  /* color: var(--accent-blue); */
+}
+
+.blog-post-content img {
+  max-width: 100%;
+  /* Post images carry width/height attributes to reserve space (avoids layout
+     shift); height:auto keeps them undistorted once max-width kicks in. */
+  height: auto;
+  border-radius: 0.6rem;
+  margin: 1rem 0;
+}
+
+/* Whole article settles in with a single gentle fade + rise on load. Content
+   is injected via dangerouslySetInnerHTML, so no JS (IntersectionObserver,
+   inline <script>) can run inside it — this keeps the "smooth reveal" feel
+   using CSS only, which also means it costs nothing at scroll time. */
+.blog-post-content {
+  animation: blog-content-in 0.5s ease both;
+}
+
+@keyframes blog-content-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Callout box — used sparingly for a single important warning or tip
+   (e.g. "your account's region can't be changed later"). */
+.blog-callout {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  background: var(--bg-panel-raised);
+  border: 1px solid var(--card-border);
+  border-left: 3px solid var(--accent-cyan);
+  border-radius: 0.7rem;
+  padding: 1rem 1.15rem;
+  margin: 1.5rem 0;
+}
+
+/* Positive/tip variant (💡) — visually distinct from the default warning
+   accent, so "here's a useful tip" reads differently from "watch out for
+   this" at a glance. */
+.blog-callout--tip {
+  border-left-color: var(--accent-violet);
+}
+
+.blog-callout-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.blog-callout p {
+  margin: 0;
+}
+
+.blog-callout strong {
+  color: var(--text-primary);
+}
+
+/* CTA card — a bigger, visually distinct stop for the article's one or two
+   highest-value links (e.g. "go buy the right card now"). Reuses the same
+   blue → violet gradient as the site's primary buttons (see .navbar-btn-solid
+   / .auth-submit) so it reads as the same brand, not a new component. */
+.blog-cta-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: var(--bg-panel-raised);
+  border: 1px solid var(--card-border);
+  border-radius: 0.9rem;
+  padding: 1.4rem 1.6rem;
+  margin: 2rem 0;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.blog-cta-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.12);
+  border-color: var(--accent-blue);
+}
+
+.blog-cta-card-text h4 {
+  font-family: "Rajdhani", sans-serif;
+  margin: 0 0 0.25rem;
+  color: var(--text-primary);
+  font-size: 1.1rem;
+}
+
+.blog-cta-card-text p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+
+.blog-cta-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-shrink: 0;
+  background: linear-gradient(120deg, var(--accent-blue), var(--accent-violet));
+  font-family: "Rajdhani", sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  text-decoration: none;
+  padding: 0.75rem 1.3rem;
+  border-radius: 0.6rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+/* Higher specificity than the general ".blog-post-content a" link-color
+   rule above, which would otherwise win and render this text in
+   --accent-blue — nearly invisible against the button's own blue→violet
+   background. */
+.blog-post-content .blog-cta-button,
+.blog-post-content .blog-cta-button:hover,
+.blog-post-content .blog-cta-button:visited {
+  color: #fff;
+}
+
+.blog-cta-button:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 10px 24px rgba(47, 111, 237, 0.35);
+  filter: brightness(1.08);
+}
+
+.blog-cta-button:focus-visible {
+  outline: 2px solid var(--accent-cyan);
+  outline-offset: 2px;
+}
+
+.blog-cta-button-arrow {
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+
+.blog-cta-button:hover .blog-cta-button-arrow {
+  transform: translateX(3px);
+}
+
+/* FAQ accordion — plain <details>/<summary> so it works without any JS
+   (dangerouslySetInnerHTML content can't run scripts). Native, keyboard- and
+   screen-reader-accessible by default. */
+.blog-faq-item {
+  border: 1px solid var(--card-border);
+  border-radius: 0.7rem;
+  margin: 0 0 0.75rem;
+  overflow: hidden;
+  background: var(--bg-panel);
+}
+
+.blog-faq-item summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 1rem 1.1rem;
+  font-family: "Rajdhani", sans-serif;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  transition: color 0.15s ease;
+}
+
+.blog-faq-item summary::-webkit-details-marker {
+  display: none;
+}
+
+.blog-faq-item summary:hover {
+  color: var(--accent-blue);
+}
+
+.blog-faq-item summary::after {
+  content: "+";
+  flex-shrink: 0;
+  font-size: 1.3rem;
+  font-weight: 400;
+  color: var(--accent-blue);
+  transition: transform 0.25s ease;
+}
+
+.blog-faq-item[open] summary::after {
+  transform: rotate(45deg);
+}
+
+.blog-faq-item p {
+  margin: 0;
+  padding: 0 1.1rem 1.1rem;
+  color: var(--text-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blog-post-content,
+  .blog-cta-card,
+  .blog-cta-button,
+  .blog-cta-button-arrow,
+  .blog-faq-item summary::after {
+    animation: none;
+    transition: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .blog-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .blog-cta-card {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .blog-cta-button {
+    justify-content: center;
+  }
+}
